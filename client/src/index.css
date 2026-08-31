@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    border-color: #30363D;
+  }
+  
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: #30363D #0D1117;
+  }
+
+  body {
+    background-color: #0D1117;
+    color: #C9D1D9;
+    font-size: 15px;
+    line-height: 1.65;
+    font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    color: #F0F6FC;
+    letter-spacing: -0.015em;
+  }
+
+  /* Clean modern scrollbars */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #0D1117;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #30363D;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #484F58;
+  }
+
+  /* Monospace font standard */
+  code, pre, kbd, samp, .font-mono, .font-code {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-feature-settings: "liga" 1, "calt" 1, "zero" 1;
+  }
+}
+
+/* Crisp 1px borders */
+.border-subtle {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.border-strong {
+  border: 1px solid rgba(255, 255, 255, 0.16);
+}
+
+/* Calm modern panel styling */
+.glass-header {
+  background: rgba(13, 15, 22, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.panel-card {
+  background: #11131A;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+}
+
+/* KaTeX clean typography */
+.katex-display {
+  display: block !important;
+  margin: 0.75em 0 !important;
+  overflow-x: auto;
+  overflow-y: hidden;
+  padding: 0.5rem 0;
+  text-align: center;
+}
+
+.katex {
+  font-size: 1.05em;
+  color: #818CF8;
+  display: inline !important;
+  line-height: inherit;
+  white-space: nowrap;
+}
+
+.katex .katex-html {
+  display: inline !important;
+  white-space: nowrap;
+}
+
+.katex-mathml {
+  display: none !important;
+}
+
+
+

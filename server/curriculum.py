@@ -1,0 +1,45 @@
+"""Curriculum tracks and challenge definitions for PyMastery.
+Re-exports from the server.curriculum package for seamless backwards compatibility.
+"""
+
+from server.curriculum import (
+    DAYS,
+    DAYS_BY_ID,
+    DAYS_BY_NUM,
+    TRACKS,
+    CHALLENGES,
+    CURRICULUM_CHALLENGES,
+    CurriculumService,
+    curriculum,
+    get_all_curriculum,
+    get_day,
+    get_challenge,
+    day01_numpy,
+    day02_pandas,
+    day03_matplotlib,
+    day04_sklearn,
+    day05_pytorch_autograd,
+    day06_pytorch_nn,
+    day07_full_pipeline,
+)
+
+__all__ = [
+    "DAYS",
+    "DAYS_BY_ID",
+    "DAYS_BY_NUM",
+    "TRACKS",
+    "CHALLENGES",
+    "CURRICULUM_CHALLENGES",
+    "CurriculumService",
+    "curriculum",
+    "get_all_curriculum",
+    "get_day",
+    "get_challenge",
+    "day01_numpy",
+    "day02_pandas",
+    "day03_matplotlib",
+    "day04_sklearn",
+    "day05_pytorch_autograd",
+    "day06_pytorch_nn",
+    "day07_full_pipeline",
+]
