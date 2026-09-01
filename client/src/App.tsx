@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import confetti from 'canvas-confetti';
-import { CURRICULUM_DATA } from './data/curriculumData';
+import { CURRICULUM_DATA, LIBRARY_CURRICULA } from './data/curriculumData';
 import type {
   DayTrack,
   Challenge,
@@ -8,6 +8,7 @@ import type {
   ExecutionResponse,
   Medal,
   LayoutMode,
+  LibraryId,
 } from './types';
 import {
   loadUserProgress,
@@ -31,7 +32,8 @@ import ChallengeIntuitionPanel from './components/ChallengeIntuitionPanel';
 
 export function App() {
   // Curriculum & Active Challenge State
-  const [curriculum] = useState<DayTrack[]>(CURRICULUM_DATA);
+  const [selectedLibrary, setSelectedLibrary] = useState<LibraryId>('numpy');
+  const curriculum = LIBRARY_CURRICULA[selectedLibrary] || CURRICULUM_DATA;
   const [currentDay, setCurrentDay] = useState<DayTrack>(CURRICULUM_DATA[0]);
   const [activeChallenge, setActiveChallenge] = useState<Challenge>(
     CURRICULUM_DATA[0].challenges[0]
@@ -128,6 +130,22 @@ export function App() {
       if (day.challenges.length > 0) {
         const firstChallenge = day.challenges[0];
         handleSelectChallenge(firstChallenge, day);
+      }
+    },
+    [handleSelectChallenge]
+  );
+
+  // 3b. Switch Library Focus (NumPy, Pandas, Matplotlib, Scikit-Learn, PyTorch)
+  const handleSelectLibrary = useCallback(
+    (lib: LibraryId) => {
+      setSelectedLibrary(lib);
+      const libTracks = LIBRARY_CURRICULA[lib];
+      if (libTracks && libTracks.length > 0) {
+        const firstTrack = libTracks[0];
+        setCurrentDay(firstTrack);
+        if (firstTrack.challenges && firstTrack.challenges.length > 0) {
+          handleSelectChallenge(firstTrack.challenges[0], firstTrack);
+        }
       }
     },
     [handleSelectChallenge]
@@ -396,6 +414,7 @@ export function App() {
       <Header
         currentDay={currentDay}
         activeChallenge={activeChallenge}
+        selectedLibrary={selectedLibrary}
         layoutMode={layoutMode}
         onChangeLayout={setLayoutMode}
         mentorOpen={mentorOpen}
@@ -424,6 +443,8 @@ export function App() {
                 currentDay={currentDay}
                 activeChallenge={activeChallenge}
                 userProgress={userProgress}
+                selectedLibrary={selectedLibrary}
+                onSelectLibrary={handleSelectLibrary}
                 onSelectChallenge={(ch, d) => {
                   handleSelectChallenge(ch, d);
                   setSidebarOpen(false);

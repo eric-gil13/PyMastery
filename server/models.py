@@ -261,4 +261,20 @@ class AITutorResponse(BaseModel):
     hints: List[str] = Field(default_factory=list)
     suggested_actions: List[str] = Field(default_factory=list)
     provider_used: Optional[str] = "fallback"
+    error_message: Optional[str] = None
+
+
+class AITestConnectionRequest(BaseModel):
+    user_api_key: Optional[str] = None
+    provider: Optional[str] = "auto"
+    model: Optional[str] = None
+    base_url: Optional[str] = None
+
+
+class AITestConnectionResponse(BaseModel):
+    success: bool
+    provider: str
+    model: str
+    message: str
+
 

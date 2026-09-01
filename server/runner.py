@@ -557,9 +557,13 @@ class CodeRunner:
         if python_path:
             self.python_path = python_path
         else:
-            venv_python = pathlib.Path(__file__).resolve().parent.parent / ".venv" / "Scripts" / "python.exe"
-            if venv_python.exists():
-                self.python_path = str(venv_python)
+            root_dir = pathlib.Path(__file__).resolve().parent.parent
+            win_venv = root_dir / ".venv" / "Scripts" / "python.exe"
+            unix_venv = root_dir / ".venv" / "bin" / "python"
+            if win_venv.exists():
+                self.python_path = str(win_venv)
+            elif unix_venv.exists():
+                self.python_path = str(unix_venv)
             else:
                 self.python_path = sys.executable
 
@@ -633,6 +637,7 @@ class CodeRunner:
                     proc.stdin.close()
                 except Exception:
                     pass
+                proc.stdin = None
 
                 while proc.poll() is None:
                     if ps_proc:

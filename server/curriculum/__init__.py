@@ -1,12 +1,48 @@
 """
-PyMastery 7-Day High-Density Curriculum Registry
+PyMastery Progressive Zero-to-Hero Curriculum Registry
 """
 
 from typing import Dict, Any, List, Optional, Union
 from server.models import Challenge, CurriculumOverview, TestCase, Track
 
-# Import Day Curriculum Modules
+# Import Progressive Zero-to-Hero NumPy Curriculum Modules
 from server.curriculum import (
+    day01_numpy_basics,
+    day02_numpy_shapes,
+    day03_numpy_slicing,
+    day04_numpy_math,
+    day05_numpy_axes,
+    day06_numpy_masking,
+    day07_numpy_broadcasting,
+    # Progressive Pandas Modules
+    pandas_01_basics,
+    pandas_02_indexing,
+    pandas_03_cleaning,
+    pandas_04_groupby,
+    pandas_05_merging,
+    pandas_06_timeseries,
+    pandas_07_pipeline,
+    # Progressive Matplotlib Modules
+    matplotlib_01_basics,
+    matplotlib_02_charts,
+    matplotlib_03_subplots,
+    matplotlib_04_styling,
+    # Progressive Scikit-Learn Modules
+    sklearn_01_workflow,
+    sklearn_02_preprocessing,
+    sklearn_03_classification,
+    sklearn_04_regression,
+    sklearn_05_cross_val,
+    sklearn_06_pipelines,
+    # Progressive PyTorch Modules
+    pytorch_01_tensors,
+    pytorch_02_autograd,
+    pytorch_03_modules,
+    pytorch_04_loss_optim,
+    pytorch_05_train_loop,
+    pytorch_06_datasets,
+    pytorch_07_architectures,
+    # Legacy Modules
     day01_numpy,
     day02_pandas,
     day03_matplotlib,
@@ -16,7 +52,53 @@ from server.curriculum import (
     day07_full_pipeline,
 )
 
-DAYS = [
+NUMPY_DAYS = [
+    day01_numpy_basics.get_curriculum(),
+    day02_numpy_shapes.get_curriculum(),
+    day03_numpy_slicing.get_curriculum(),
+    day04_numpy_math.get_curriculum(),
+    day05_numpy_axes.get_curriculum(),
+    day06_numpy_masking.get_curriculum(),
+    day07_numpy_broadcasting.get_curriculum(),
+]
+
+PANDAS_DAYS = [
+    pandas_01_basics.get_curriculum(),
+    pandas_02_indexing.get_curriculum(),
+    pandas_03_cleaning.get_curriculum(),
+    pandas_04_groupby.get_curriculum(),
+    pandas_05_merging.get_curriculum(),
+    pandas_06_timeseries.get_curriculum(),
+    pandas_07_pipeline.get_curriculum(),
+]
+
+MATPLOTLIB_DAYS = [
+    matplotlib_01_basics.get_curriculum(),
+    matplotlib_02_charts.get_curriculum(),
+    matplotlib_03_subplots.get_curriculum(),
+    matplotlib_04_styling.get_curriculum(),
+]
+
+SKLEARN_DAYS = [
+    sklearn_01_workflow.get_curriculum(),
+    sklearn_02_preprocessing.get_curriculum(),
+    sklearn_03_classification.get_curriculum(),
+    sklearn_04_regression.get_curriculum(),
+    sklearn_05_cross_val.get_curriculum(),
+    sklearn_06_pipelines.get_curriculum(),
+]
+
+PYTORCH_DAYS = [
+    pytorch_01_tensors.get_curriculum(),
+    pytorch_02_autograd.get_curriculum(),
+    pytorch_03_modules.get_curriculum(),
+    pytorch_04_loss_optim.get_curriculum(),
+    pytorch_05_train_loop.get_curriculum(),
+    pytorch_06_datasets.get_curriculum(),
+    pytorch_07_architectures.get_curriculum(),
+]
+
+LEGACY_DAYS = [
     day01_numpy.get_curriculum(),
     day02_pandas.get_curriculum(),
     day03_matplotlib.get_curriculum(),
@@ -26,8 +108,22 @@ DAYS = [
     day07_full_pipeline.get_curriculum(),
 ]
 
+# Default active track is NumPy Zero-to-Hero
+DAYS = NUMPY_DAYS
+
 DAYS_BY_ID = {day["day_id"]: day for day in DAYS}
 DAYS_BY_NUM = {day["day_number"]: day for day in DAYS}
+
+ALL_TRACK_COLLECTIONS = [NUMPY_DAYS, PANDAS_DAYS, MATPLOTLIB_DAYS, SKLEARN_DAYS, PYTORCH_DAYS, LEGACY_DAYS]
+
+# Build index of all challenges across progressive and legacy curricula for fast lookup
+ALL_CHALLENGES_MAP: Dict[str, Dict[str, Any]] = {}
+for day_list in ALL_TRACK_COLLECTIONS:
+    for d in day_list:
+        for ch in d.get("challenges", []):
+            if "id" in ch:
+                ALL_CHALLENGES_MAP[ch["id"]] = ch
+                ALL_CHALLENGES_MAP[ch["id"].lower()] = ch
 
 
 def get_all_curriculum() -> List[Dict[str, Any]]:
@@ -56,11 +152,14 @@ def get_challenge(day_id_or_number: Union[str, int, None] = None, challenge_id: 
     """
     Lookup a specific challenge by day and challenge_id, or by challenge_id across all days.
     """
-    # If only one argument is provided and it's a challenge_id
     if challenge_id is None and isinstance(day_id_or_number, str):
-        if "ch" in day_id_or_number or not day_id_or_number.startswith("day") or len(day_id_or_number) > 6:
-            challenge_id = day_id_or_number
-            day_id_or_number = None
+        challenge_id = day_id_or_number
+        day_id_or_number = None
+
+    if challenge_id is not None:
+        clean_id = challenge_id.strip().lower()
+        if clean_id in ALL_CHALLENGES_MAP:
+            return ALL_CHALLENGES_MAP[clean_id]
 
     if day_id_or_number is not None:
         day = get_day(day_id_or_number)
@@ -69,13 +168,6 @@ def get_challenge(day_id_or_number: Union[str, int, None] = None, challenge_id: 
                 if ch["id"] == challenge_id:
                     return ch
         return None
-
-    # Search across all days if day_id is not specified
-    if challenge_id is not None:
-        for day in DAYS:
-            for ch in day["challenges"]:
-                if ch["id"] == challenge_id:
-                    return ch
 
     return None
 
@@ -98,56 +190,96 @@ def _convert_to_challenge_models() -> List[Challenge]:
         "Expert": "Expert"
     }
 
-    for day in DAYS:
-        day_num = day["day_number"]
-        track_id = f"track-day{day_num:02d}"
-        track_title = day["title"]
-        
-        for ch in day["challenges"]:
-            diff = difficulty_map.get(ch.get("difficulty", "Intermediate"), "Intermediate")
+def _convert_to_challenge_models() -> List[Challenge]:
+    """Converts curriculum challenges across all libraries into FastAPI Challenge models."""
+    models: List[Challenge] = []
+    seen_ids = set()
+    
+    difficulty_map = {
+        "Easy": "Beginner",
+        "Beginner": "Beginner",
+        "Medium": "Intermediate",
+        "Intermediate": "Intermediate",
+        "Hard": "Advanced",
+        "Advanced": "Advanced",
+        "Expert": "Expert"
+    }
+
+    for track_list in ALL_TRACK_COLLECTIONS:
+        for day in track_list:
+            day_num = day.get("day_number", 1)
+            day_id = day.get("day_id", f"day{day_num:02d}")
+            track_id = f"track-{day_id}"
+            track_title = day["title"]
             
-            # Formulate test cases
-            test_cases = [
-                TestCase(
-                    name=f"Comprehensive Test Suite for {ch['title']}",
-                    test_code=ch["test_suite"],
-                    description=f"Automated test harness for {ch['id']}"
+            for ch in day["challenges"]:
+                if ch["id"] in seen_ids:
+                    continue
+                seen_ids.add(ch["id"])
+                diff = difficulty_map.get(ch.get("difficulty", "Intermediate"), "Intermediate")
+                
+                # Formulate test cases
+                test_cases = [
+                    TestCase(
+                        name=f"Comprehensive Test Suite for {ch['title']}",
+                        test_code=ch["test_suite"],
+                        description=f"Automated test harness for {ch['id']}"
+                    )
+                ]
+                
+                model = Challenge(
+                    id=ch["id"],
+                    track_id=track_id,
+                    track_name=track_title,
+                    title=ch["title"],
+                    difficulty=diff,
+                    category=ch.get("category", "General"),
+                    xp_reward=100 + day_num * 25,
+                    estimated_minutes=20,
+                    description_markdown=f"{ch['description']}\n\n### Instructions:\n{ch.get('instructions', '')}",
+                    hints=ch.get("hints", []),
+                    starter_code=ch["starter_code"],
+                    solution_code=ch["reference_solution"],
+                    test_cases=test_cases,
+                    tags=day.get("concepts_covered", [])[:4]
                 )
-            ]
-            
-            model = Challenge(
-                id=ch["id"],
-                track_id=track_id,
-                track_name=track_title,
-                title=ch["title"],
-                difficulty=diff,
-                category=ch.get("category", "General"),
-                xp_reward=150 + day_num * 25,
-                estimated_minutes=25,
-                description_markdown=f"{ch['description']}\n\n### Instructions:\n{ch.get('instructions', '')}",
-                hints=ch.get("hints", []),
-                starter_code=ch["starter_code"],
-                solution_code=ch["reference_solution"],
-                test_cases=test_cases,
-                tags=day.get("concepts_covered", [])[:4]
-            )
-            models.append(model)
-            
+                models.append(model)
+                
     return models
 
 
 # Global tracks and challenges for FastAPI API routes
 CURRICULUM_CHALLENGES = _convert_to_challenge_models()
 
+NUMPY_ICONS = ["Layers", "Grid", "Scissors", "Zap", "BarChart3", "Filter", "Network"]
+NUMPY_BADGES = [
+    "Part 1 • NumPy Basics",
+    "Part 2 • Shapes & Vectors",
+    "Part 3 • Indexing & Slicing",
+    "Part 4 • Vectorized Math",
+    "Part 5 • Aggregations & Axes",
+    "Part 6 • Boolean Masking",
+    "Part 7 • Broadcasting & LinAlg",
+]
+NUMPY_DIFFICULTIES = [
+    "Beginner",
+    "Beginner",
+    "Intermediate",
+    "Intermediate",
+    "Intermediate",
+    "Intermediate",
+    "Advanced",
+]
+
 TRACKS: List[Track] = [
     Track(
         id=f"track-day{day['day_number']:02d}",
         title=day["title"],
         description=day["tagline"],
-        icon=["Cpu", "Table", "BarChart3", "Layers", "BrainCircuit", "Zap", "Rocket"][day["day_number"] - 1],
-        badge=["⚡ NumPy Veteran", "📊 Pandas Pro", "📈 Viz Master", "🛡️ ML Architect", "🔥 Autograd Expert", "🧠 Deep Learner", "🏆 Capstone Master"][day["day_number"] - 1],
+        icon=NUMPY_ICONS[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_ICONS) else "Cpu",
+        badge=NUMPY_BADGES[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_BADGES) else f"Part {day['day_number']}",
         order=day["day_number"],
-        difficulty=["Intermediate", "Intermediate", "Intermediate", "Advanced", "Advanced", "Advanced", "Expert"][day["day_number"] - 1],
+        difficulty=NUMPY_DIFFICULTIES[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_DIFFICULTIES) else "Intermediate",
         challenge_count=len(day["challenges"]),
         challenges=[c for c in CURRICULUM_CHALLENGES if c.track_id == f"track-day{day['day_number']:02d}"]
     )
@@ -163,6 +295,8 @@ class CurriculumService:
     def __init__(self):
         self._tracks = {t.id: t for t in TRACKS}
         self._challenges = {c.id: c for c in CHALLENGES}
+        for c in CHALLENGES:
+            self._challenges[c.id.lower()] = c
         for t in self._tracks.values():
             t.challenges = [c for c in CHALLENGES if c.track_id == t.id]
             t.challenge_count = len(t.challenges)

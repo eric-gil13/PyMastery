@@ -5,7 +5,12 @@ import type {
   ChatMessage,
 } from '../types';
 
-const API_BASE_URL = 'http://localhost:8000/api';
+export const API_BASE_URL =
+  (import.meta as any).env?.VITE_API_BASE_URL ||
+  (typeof window !== 'undefined' && window.location.hostname
+    ? `${window.location.protocol}//${window.location.hostname}:8000/api`
+    : 'http://localhost:8000/api');
+
 
 export async function fetchEnvironmentStatus(): Promise<EnvironmentStatus> {
   try {
@@ -232,4 +237,50 @@ export async function executeRawSnippetApi(code: string): Promise<{
     executionDurationMs: 1.4,
   };
 }
+
+export async function testAiConnectionApi(
+  key?: string,
+  provider?: string,
+  model?: string,
+  baseUrl?: string
+): Promise<{ success: boolean; provider: string; model: string; message: string }> {
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (key?.trim()) headers['X-AI-Key'] = key.trim();
+  if (provider && provider !== 'auto') headers['X-AI-Provider'] = provider;
+  if (model?.trim()) headers['X-AI-Model'] = model.trim();
+  if (baseUrl?.trim()) headers['X-AI-Base-URL'] = baseUrl.trim();
+
+  try {
+    const res = await fetch(`${API_BASE_URL}/ai/test`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        user_api_key: key?.trim() || null,
+        provider: provider || 'auto',
+        model: model?.trim() || null,
+        base_url: baseUrl?.trim() || null,
+      }),
+    });
+    if (res.ok) {
+      return await res.json();
+    }
+    const errText = await res.text();
+    return {
+      success: false,
+      provider: provider || 'auto',
+      model: model || 'default',
+      message: `Server returned error (${res.status}): ${errText}`,
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      provider: provider || 'auto',
+      model: model || 'default',
+      message: `Could not connect to backend server: ${err?.message || err}`,
+    };
+  }
+}
+
 

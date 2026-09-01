@@ -18,13 +18,15 @@ import {
   Clock,
   X,
 } from 'lucide-react';
-import type { DayTrack, Challenge, UserProgress, Difficulty, Medal } from '../types';
+import type { DayTrack, Challenge, UserProgress, Difficulty, Medal, LibraryId } from '../types';
 
 interface CurriculumNavProps {
   curriculum: DayTrack[];
   currentDay: DayTrack;
   activeChallenge: Challenge;
   userProgress: UserProgress;
+  selectedLibrary?: LibraryId;
+  onSelectLibrary?: (lib: LibraryId) => void;
   onSelectChallenge: (challenge: Challenge, day: DayTrack) => void;
   onOpenPrimer: (challenge?: Challenge) => void;
   onOpenSync?: () => void;
@@ -87,11 +89,21 @@ const getEstimatedTime = (challenge: Challenge): string => {
   }
 };
 
+const LIBRARIES: Array<{ id: LibraryId; name: string; icon: string; badge: string; color: string }> = [
+  { id: 'numpy', name: 'NumPy', icon: '⚡', badge: '7 Parts', color: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-300' },
+  { id: 'pandas', name: 'Pandas', icon: '📊', badge: '7 Parts', color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-300' },
+  { id: 'matplotlib', name: 'Matplotlib', icon: '📈', badge: '4 Parts', color: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-300' },
+  { id: 'sklearn', name: 'Scikit-Learn', icon: '🛡️', badge: '6 Parts', color: 'from-indigo-500/20 to-violet-500/10 border-indigo-500/30 text-indigo-300' },
+  { id: 'pytorch', name: 'PyTorch', icon: '🔥', badge: '7 Parts', color: 'from-rose-500/20 to-pink-500/10 border-rose-500/30 text-rose-300' },
+];
+
 export const CurriculumNav: React.FC<CurriculumNavProps> = ({
   curriculum,
   currentDay,
   activeChallenge,
   userProgress,
+  selectedLibrary = 'numpy',
+  onSelectLibrary,
   onSelectChallenge,
   onOpenPrimer,
   onOpenSync,
@@ -135,11 +147,45 @@ export const CurriculumNav: React.FC<CurriculumNavProps> = ({
     <aside className="w-80 h-full bg-surface-panel border-r border-surface-border flex flex-col shrink-0 select-none overflow-hidden text-zinc-100">
       {/* Sidebar Header & Overall Progress Deck */}
       <div className="p-3.5 border-b border-surface-border bg-surface-panel space-y-2.5">
-        <div className="flex items-center justify-between">
+        {/* Library Switcher Bar */}
+        <div className="space-y-1.5 pb-1">
+          <div className="flex items-center justify-between text-[11px]">
+            <span className="font-semibold text-zinc-300 uppercase tracking-wider text-[10px]">
+              Library
+            </span>
+            <span className="text-[10px] text-zinc-400 font-mono">
+              Zero-to-Hero
+            </span>
+          </div>
+          <div className="grid grid-cols-5 gap-1">
+            {LIBRARIES.map((lib) => {
+              const isActive = selectedLibrary === lib.id;
+              return (
+                <button
+                  key={lib.id}
+                  onClick={() => onSelectLibrary?.(lib.id)}
+                  title={`${lib.name} (${lib.badge})`}
+                  className={`flex flex-col items-center justify-center py-1.5 px-0.5 rounded-lg border transition-all ${
+                    isActive
+                      ? `bg-gradient-to-b ${lib.color} ring-1 ring-white/20 font-bold shadow-xs scale-[1.02]`
+                      : 'bg-zinc-900/60 border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60'
+                  }`}
+                >
+                  <span className="text-sm leading-none">{lib.icon}</span>
+                  <span className="text-[9px] mt-1 font-medium truncate max-w-full">
+                    {lib.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between pt-1">
           <div className="flex items-center gap-2">
             <Flame className="w-4 h-4 text-amber-400" />
             <span className="text-xs font-bold text-zinc-100 uppercase tracking-wider">
-              Part 1 – 7 Curriculum
+              {LIBRARIES.find((l) => l.id === selectedLibrary)?.name || 'Curriculum'} Tracks
             </span>
           </div>
           <span className="text-xs font-mono font-bold text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">

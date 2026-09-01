@@ -12,6 +12,8 @@ from typing import Any, Dict, List, Optional, Tuple
 import httpx
 from server.models import (
     AIReviewRequest,
+    AITestConnectionRequest,
+    AITestConnectionResponse,
     AITutorChatRequest,
     AITutorResponse,
     CodeReviewFeedback,
@@ -181,7 +183,7 @@ class AITutorService:
             api_key = req_key.strip()
             if req_provider and req_provider not in ("auto", "mock"):
                 provider = req_provider.lower()
-            elif api_key.startswith("AIzaSy"):
+            elif api_key.startswith("AIza"):
                 provider = "gemini"
             elif api_key.startswith("sk-ant"):
                 provider = "anthropic"
@@ -379,13 +381,23 @@ Respond ONLY with a valid JSON matching this schema:
         if not conversation_turns or conversation_turns[-1]["content"] != latest_message:
             conversation_turns.append({"role": "user", "content": latest_message})
 
+        error_detail: Optional[str] = None
         try:
             async with httpx.AsyncClient(timeout=45.0) as client:
                 if provider == "gemini":
+                    # Gemini requires contents to begin with 'user' and alternate roles
                     gemini_contents = []
                     for turn in conversation_turns:
                         g_role = "model" if turn["role"] == "assistant" else "user"
-                        gemini_contents.append({"role": g_role, "parts": [{"text": turn["content"]}]})
+                        if not gemini_contents and g_role == "model":
+                            continue  # Drop initial model turns
+                        if gemini_contents and gemini_contents[-1]["role"] == g_role:
+                            gemini_contents[-1]["parts"][0]["text"] += f"\n\n{turn['content']}"
+                        else:
+                            gemini_contents.append({"role": g_role, "parts": [{"text": turn["content"]}]})
+
+                    if not gemini_contents:
+                        gemini_contents = [{"role": "user", "parts": [{"text": latest_message}]}]
 
                     url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
                     payload: Dict[str, Any] = {
@@ -396,14 +408,23 @@ Respond ONLY with a valid JSON matching this schema:
                     }
                     resp = await client.post(url, json=payload)
                     if resp.status_code == 200:
-                        text = resp.json()["candidates"][0]["content"]["parts"][0]["text"]
-                        return AITutorResponse(
-                            reply=text,
-                            hints=["Analyze array dimensions & strides", "Avoid python-level iterations in hot paths"],
-                            suggested_actions=["Run Test Suite (Ctrl+Enter)", "Inspect Visualizer & Benchmarks"],
-                            provider_used=f"gemini ({model})"
-                        )
+                        candidates = resp.json().get("candidates", [])
+                        if candidates and "content" in candidates[0] and "parts" in candidates[0]["content"]:
+                            text = candidates[0]["content"]["parts"][0]["text"]
+                            return AITutorResponse(
+                                reply=text,
+                                hints=["Analyze array dimensions & strides", "Avoid python-level iterations in hot paths"],
+                                suggested_actions=["Run Test Suite (Ctrl+Enter)", "Inspect Visualizer & Benchmarks"],
+                                provider_used=f"gemini ({model})"
+                            )
+                        else:
+                            error_detail = "Gemini returned an empty candidate response."
                     else:
+                        try:
+                            err_msg = resp.json().get("error", {}).get("message", resp.text)
+                        except Exception:
+                            err_msg = resp.text
+                        error_detail = f"Gemini API error ({resp.status_code}): {err_msg}"
                         logger.warning("Gemini chat API returned status %s: %s", resp.status_code, resp.text)
 
                 elif provider in ("openai", "groq", "deepseek", "custom"):
@@ -442,12 +463,115 @@ Respond ONLY with a valid JSON matching this schema:
                             provider_used=f"{'qwen/custom' if provider == 'custom' else provider} ({model})"
                         )
                     else:
+                        try:
+                            err_msg = resp.json().get("error", {}).get("message", resp.text)
+                        except Exception:
+                            err_msg = resp.text
+                        error_detail = f"{provider.capitalize()} API error ({resp.status_code}): {err_msg}"
                         logger.warning("%s chat API returned status %s: %s", provider, resp.status_code, resp.text)
         except Exception as e:
+            error_detail = f"AI Tutor runtime error: {e}"
             logger.error("AI Tutor chat error: %s", e)
 
+        fallback = self._generate_dynamic_fallback_response(req, latest_message)
+        if error_detail:
+            fallback.error_message = error_detail
+        return fallback
 
-        return self._generate_dynamic_fallback_response(req, latest_message)
+    async def test_connection(self, req: AITestConnectionRequest) -> AITestConnectionResponse:
+        """Lightweight connectivity ping to validate API keys and model availability."""
+        api_key, provider, model, custom_url = self._resolve_key_and_provider(
+            req.user_api_key, req.provider, req.model, req.base_url
+        )
+        if not api_key or provider == "mock":
+            return AITestConnectionResponse(
+                success=False,
+                provider=provider,
+                model=model,
+                message="No API key provided or detected. Please enter a valid API key."
+            )
+
+        try:
+            async with httpx.AsyncClient(timeout=15.0) as client:
+                if provider == "gemini":
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent?key={api_key}"
+                    resp = await client.post(
+                        url,
+                        json={"contents": [{"role": "user", "parts": [{"text": "Hello, ping test."}]}]}
+                    )
+                    if resp.status_code == 200:
+                        return AITestConnectionResponse(
+                            success=True,
+                            provider=provider,
+                            model=model,
+                            message=f"Successfully connected to Gemini API with model '{model}'!"
+                        )
+                    else:
+                        try:
+                            err_msg = resp.json().get("error", {}).get("message", resp.text)
+                        except Exception:
+                            err_msg = resp.text
+                        return AITestConnectionResponse(
+                            success=False,
+                            provider=provider,
+                            model=model,
+                            message=f"Gemini error ({resp.status_code}): {err_msg}"
+                        )
+                elif provider in ("openai", "groq", "deepseek", "custom"):
+                    if provider == "custom" and custom_url:
+                        endpoint = self._normalize_chat_endpoint(custom_url)
+                    elif provider == "groq":
+                        endpoint = "https://api.groq.com/openai/v1/chat/completions"
+                    elif provider == "deepseek":
+                        endpoint = "https://api.deepseek.com/chat/completions"
+                    else:
+                        endpoint = "https://api.openai.com/v1/chat/completions"
+
+                    headers = {"Content-Type": "application/json"}
+                    if api_key and api_key != "local-key":
+                        headers["Authorization"] = f"Bearer {api_key}"
+
+                    resp = await client.post(
+                        endpoint,
+                        headers=headers,
+                        json={
+                            "model": model,
+                            "messages": [{"role": "user", "content": "Hello, ping test."}],
+                            "max_tokens": 10,
+                        }
+                    )
+                    if resp.status_code == 200:
+                        return AITestConnectionResponse(
+                            success=True,
+                            provider=provider,
+                            model=model,
+                            message=f"Successfully connected to {provider.capitalize()} with model '{model}'!"
+                        )
+                    else:
+                        try:
+                            err_msg = resp.json().get("error", {}).get("message", resp.text)
+                        except Exception:
+                            err_msg = resp.text
+                        return AITestConnectionResponse(
+                            success=False,
+                            provider=provider,
+                            model=model,
+                            message=f"{provider.capitalize()} error ({resp.status_code}): {err_msg}"
+                        )
+                else:
+                    return AITestConnectionResponse(
+                        success=False,
+                        provider=provider,
+                        model=model,
+                        message=f"Unsupported provider: '{provider}'."
+                    )
+        except Exception as e:
+            return AITestConnectionResponse(
+                success=False,
+                provider=provider,
+                model=model,
+                message=f"Network connection failed: {str(e)}"
+            )
 
     def _generate_dynamic_fallback_response(self, req: AITutorChatRequest, query: str) -> AITutorResponse:
         """Dynamic, topic-aware offline mentor fallback when no LLM API is reachable."""

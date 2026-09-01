@@ -8,11 +8,13 @@ import {
   Menu,
   Search,
 } from 'lucide-react';
-import type { DayTrack, Challenge, LayoutMode } from '../types';
+import type { DayTrack, Challenge, LayoutMode, LibraryId } from '../types';
+import { LIBRARY_METADATA } from '../data/curriculumData';
 
 interface HeaderProps {
   currentDay: DayTrack;
   activeChallenge: Challenge;
+  selectedLibrary?: LibraryId;
   layoutMode?: LayoutMode;
   onChangeLayout?: (mode: LayoutMode) => void;
   mentorOpen: boolean;
@@ -42,6 +44,7 @@ const getDifficultyBadge = (difficulty: string) => {
 export const Header: React.FC<HeaderProps> = ({
   currentDay,
   activeChallenge,
+  selectedLibrary = 'numpy',
   layoutMode = 'guided',
   onChangeLayout,
   mentorOpen,
@@ -82,6 +85,11 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="h-4 w-px bg-surface-border mx-0.5 hidden md:block" />
 
         <div className="hidden md:flex items-center gap-2 text-xs min-w-0">
+          <span className="text-zinc-200 font-semibold whitespace-nowrap flex items-center gap-1 bg-surface-elevated px-2 py-0.5 rounded border border-surface-border">
+            <span>{LIBRARY_METADATA[selectedLibrary]?.icon || '⚡'}</span>
+            <span>{LIBRARY_METADATA[selectedLibrary]?.name || 'NumPy'}</span>
+          </span>
+          <span className="text-zinc-600">›</span>
           <span className="text-zinc-400 font-medium whitespace-nowrap">
             Part {currentDay.dayNumber}: {currentDay.title.split('&')[0].trim()}
           </span>

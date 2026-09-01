@@ -256,9 +256,9 @@ class EndToEndMLPipeline:
         
         # 3. DataLoaders
         t_x_train = torch.tensor(X_train_arr, dtype=torch.float32)
-        t_y_train = torch.tensor(y_train, dtype=torch.long)
+        t_y_train = torch.tensor(np.asarray(y_train), dtype=torch.long)
         t_x_val = torch.tensor(X_val_arr, dtype=torch.float32)
-        t_y_val = torch.tensor(y_val, dtype=torch.long)
+        t_y_val = torch.tensor(np.asarray(y_val), dtype=torch.long)
         
         train_loader = DataLoader(TensorDataset(t_x_train, t_y_train), batch_size=batch_size, shuffle=True)
         val_loader = DataLoader(TensorDataset(t_x_val, t_y_val), batch_size=batch_size, shuffle=False)

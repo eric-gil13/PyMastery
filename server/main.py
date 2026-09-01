@@ -18,6 +18,8 @@ from server.auth import (
 from server.curriculum import curriculum
 from server.models import (
     AIReviewRequest,
+    AITestConnectionRequest,
+    AITestConnectionResponse,
     AITutorChatRequest,
     AITutorResponse,
     BenchmarkHighscore,
@@ -351,6 +353,23 @@ async def tutor_chat_endpoint(
     return await ai_tutor.tutor_chat(req)
 
 
+@app.post("/api/ai/test", response_model=AITestConnectionResponse)
+async def test_connection_endpoint(
+    req: AITestConnectionRequest,
+    x_ai_key: Optional[str] = Header(None, alias="X-AI-Key"),
+    x_ai_provider: Optional[str] = Header(None, alias="X-AI-Provider"),
+    x_ai_model: Optional[str] = Header(None, alias="X-AI-Model"),
+    x_ai_base_url: Optional[str] = Header(None, alias="X-AI-Base-URL"),
+) -> AITestConnectionResponse:
+    if x_ai_key and not req.user_api_key:
+        req.user_api_key = x_ai_key
+    if x_ai_provider and (not req.provider or req.provider == "auto"):
+        req.provider = x_ai_provider
+    if x_ai_model and not req.model:
+        req.model = x_ai_model
+    if x_ai_base_url and not req.base_url:
+        req.base_url = x_ai_base_url
+    return await ai_tutor.test_connection(req)
 
 
 if __name__ == "__main__":

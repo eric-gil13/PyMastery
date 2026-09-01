@@ -1,6 +1,7 @@
 export type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
 export type Medal = 'gold' | 'silver' | 'bronze' | 'none';
 export type LayoutMode = 'guided' | 'code' | 'study' | 'focus' | 'masterclass';
+export type LibraryId = 'numpy' | 'pandas' | 'matplotlib' | 'sklearn' | 'pytorch';
 
 export interface TestCase {
   id: string;

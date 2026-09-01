@@ -271,10 +271,10 @@ class TestFastAPIRoutes(unittest.TestCase):
         self.assertGreaterEqual(data["total_challenges"], 5)
         self.assertGreater(data["total_xp"], 500)
 
-        ch_res = self.client.get("/api/challenge/day01_ch01_pairwise_distance")
+        ch_res = self.client.get("/api/challenge/d1-c1")
         self.assertEqual(ch_res.status_code, 200)
         ch = ch_res.json()
-        self.assertEqual(ch["id"], "day01_ch01_pairwise_distance")
+        self.assertEqual(ch["id"], "d1-c1")
 
     def test_03_run_endpoint(self):
         res = self.client.post("/api/run", json={"code": "print('API Test Success!')"})

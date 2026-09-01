@@ -256,7 +256,7 @@ def resample_and_compute_metrics(
         
         # Annualized rolling volatility: factor for 1-minute bars in 252 trading days x 390 mins/day
         annual_factor = np.sqrt(252 * 390)
-        rolling_std = bar_df["log_return"].rolling(window=rolling_window, min_periods=rolling_window).std(ddof=1)
+        rolling_std = bar_df["log_return"].rolling(window=rolling_window, min_periods=max(1, rolling_window - 1)).std(ddof=1)
         bar_df["volatility"] = rolling_std * annual_factor
         
         return bar_df

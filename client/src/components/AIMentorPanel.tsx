@@ -7,12 +7,16 @@ import {
   X,
   Zap,
   AlertCircle,
+  AlertTriangle,
+  CheckCircle2,
+  RefreshCw,
   BookOpen,
   Settings,
   Key,
 } from 'lucide-react';
 import type { Challenge, ChatMessage, ExecutionResponse } from '../types';
 import ChatMessageRenderer from './ChatMessageRenderer';
+import { API_BASE_URL, testAiConnectionApi } from '../services/api';
 
 interface AIMentorPanelProps {
   isOpen: boolean;
@@ -44,8 +48,17 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
   const [showSettings, setShowSettings] = useState(false);
   const [byokKey, setByokKey] = useState(() => localStorage.getItem('pymastery_byok_key') || '');
   const [byokProvider, setByokProvider] = useState(() => localStorage.getItem('pymastery_byok_provider') || 'auto');
-  const [byokModel, setByokModel] = useState(() => localStorage.getItem('pymastery_byok_model') || '');
+  const [byokModel, setByokModel] = useState(() => {
+    const saved = localStorage.getItem('pymastery_byok_model') || '';
+    return (saved === 'gemini-2.5-flash' || saved === 'gemini-2.5') ? 'gemini-3.6-flash' : saved;
+  });
   const [byokBaseUrl, setByokBaseUrl] = useState(() => localStorage.getItem('pymastery_byok_base_url') || '');
+  const [lastApiError, setLastApiError] = useState<string | null>(null);
+  const [testState, setTestState] = useState<{
+    loading: boolean;
+    success: boolean | null;
+    message: string | null;
+  }>({ loading: false, success: null, message: null });
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const saveAiSettings = (key: string, provider: string, model: string, baseUrl: string = byokBaseUrl) => {
@@ -57,6 +70,35 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
     localStorage.setItem('pymastery_byok_provider', provider);
     localStorage.setItem('pymastery_byok_model', model);
     localStorage.setItem('pymastery_byok_base_url', baseUrl);
+  };
+
+  const handleTestConnection = async () => {
+    if (!byokKey.trim() && byokProvider !== 'custom') {
+      setTestState({
+        loading: false,
+        success: false,
+        message: 'Please enter an API key first.',
+      });
+      return;
+    }
+    setTestState({ loading: true, success: null, message: null });
+    try {
+      const res = await testAiConnectionApi(byokKey, byokProvider, byokModel, byokBaseUrl);
+      setTestState({
+        loading: false,
+        success: res.success,
+        message: res.message,
+      });
+      if (res.success) {
+        setLastApiError(null);
+      }
+    } catch (err: any) {
+      setTestState({
+        loading: false,
+        success: false,
+        message: err?.message || 'Connection failed',
+      });
+    }
   };
 
 
@@ -142,7 +184,7 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
       if (byokBaseUrl.trim()) headers['X-AI-Base-URL'] = byokBaseUrl.trim();
 
 
-      const resp = await fetch('http://localhost:8000/api/ai/tutor', {
+      const resp = await fetch(`${API_BASE_URL}/ai/tutor`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -161,10 +203,17 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
       });
 
       if (!resp.ok) {
-        throw new Error('Backend AI unavailable');
+        const errText = await resp.text();
+        throw new Error(`Backend AI returned error (${resp.status}): ${errText}`);
       }
 
       const data = await resp.json();
+      if (data.error_message) {
+        setLastApiError(data.error_message);
+      } else {
+        setLastApiError(null);
+      }
+
       const botMsg: ChatMessage = {
         id: `bot-${Date.now()}`,
         role: 'assistant',
@@ -172,7 +221,10 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       };
       setMessages((prev) => [...prev, botMsg]);
-    } catch {
+    } catch (err: any) {
+      if (byokKey.trim() || (byokProvider && byokProvider !== 'auto')) {
+        setLastApiError(err?.message || 'Could not connect to AI service. Using offline mentor fallback.');
+      }
       // High quality Socratic offline tutor
       const fallbackReply = generateSocraticResponse(textToSend, challenge, currentCode, executionResult);
       const botMsg: ChatMessage = {
@@ -207,8 +259,12 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-white">Socratic AI Mentor</h2>
-                <span className="text-[10px] uppercase font-bold tracking-wider bg-accent-indigo/10 text-accent-indigo border border-accent-indigo/30 px-2 py-0.2 rounded-full">
-                  {byokKey.trim() ? (byokProvider === 'auto' ? 'Custom Key' : byokProvider.toUpperCase()) : 'Auto / Free'}
+                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded-full border ${
+                  lastApiError && byokKey.trim()
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                    : 'bg-accent-indigo/10 text-accent-indigo border-accent-indigo/30'
+                }`}>
+                  {byokKey.trim() ? (lastApiError ? 'Fallback Active' : (byokProvider === 'auto' ? 'Custom Key' : byokProvider.toUpperCase())) : 'Auto / Free'}
                 </span>
               </div>
               <p className="text-xs text-zinc-400 truncate max-w-[240px]">
@@ -271,11 +327,48 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
                 <label className="text-[10px] text-zinc-400 uppercase font-semibold">Model Name</label>
                 <input
                   type="text"
-                  placeholder={byokProvider === 'custom' ? 'e.g. qwen2.5-coder-32b' : 'e.g. gemini-3.6-flash'}
+                  placeholder={
+                    byokProvider === 'custom'
+                      ? 'e.g. qwen2.5-coder-32b'
+                      : byokProvider === 'openai'
+                      ? 'e.g. gpt-4o-mini'
+                      : byokProvider === 'groq'
+                      ? 'e.g. llama-3.3-70b-versatile'
+                      : byokProvider === 'deepseek'
+                      ? 'e.g. deepseek-chat'
+                      : 'e.g. gemini-3.6-flash'
+                  }
                   value={byokModel}
                   onChange={(e) => saveAiSettings(byokKey, byokProvider, e.target.value, byokBaseUrl)}
                   className="w-full mt-1 bg-surface-base border border-surface-border rounded-lg px-2 py-1.5 text-zinc-200 text-xs focus:border-accent-indigo outline-none"
                 />
+                {/* Model Presets */}
+                <div className="mt-1.5 flex flex-wrap items-center gap-1">
+                  <span className="text-[9px] text-zinc-500 font-medium">Presets:</span>
+                  {(byokProvider === 'gemini' || byokProvider === 'auto'
+                    ? ['gemini-3.6-flash', 'gemini-2.5-flash', 'gemini-1.5-flash']
+                    : byokProvider === 'openai'
+                    ? ['gpt-4o-mini', 'gpt-4o']
+                    : byokProvider === 'groq'
+                    ? ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant']
+                    : byokProvider === 'deepseek'
+                    ? ['deepseek-chat', 'deepseek-coder']
+                    : ['qwen2.5-coder-32b']
+                  ).map((preset) => (
+                    <button
+                      key={preset}
+                      type="button"
+                      onClick={() => saveAiSettings(byokKey, byokProvider, preset, byokBaseUrl)}
+                      className={`text-[9px] px-1.5 py-0.5 rounded border transition cursor-pointer ${
+                        byokModel === preset || (!byokModel && preset === 'gemini-3.6-flash' && (byokProvider === 'gemini' || byokProvider === 'auto'))
+                          ? 'bg-accent-indigo/25 border-accent-indigo text-accent-indigo font-semibold'
+                          : 'bg-surface-base border-surface-border text-zinc-400 hover:text-zinc-200 hover:border-zinc-500'
+                      }`}
+                    >
+                      {preset}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
 
@@ -314,6 +407,46 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
                   ? 'Key is forwarded via Bearer authorization if provided.'
                   : 'Get a free Gemini key at aistudio.google.com or use personal keys for OpenAI/Groq.'}
               </p>
+            </div>
+
+            {/* Test Connection Button */}
+            <div className="pt-2 border-t border-surface-border flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <button
+                  type="button"
+                  onClick={handleTestConnection}
+                  disabled={testState.loading || (!byokKey.trim() && byokProvider !== 'custom')}
+                  className="px-2.5 py-1.5 bg-accent-indigo/20 hover:bg-accent-indigo/30 border border-accent-indigo/40 text-accent-indigo rounded-lg text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {testState.loading ? (
+                    <>
+                      <RefreshCw className="w-3 h-3 animate-spin" />
+                      <span>Testing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Zap className="w-3 h-3" />
+                      <span>Test Connection</span>
+                    </>
+                  )}
+                </button>
+
+                {testState.message && (
+                  <div
+                    className={`text-[11px] truncate max-w-[260px] flex items-center gap-1 ${
+                      testState.success ? 'text-emerald-400' : 'text-rose-400'
+                    }`}
+                    title={testState.message}
+                  >
+                    {testState.success ? (
+                      <CheckCircle2 className="w-3.5 h-3.5 shrink-0 text-emerald-400" />
+                    ) : (
+                      <AlertCircle className="w-3.5 h-3.5 shrink-0 text-rose-400" />
+                    )}
+                    <span className="truncate">{testState.message}</span>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
@@ -367,6 +500,27 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
 
       {/* 4. MESSAGES SCROLL AREA */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4 select-text custom-scrollbar">
+        {lastApiError && (
+          <div className="p-3 bg-amber-500/10 border border-amber-500/30 rounded-xl text-amber-300 text-xs flex items-start justify-between gap-2.5 animate-in fade-in duration-150 shadow-xs">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 shrink-0 text-amber-400 mt-0.5" />
+              <div>
+                <p className="font-semibold text-amber-200">Custom AI Key Error</p>
+                <p className="text-[11px] text-amber-300/80 mt-0.5 break-words">{lastApiError}</p>
+                <p className="text-[10px] text-zinc-400 mt-1">
+                  Mentor is operating in offline mode. Check your key & model in Settings (⚙️).
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={() => setLastApiError(null)}
+              className="p-1 text-amber-400 hover:text-white rounded transition cursor-pointer"
+              title="Dismiss notification"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
         {messages.map((m) => {
           const isUser = m.role === 'user';
           return (

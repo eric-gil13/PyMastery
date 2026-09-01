@@ -1,39 +1,119 @@
-import type { DayTrack } from '../types';
-import { DAY01_TRACK, PART01_TRACK } from './curriculum/day01_numpy';
-import { DAY02_TRACK, PART02_TRACK } from './curriculum/day02_pandas';
-import { DAY03_TRACK, PART03_TRACK } from './curriculum/day03_autograd';
-import { DAY04_TRACK, PART04_TRACK } from './curriculum/day04_cuda_streams';
-import { DAY05_TRACK, PART05_TRACK } from './curriculum/day05_pytorch_nn';
-import { DAY06_TRACK, PART06_TRACK } from './curriculum/day06_attention';
-import { DAY07_TRACK, PART07_TRACK } from './curriculum/day07_quantization';
+import type { DayTrack, LibraryId } from '../types';
 
-export const PART_TRACKS: DayTrack[] = [
-  PART01_TRACK,
-  PART02_TRACK,
-  PART03_TRACK,
-  PART04_TRACK,
-  PART05_TRACK,
-  PART06_TRACK,
-  PART07_TRACK,
+// 1. NumPy (Parts 1-7)
+import { DAY01_ARRAY_BASICS_TRACK as NUMPY_PART01 } from './curriculum/day01_array_basics';
+import { DAY02_SHAPES_DIMENSIONS_TRACK as NUMPY_PART02 } from './curriculum/day02_shapes_dimensions';
+import { DAY03_TRACK as NUMPY_PART03 } from './curriculum/day03_indexing_slicing';
+import { DAY04_TRACK as NUMPY_PART04 } from './curriculum/day04_vectorized_math';
+import { DAY05_TRACK as NUMPY_PART05 } from './curriculum/day05_aggregations_axes';
+import { DAY06_TRACK as NUMPY_PART06 } from './curriculum/day06_boolean_masking';
+import { DAY07_TRACK as NUMPY_PART07 } from './curriculum/day07_broadcasting_linear_algebra';
+
+// 2. Pandas (Parts 1-7)
+import { PANDAS_PART01_TRACK } from './curriculum/pandas_01_series_dataframe';
+import { PANDAS_PART02_TRACK } from './curriculum/pandas_02_indexing_selection';
+import { PANDAS_PART03_TRACK } from './curriculum/pandas_03_cleaning_missing';
+import { PANDAS_PART04_TRACK } from './curriculum/pandas_04_groupby_aggregations';
+import { PANDAS_PART05_TRACK } from './curriculum/pandas_05_merging_joining';
+import { PANDAS_PART06_TRACK } from './curriculum/pandas_06_datetime_timeseries';
+import { PANDAS_PART07_TRACK } from './curriculum/pandas_07_analytics_pipeline';
+
+// 3. Matplotlib (Parts 1-4)
+import { MATPLOTLIB_PART01_TRACK } from './curriculum/matplotlib_01_foundations';
+import { MATPLOTLIB_PART02_TRACK } from './curriculum/matplotlib_02_chart_types';
+import { MATPLOTLIB_PART03_TRACK } from './curriculum/matplotlib_03_subplots';
+import { MATPLOTLIB_PART04_TRACK } from './curriculum/matplotlib_04_customization';
+
+// 4. Scikit-Learn (Parts 1-6)
+import { SKLEARN_PART01_TRACK } from './curriculum/sklearn_01_workflow';
+import { SKLEARN_PART02_TRACK } from './curriculum/sklearn_02_preprocessing';
+import { SKLEARN_PART03_TRACK } from './curriculum/sklearn_03_classification';
+import { SKLEARN_PART04_TRACK } from './curriculum/sklearn_04_regression';
+import { SKLEARN_PART05_TRACK } from './curriculum/sklearn_05_cross_validation';
+import { SKLEARN_PART06_TRACK } from './curriculum/sklearn_06_pipelines';
+
+// 5. PyTorch (Parts 1-7)
+import { PYTORCH_PART01_TRACK } from './curriculum/pytorch_01_tensors';
+import { PYTORCH_PART02_TRACK } from './curriculum/pytorch_02_autograd';
+import { PYTORCH_PART03_TRACK } from './curriculum/pytorch_03_modules';
+import { PYTORCH_PART04_TRACK } from './curriculum/pytorch_04_loss_optim';
+import { PYTORCH_PART05_TRACK } from './curriculum/pytorch_05_training_loop';
+import { PYTORCH_PART06_TRACK } from './curriculum/pytorch_06_datasets';
+import { PYTORCH_PART07_TRACK } from './curriculum/pytorch_07_architectures';
+
+export const NUMPY_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  NUMPY_PART01,
+  NUMPY_PART02,
+  NUMPY_PART03,
+  NUMPY_PART04,
+  NUMPY_PART05,
+  NUMPY_PART06,
+  NUMPY_PART07,
 ];
 
-export const CURRICULUM_DATA: DayTrack[] = PART_TRACKS;
+export const PANDAS_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  PANDAS_PART01_TRACK,
+  PANDAS_PART02_TRACK,
+  PANDAS_PART03_TRACK,
+  PANDAS_PART04_TRACK,
+  PANDAS_PART05_TRACK,
+  PANDAS_PART06_TRACK,
+  PANDAS_PART07_TRACK,
+];
 
-export {
-  DAY01_TRACK,
-  DAY02_TRACK,
-  DAY03_TRACK,
-  DAY04_TRACK,
-  DAY05_TRACK,
-  DAY06_TRACK,
-  DAY07_TRACK,
-  PART01_TRACK,
-  PART02_TRACK,
-  PART03_TRACK,
-  PART04_TRACK,
-  PART05_TRACK,
-  PART06_TRACK,
-  PART07_TRACK,
+export const MATPLOTLIB_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  MATPLOTLIB_PART01_TRACK,
+  MATPLOTLIB_PART02_TRACK,
+  MATPLOTLIB_PART03_TRACK,
+  MATPLOTLIB_PART04_TRACK,
+];
+
+export const SKLEARN_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  SKLEARN_PART01_TRACK,
+  SKLEARN_PART02_TRACK,
+  SKLEARN_PART03_TRACK,
+  SKLEARN_PART04_TRACK,
+  SKLEARN_PART05_TRACK,
+  SKLEARN_PART06_TRACK,
+];
+
+export const PYTORCH_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  PYTORCH_PART01_TRACK,
+  PYTORCH_PART02_TRACK,
+  PYTORCH_PART03_TRACK,
+  PYTORCH_PART04_TRACK,
+  PYTORCH_PART05_TRACK,
+  PYTORCH_PART06_TRACK,
+  PYTORCH_PART07_TRACK,
+];
+
+export const LIBRARY_CURRICULA: Record<LibraryId, DayTrack[]> = {
+  numpy: NUMPY_ZERO_TO_HERO_TRACKS,
+  pandas: PANDAS_ZERO_TO_HERO_TRACKS,
+  matplotlib: MATPLOTLIB_ZERO_TO_HERO_TRACKS,
+  sklearn: SKLEARN_ZERO_TO_HERO_TRACKS,
+  pytorch: PYTORCH_ZERO_TO_HERO_TRACKS,
 };
 
+export const LIBRARY_METADATA: Record<LibraryId, { name: string; icon: string; tagline: string }> = {
+  numpy: { name: 'NumPy', icon: '⚡', tagline: 'Arrays, vectors, multi-dimensional math, and broadcasting' },
+  pandas: { name: 'Pandas', icon: '📊', tagline: 'Series, DataFrames, indexing, cleaning, and aggregations' },
+  matplotlib: { name: 'Matplotlib', icon: '📈', tagline: 'Figures, axes, multi-panel subplots, and styling' },
+  sklearn: { name: 'Scikit-Learn', icon: '🛡️', tagline: 'Data splits, preprocessing, classification, regression, and pipelines' },
+  pytorch: { name: 'PyTorch', icon: '🔥', tagline: 'Tensors, autograd, neural modules, optimizers, and training loops' },
+};
+
+// Aliases for compatibility with existing imports
+export const PART01_TRACK = NUMPY_PART01;
+export const PART02_TRACK = NUMPY_PART02;
+export const PART03_TRACK = NUMPY_PART03;
+export const PART04_TRACK = NUMPY_PART04;
+export const PART05_TRACK = NUMPY_PART05;
+export const PART06_TRACK = NUMPY_PART06;
+export const PART07_TRACK = NUMPY_PART07;
+
+export const PART_TRACKS: DayTrack[] = NUMPY_ZERO_TO_HERO_TRACKS;
+export const CURRICULUM_DATA: DayTrack[] = NUMPY_ZERO_TO_HERO_TRACKS;
+
 export default CURRICULUM_DATA;
+
