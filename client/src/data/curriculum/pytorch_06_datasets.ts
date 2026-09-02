@@ -74,7 +74,7 @@ export const CHALLENGE_1: Challenge = {
   slug: 'custom-tabular-dataset',
   difficulty: 'Beginner',
   category: 'Data Pipelines',
-  summary: 'Implement a custom PyTorch Dataset subclass with __len__, __getitem__, automatic float32/int64 dtype casting, length validation, and optional transforms.',
+  summary: 'Implement a custom dataset supporting indexed sample retrieval and length queries, with automatic floating-point and integer label casting, length validation, and optional transforms.',
   mentalModel5s: 'Dataset defines the recipe for fetching one sample at index i: X[i] as float32 and optional y[i] as int64.',
   visualAnalogy: 'Think of a Dataset like a deck of flashcards: __len__ tells you how many cards are in the deck, and __getitem__(i) pulls out card number i, reading the question (feature tensor) and answer (label tensor).',
   pitfalls: [
@@ -109,18 +109,18 @@ class TabularDataset(torch.utils.data.Dataset):
 
 Specifications:
 1. \`__init__(self, features, labels=None, transform=None)\`:
-   - Store \`features\` as a \`torch.float32\` tensor (\`torch.as_tensor(features, dtype=torch.float32)\`).
+   - Store \`features\` as a standard single-precision float32 tensor.
    - If \`labels\` is provided (not \`None\`):
-     - Convert to \`torch.Tensor\`. If discrete/integer, convert to \`torch.int64\`; if floating, convert to \`torch.float32\`.
-     - Validate length: if \`len(self.features) != len(self.labels)\`, raise \`ValueError("Features and labels must have the same length")\`.
+     - Convert labels to a tensor: if discrete/integer labels, cast to 64-bit integer type (int64); if continuous, cast to float32.
+     - Validate that features and labels contain the same number of samples. If not, raise \`ValueError("Features and labels must have the same length")\`.
    - Store \`self.transform = transform\`.
 2. \`__len__(self) -> int\`:
-   - Return the total number of samples (\`len(self.features)\`).
+   - Return the total number of samples in the dataset.
 3. \`__getitem__(self, idx: int)\`:
-   - Retrieve feature item \`x = self.features[idx]\`.
-   - If \`self.transform is not None\`, apply \`x = self.transform(x)\`.
-   - If \`self.labels is not None\`, return tuple \`(x, self.labels[idx])\`.
-   - If \`self.labels is None\`, return \`x\` directly.`,
+   - Retrieve the feature sample at index \`idx\` as \`x\`.
+   - If a transform function is defined, apply it to \`x\`.
+   - If labels are present, return a tuple of \`(x, y)\` containing the feature sample and its corresponding label.
+   - If labels are absent, return \`x\` directly.`,
   hints: [
     'Use torch.as_tensor() for efficient tensor conversion.',
     'Check np.issubdtype(arr.dtype, np.integer) or tensor dtype to cast discrete targets to torch.int64.',
@@ -140,7 +140,7 @@ class TabularDataset(Dataset):
         labels: Optional[Any] = None,
         transform: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
     ):
-        # TODO: Convert features to float32, process labels, and store transform
+        # TODO: Convert features to single-precision float tensor, process optional labels, and store transform
         pass
 
     def __len__(self) -> int:
@@ -148,7 +148,7 @@ class TabularDataset(Dataset):
         pass
 
     def __getitem__(self, idx: int) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        # TODO: Retrieve sample, apply transform, and return (x, y) or x
+        # TODO: Retrieve sample, apply transform if present, and return (x, y) or x
         pass
 `,
   solutionCode: `import torch
@@ -269,7 +269,7 @@ export const CHALLENGE_2: Challenge = {
   slug: 'mini-batch-dataloader-streamer',
   difficulty: 'Intermediate',
   category: 'Data Pipelines',
-  summary: 'Construct and inspect a PyTorch DataLoader stream: evaluate batch counts, inspect tensor dimensions, and detect partial trailing batches.',
+  summary: 'Construct and inspect a mini-batch DataLoader stream: evaluate batch counts, inspect tensor dimensions, and detect partial trailing batches.',
   mentalModel5s: 'DataLoader wraps Dataset with batching, shuffling, and collation into (B, D) tensors.',
   visualAnalogy: 'A conveyor belt factory: Dataset supplies individual parts. DataLoader packages them into boxes of 32 (batches), shuffles the delivery order, and sends them to the assembly worker (model). If the last box is only partially full, drop_last decides whether to pack it or recycle it.',
   pitfalls: [
@@ -296,19 +296,19 @@ Write a function:
 
 Specifications:
 1. Validate \`batch_size\`: if \`batch_size <= 0\`, raise \`ValueError("batch_size must be positive")\`.
-2. Instantiate \`dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)\`.
+2. Instantiate a mini-batch data loader for the dataset configured with the given \`batch_size\`, \`shuffle\`, and \`drop_last\` parameters, storing it as \`dataloader\`.
 3. Compute:
-   - \`total_batches = len(dataloader)\`
-   - \`dataset_size = len(dataset)\`
-4. Inspect the first batch: \`first_batch = next(iter(dataloader))\`.
-   - If \`first_batch\` is a tuple/list:
+   - \`total_batches\`: the total number of batches in the stream
+   - \`dataset_size\`: the total number of samples in the dataset
+4. Inspect the first mini-batch yielded by the data loader:
+   - If the batch contains multiple items (features and labels):
      - \`first_batch_features_shape = tuple(first_batch[0].shape)\`
      - \`first_batch_labels_shape = tuple(first_batch[1].shape)\` if labels exist, else \`None\`
    - Else:
      - \`first_batch_features_shape = tuple(first_batch.shape)\`
      - \`first_batch_labels_shape = None\`
-5. Iterate through all batches in \`dataloader\` to collect individual batch sample counts: \`batch_sizes = [int(batch[0].shape[0]) for batch in dataloader]\` (or \`batch.shape[0]\`).
-6. Calculate \`has_partial_batch = any(s < batch_size for s in batch_sizes)\`.
+5. Iterate through all batches in the stream to collect individual batch sample sizes as a list of integers (\`batch_sizes\`).
+6. Determine whether any batch has fewer samples than the specified batch size, recording boolean \`has_partial_batch\`.
 7. Return a dictionary:
    \`{"dataloader": dataloader, "total_batches": int(total_batches), "dataset_size": int(dataset_size), "batch_size": int(batch_size), "first_batch_features_shape": first_batch_features_shape, "first_batch_labels_shape": first_batch_labels_shape, "has_partial_batch": bool(has_partial_batch), "batch_sizes": batch_sizes}\``,
   hints: [

@@ -8,7 +8,7 @@ export const CHALLENGE_1: Challenge = {
   slug: 'classification-regression-loss-evaluator',
   difficulty: 'Intermediate',
   category: 'Loss Functions & Optimizers',
-  summary: 'Compute Mean Squared Error (MSE) for regression targets and Cross-Entropy loss on raw logits for multi-class classification, extracting probabilities and discrete predictions.',
+  summary: 'Compute mean squared error loss for continuous targets and cross-entropy loss for classification logits, extracting probabilities and discrete predictions.',
   mentalModel5s: 'MSE measures distance between continuous numbers; Cross-Entropy evaluates probabilities against discrete class indices using raw unnormalized logits.',
   visualAnalogy: 'MSE is like measuring how many inches an arrow missed the bullseye; Cross-Entropy is a strict grading rubric that gives a high score only when the model places maximum probability on the correct multiple-choice letter.',
   pitfalls: [
@@ -32,10 +32,10 @@ export const CHALLENGE_1: Challenge = {
 Write a function \`evaluate_losses(pred_reg: torch.Tensor, target_reg: torch.Tensor, logits_cls: torch.Tensor, target_cls: torch.Tensor) -> dict\` that:
 1. Validates regression shape compatibility: \`pred_reg.shape == target_reg.shape\`. If mismatched, raise \`ValueError("Regression predictions and targets must have matching shapes")\`.
 2. Validates classification batch dimensions: \`logits_cls.shape[0] == target_cls.shape[0]\`. If mismatched, raise \`ValueError("Classification batch dimensions must match")\`.
-3. Computes regression loss using \`nn.MSELoss()(pred_reg, target_reg)\`.
-4. Computes classification loss using \`nn.CrossEntropyLoss()(logits_cls, target_cls)\`.
-5. Computes predicted class probabilities using softmax: \`probs = torch.softmax(logits_cls, dim=-1)\`.
-6. Computes predicted discrete classes using argmax: \`preds = torch.argmax(logits_cls, dim=-1)\`.
+3. Computes mean squared error loss (\`mse_loss\`) between continuous predictions \`pred_reg\` and targets \`target_reg\`.
+4. Computes cross-entropy loss (\`ce_loss\`) between unnormalized classification logits \`logits_cls\` and target class labels \`target_cls\`.
+5. Computes predicted class probabilities along the class dimension as \`probs\`.
+6. Computes predicted discrete class indices along the class dimension as \`preds\`.
 7. Returns a dictionary containing:
    \`{"mse_loss": float(mse_loss.item()), "ce_loss": float(ce_loss.item()), "probabilities": probs, "predicted_classes": preds}\``,
   hints: [
@@ -65,7 +65,7 @@ def evaluate_losses(
     Returns:
         Dictionary with 'mse_loss', 'ce_loss', 'probabilities', 'predicted_classes'
     """
-    # TODO: Validate shapes, compute MSE and CrossEntropy, extract probs and preds
+    # TODO: Validate shapes, compute regression and classification losses, extract probabilities and predictions
     pass
 `,
   solutionCode: `import torch
@@ -180,7 +180,7 @@ export const CHALLENGE_2: Challenge = {
   slug: 'single-step-parameter-update-optimizer',
   difficulty: 'Advanced',
   category: 'Loss Functions & Optimizers',
-  summary: 'Execute the canonical 5-step PyTorch training update (zero_grad, forward, loss, backward, step) using the Adam optimizer, and verify weight parameter mutations.',
+  summary: 'Execute the canonical optimization update cycle (clear previous gradients, compute forward pass, evaluate loss, backpropagate error, and update parameters) using the Adam optimizer, and verify weight parameter mutations.',
   mentalModel5s: 'The 5-step training rhythm: zero_grad() -> forward() -> loss() -> backward() -> step(). Every PyTorch model trains on this loop.',
   visualAnalogy: 'A rowing team: clear the oar splash (zero_grad), pull forward through the water (forward + loss), feel the water resistance (backward gradients), and kick the sliding seat forward (optimizer step).',
   pitfalls: [
@@ -199,22 +199,20 @@ export const CHALLENGE_2: Challenge = {
     content: 'Adam tracks running exponentially weighted moving averages of gradient first moments (m) and second moments (v). optimizer.step() applies weight updates in-place directly on param.data buffers.',
     keyRule: 'Always perform optimizer.step() after loss.backward() and before the next optimizer.zero_grad().'
   },
-  instructions: `Training neural networks consists of repeating a 5-step optimization cycle over batches of data.
+  instructions: `Training neural networks consists of repeating an optimization update cycle over batches of data.
 
 Write a function \`single_step_adam_update(model: nn.Module, x: torch.Tensor, target: torch.Tensor, lr: float = 0.01) -> dict\` that:
 1. Validates that \`lr > 0\`. If not, raise \`ValueError("Learning rate must be positive")\`.
-2. Instantiates an Adam optimizer: \`optimizer = torch.optim.Adam(model.parameters(), lr=lr)\`.
-3. Captures a detached clone of all initial model parameters:
-   \`initial_params = [p.clone().detach() for p in model.parameters()]\`
-4. Executes the canonical 5-step training update:
-   a. \`optimizer.zero_grad()\`
-   b. \`output = model(x)\`
-   c. \`loss = nn.MSELoss()(output, target)\`
-   d. \`loss.backward()\`
-   e. Captures gradient norms: \`grad_norms = [float(p.grad.norm().item()) for p in model.parameters() if p.grad is not None]\`
-   f. \`optimizer.step()\`
-5. Checks whether parameters were modified by testing if any parameter differs from its initial clone:
-   \`params_updated = any(not torch.equal(p, init_p) for p, init_p in zip(model.parameters(), initial_params))\`
+2. Instantiates an Adam optimizer configured for the model's parameters with learning rate \`lr\`.
+3. Captures a detached clone of all initial model parameters for later comparison.
+4. Executes the canonical optimization update cycle:
+   - Clears previous parameter gradients
+   - Computes model predictions on \`x\` as \`output\`
+   - Evaluates mean squared error loss against \`target\` as \`loss\`
+   - Backpropagates error to compute gradients
+   - Records the Euclidean norm of each parameter gradient as Python floats in \`grad_norms\`
+   - Updates model parameters via the optimizer
+5. Checks whether model parameters were successfully updated compared to their initial snapshot, recording boolean \`params_updated\`.
 6. Returns a dictionary containing:
    \`{"initial_loss": float(loss.item()), "optimizer": optimizer, "params_updated": bool(params_updated), "grad_norms": grad_norms}\``,
   hints: [
@@ -245,7 +243,7 @@ def single_step_adam_update(
     Returns:
         Dictionary with 'initial_loss', 'optimizer', 'params_updated', 'grad_norms'
     """
-    # TODO: Validate lr, configure Adam, execute 5-step loop, verify weight updates
+    # TODO: Validate lr, configure Adam, execute canonical update cycle, and verify parameter updates
     pass
 `,
   solutionCode: `import torch

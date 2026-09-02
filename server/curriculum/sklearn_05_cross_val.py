@@ -116,7 +116,7 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Model Selection",
     "description": (
-        "Evaluate the generalization stability of any Scikit-Learn estimator using Stratified K-Fold "
+        "Evaluate classifier generalization across multiple validation folds using stratified K-fold "
         "cross-validation and compute summary performance statistics (mean, std, min, max)."
     ),
     "instructions": (
@@ -125,13 +125,13 @@ CHALLENGE_1 = {
         "   - If `n_splits < 2`, raise `ValueError(\"n_splits must be at least 2\")`.\n"
         "   - If `len(X) != len(y)`, raise `ValueError(\"X and y length mismatch\")`.\n"
         "   - If `len(X) == 0`, raise `ValueError(\"Arrays cannot be empty\")`.\n"
-        "2. Configures `cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)`.\n"
-        "3. Computes cross-validation scores via `cross_val_score(estimator, X, y, cv=cv, scoring=scoring)`.\n"
-        "4. Calculates summary statistics:\n"
-        "   - `mean_score`: float from `np.mean(scores)`\n"
-        "   - `std_score`: float from `np.std(scores)`\n"
-        "   - `min_score`: float from `np.min(scores)`\n"
-        "   - `max_score`: float from `np.max(scores)`\n"
+        "2. Configures a stratified K-fold cross-validation splitting strategy with `n_splits` folds, shuffling enabled, and the specified `random_state` seed.\n"
+        "3. Evaluates model generalization across the cross-validation splits using the requested `scoring` metric to obtain `cv_scores`.\n"
+        "4. Calculates summary performance statistics across all fold scores:\n"
+        "   - `mean_score`: float average score across folds\n"
+        "   - `std_score`: float standard deviation of scores\n"
+        "   - `min_score`: float lowest score observed across folds\n"
+        "   - `max_score`: float highest score observed across folds\n"
         "5. Returns a dictionary:\n"
         "   `{\"cv_scores\": scores, \"mean_score\": mean_score, \"std_score\": std_score, \"min_score\": min_score, \"max_score\": max_score}`"
     ),
@@ -140,7 +140,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 def evaluate_model_cv(estimator, X: np.ndarray, y: np.ndarray, n_splits: int = 5, scoring: str = "accuracy", random_state: int = 42) -> dict:
     """
-    Evaluate estimator performance using Stratified K-Fold cross-validation.
+    Evaluate model generalization using stratified K-fold cross-validation.
 
     Args:
         estimator: Scikit-learn classifier
@@ -153,7 +153,7 @@ def evaluate_model_cv(estimator, X: np.ndarray, y: np.ndarray, n_splits: int = 5
     Returns:
         dict with cv_scores, mean_score, std_score, min_score, max_score
     """
-    # TODO: Validate inputs, run StratifiedKFold cross_val_score, compute stats, return dict
+    # TODO: Validate inputs, evaluate cross-validation scores, compute stats, return dict
     pass
 ''',
     "reference_solution": r'''import numpy as np
@@ -240,8 +240,9 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "Model Selection",
     "description": (
-        "Systematically optimize DecisionTreeClassifier hyperparameters over a grid of candidates "
-        "using GridSearchCV and extract the best parameters, score, and fitted estimator."
+        "Perform an exhaustive hyperparameter search over candidate configurations across "
+        "cross-validation splits and extract the optimal parameter combination, best validation "
+        "score, and refitted estimator."
     ),
     "instructions": (
         "Write a function `tune_decision_tree_grid(X: np.ndarray, y: np.ndarray, param_grid: dict, cv: int = 5, scoring: str = \"f1_weighted\", random_state: int = 42) -> dict` that:\n"
@@ -249,14 +250,14 @@ CHALLENGE_2 = {
         "   - If `param_grid` is empty or not a dict, raise `ValueError(\"param_grid cannot be empty\")`.\n"
         "   - If `len(X) != len(y)`, raise `ValueError(\"X and y length mismatch\")`.\n"
         "   - If `cv < 2`, raise `ValueError(\"cv must be at least 2\")`.\n"
-        "2. Instantiates base estimator `tree = DecisionTreeClassifier(random_state=random_state)`.\n"
-        "3. Creates `GridSearchCV(estimator=tree, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=1)`.\n"
-        "4. Fits the grid search on `(X, y)`.\n"
+        "2. Instantiates a baseline decision tree classifier seeded with `random_state` for reproducibility.\n"
+        "3. Configures an exhaustive hyperparameter grid search optimizer across cross-validation splits using `param_grid`, `cv` folds, the requested `scoring` metric, and `n_jobs=1`.\n"
+        "4. Executes the hyperparameter grid search optimization across the dataset `(X, y)`.\n"
         "5. Returns a dictionary:\n"
-        "   - `\"grid_search\"`: the fitted GridSearchCV instance\n"
-        "   - `\"best_params\"`: dict of best parameters (`grid.best_params_`)\n"
-        "   - `\"best_score\"`: float average validation score (`float(grid.best_score_)`)\n"
-        "   - `\"best_estimator\"`: the refitted best estimator (`grid.best_estimator_`)"
+        "   - `\"grid_search\"`: the fitted grid search instance\n"
+        "   - `\"best_params\"`: dict of best parameters\n"
+        "   - `\"best_score\"`: float average validation score\n"
+        "   - `\"best_estimator\"`: the refitted best estimator"
     ),
     "starter_code": r'''import numpy as np
 from sklearn.tree import DecisionTreeClassifier
@@ -264,7 +265,7 @@ from sklearn.model_selection import GridSearchCV
 
 def tune_decision_tree_grid(X: np.ndarray, y: np.ndarray, param_grid: dict, cv: int = 5, scoring: str = "f1_weighted", random_state: int = 42) -> dict:
     """
-    Tune DecisionTreeClassifier hyperparameters using exhaustive grid search.
+    Tune decision tree hyperparameters using exhaustive grid search across cross-validation folds.
 
     Args:
         X: Feature matrix
@@ -277,7 +278,7 @@ def tune_decision_tree_grid(X: np.ndarray, y: np.ndarray, param_grid: dict, cv: 
     Returns:
         dict with grid_search, best_params, best_score, best_estimator
     """
-    # TODO: Validate inputs, instantiate DecisionTreeClassifier and GridSearchCV, fit, return dict
+    # TODO: Validate inputs, configure grid search across CV folds, fit, return dict
     pass
 ''',
     "reference_solution": r'''import numpy as np

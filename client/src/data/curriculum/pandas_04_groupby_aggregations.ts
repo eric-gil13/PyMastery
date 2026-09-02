@@ -355,13 +355,13 @@ Write a function \`aggregate_department_metrics(df: pd.DataFrame) -> pd.DataFram
 1. Validates inputs:
    - If \`df\` is not a \`pd.DataFrame\` or \`df.empty\`, raise \`ValueError("df must be a non-empty DataFrame")\`.
    - If any of \`['department', 'salary', 'employee_id']\` are missing from \`df.columns\`, raise \`KeyError("Missing required columns")\`.
-2. Groups by \`'department'\` with \`as_index=False\` and computes named aggregations:
-   - \`'mean_salary'\`: mean of \`'salary'\`
-   - \`'max_salary'\`: max of \`'salary'\`
-   - \`'headcount'\`: count of \`'employee_id'\`
-3. Rounds \`'mean_salary'\` to 2 decimal places (\`.round(2)\`).
-4. Sorts the output table by \`'headcount'\` descending, breaking ties by \`'mean_salary'\` descending (\`ascending=[False, False]\`).
-5. Resets the index with \`.reset_index(drop=True)\`.
+2. Groups records by department (retaining \`'department'\` as a standard column) and aggregates metrics:
+   - \`'mean_salary'\`: average salary
+   - \`'max_salary'\`: maximum salary
+   - \`'headcount'\`: total count of employee IDs
+3. Rounds \`'mean_salary'\` to 2 decimal places.
+4. Sorts the resulting table by \`'headcount'\` descending, breaking ties by \`'mean_salary'\` descending.
+5. Resets the row index to a sequential 0-based index.
 6. Returns the aggregated DataFrame.`,
       hints: [
         'Use `df.groupby("department", as_index=False).agg(...)`.',
@@ -380,7 +380,7 @@ def aggregate_department_metrics(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Aggregated, sorted pandas DataFrame with reset index.
     """
-    # TODO: Validate inputs, perform groupby named aggregation, sort, and return DataFrame
+    # TODO: Validate inputs, aggregate department metrics, sort, and return DataFrame
     pass
 `,
       solutionCode: `import pandas as pd
@@ -507,13 +507,13 @@ Write a function \`rank_regional_performance(sales_df: pd.DataFrame, top_n: int 
    - If \`sales_df\` is not a \`pd.DataFrame\` or \`sales_df.empty\`, raise \`ValueError("sales_df must be a non-empty DataFrame")\`.
    - If \`top_n <= 0\`, raise \`ValueError("top_n must be a positive integer")\`.
    - If any of \`['region', 'category', 'revenue', 'profit']\` are missing from \`sales_df.columns\`, raise \`KeyError("Missing required sales columns")\`.
-2. Groups by \`['region', 'category']\` with \`as_index=False\` and aggregates:
-   - \`'total_revenue'\`: sum of \`'revenue'\`
-   - \`'total_profit'\`: sum of \`'profit'\`
-3. Computes \`'profit_margin'\` as \`(total_profit / total_revenue).round(4)\`.
-4. Sorts by \`'region'\` ascending and \`'profit_margin'\` descending (\`by=['region', 'profit_margin'], ascending=[True, False]\`).
-5. Selects top \`top_n\` rows per region using \`.groupby('region', as_index=False).head(top_n)\`.
-6. Resets the index with \`.reset_index(drop=True)\`.
+2. Groups records by region and category (retaining grouping keys as regular columns) and aggregates metrics:
+   - \`'total_revenue'\`: sum of revenue
+   - \`'total_profit'\`: sum of profit
+3. Computes \`'profit_margin'\` as total profit divided by total revenue, rounded to 4 decimal places.
+4. Sorts the aggregated records by \`'region'\` ascending, breaking ties by \`'profit_margin'\` descending.
+5. Extracts the top \`top_n\` highest-margin categories within each region.
+6. Resets the row index to a clean 0-based sequence.
 7. Returns the ranked DataFrame.`,
       hints: [
         'Multi-column groupby: `sales_df.groupby(["region", "category"], as_index=False).agg(...)`.',
@@ -534,7 +534,7 @@ def rank_regional_performance(sales_df: pd.DataFrame, top_n: int = 3) -> pd.Data
     Returns:
         Ranked pandas DataFrame with reset index.
     """
-    # TODO: Validate inputs, multi-column groupby, compute margin, rank with head(top_n), and return DataFrame
+    # TODO: Validate inputs, group by region and category, compute margin, rank top categories, and return DataFrame
     pass
 `,
       solutionCode: `import pandas as pd

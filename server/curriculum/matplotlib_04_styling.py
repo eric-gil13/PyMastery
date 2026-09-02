@@ -187,18 +187,18 @@ CHALLENGE_1 = {
         "1. Validates inputs:\n"
         "   - If `len(timestamps) == 0` or `len(signal) == 0`, raise `ValueError(\"Inputs cannot be empty\")`.\n"
         "   - If `len(timestamps) != len(signal)`, raise `ValueError(\"Timestamps and signal must have identical length\")`.\n"
-        "2. Identifies the peak anomaly index as the point with maximum absolute deviation from the mean: `int(np.argmax(np.abs(signal - np.mean(signal))))`.\n"
-        "3. Creates `fig, ax = plt.subplots(figsize=(10, 5))`.\n"
-        "4. Plots `timestamps` vs `signal` with `color=\"#2563eb\"`, `linewidth=1.8`, and `label=\"Signal\"`.\n"
-        "5. Adds a scatter point at the peak coordinate `(peak_x, peak_y)` with `color=\"#dc2626\"`, `s=80`, `zorder=5`, and `label=\"Anomaly\"`.\n"
-        "6. Calls `ax.annotate()` to attach an arrow pointing at `(peak_x, peak_y)` with:\n"
-        "   - `text=f\"{label_text}: {peak_y:.2f}\"`\n"
-        "   - `xy=(peak_x, peak_y)`\n"
-        "   - `xytext=(peak_x + (timestamps.max() - timestamps.min()) * 0.08, peak_y + (signal.max() - signal.min()) * 0.15)`\n"
-        "   - `arrowprops=dict(arrowstyle=\"->\", color=\"#dc2626\", lw=1.8)`\n"
-        "   - `fontweight=\"bold\"`\n"
-        "7. Sets title to `\"Signal Anomaly Detection\"`, x-label to `\"Time (s)\"`, y-label to `\"Amplitude\"`.\n"
-        "8. Enables grid and legend, then returns `(fig, ax)`."
+        "2. Identifies the peak anomaly index as the point with maximum absolute deviation from the mean (`int(np.argmax(np.abs(signal - np.mean(signal))))`).\n"
+        "3. Initializes a Figure and single Axes with a figure size of 10 by 5 inches (`figsize=(10, 5)`).\n"
+        "4. Plots the telemetry signal curve across timestamps (`color=\"#2563eb\"`, `linewidth=1.8`, and `label=\"Signal\"`).\n"
+        "5. Highlights the peak anomaly coordinate `(peak_x, peak_y)` with a prominent scatter point (`color=\"#dc2626\"`, `s=80`, `zorder=5`, and `label=\"Anomaly\"`).\n"
+        "6. Annotates the peak anomaly coordinate with an arrow callout featuring:\n"
+        "   - Formatted text: `f\"{label_text}: {peak_y:.2f}\"`\n"
+        "   - Target arrow coordinate: `xy=(peak_x, peak_y)`\n"
+        "   - Callout text position: `xytext=(peak_x + (timestamps.max() - timestamps.min()) * 0.08, peak_y + (signal.max() - signal.min()) * 0.15)`\n"
+        "   - Arrow properties: `arrowprops=dict(arrowstyle=\"->\", color=\"#dc2626\", lw=1.8)`\n"
+        "   - Bold typography: `fontweight=\"bold\"`\n"
+        "7. Sets the plot title to `\"Signal Anomaly Detection\"`, the x-axis label to `\"Time (s)\"`, and the y-axis label to `\"Amplitude\"`.\n"
+        "8. Enables grid lines, displays the legend, and returns the `(fig, ax)` tuple."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
 import numpy as np
@@ -215,7 +215,7 @@ def annotate_peak_anomaly(
     Returns:
         (fig, ax) tuple
     """
-    # TODO: Validate inputs, find anomaly peak, plot signal and scatter, annotate with arrow, return (fig, ax)
+    # TODO: Validate inputs, find anomaly peak, plot signal and scatter, annotate with arrow callout, and return (fig, ax)
     pass
 ''',
     "reference_solution": r'''import matplotlib.pyplot as plt
@@ -376,19 +376,18 @@ CHALLENGE_2 = {
         "   - If `len(x) == 0`, `len(y) == 0`, or `len(y_err) == 0`, raise `ValueError(\"Inputs cannot be empty\")`.\n"
         "   - If `len(x) != len(y)` or `len(x) != len(y_err)`, raise `ValueError(\"Array lengths must match\")`.\n"
         "   - If `dpi < 72`, raise `ValueError(\"DPI must be at least 72\")`.\n"
-        "2. Creates `fig, ax = plt.subplots(figsize=(7, 4.5), dpi=dpi)`.\n"
-        "3. Plots `ax.errorbar(x, y, yerr=y_err, fmt=\"-o\", color=\"#0f172a\", ecolor=\"#64748b\", elinewidth=1.5, capsize=4, capthick=1.5, markersize=5, label=\"Measurements\")`.\n"
-        "4. Cleans up spines:\n"
-        "   - Hides top spine (`ax.spines[\"top\"].set_visible(False)`)\n"
-        "   - Hides right spine (`ax.spines[\"right\"].set_visible(False)`)\n"
-        "   - Sets left spine linewidth to 1.2 (`ax.spines[\"left\"].set_linewidth(1.2)`)\n"
-        "   - Sets bottom spine linewidth to 1.2 (`ax.spines[\"bottom\"].set_linewidth(1.2)`)\n"
-        "5. Configures ticks: `ax.tick_params(direction=\"out\", length=5, width=1.2)`.\n"
-        "6. Sets title to `\"Experimental Response Function\"`, x-label to `\"Independent Variable (X)\"`, y-label to `\"Response (Y)\"`.\n"
-        "7. Adds a borderless legend (`ax.legend(frameon=False)`).\n"
-        "8. Calls `fig.tight_layout()`.\n"
-        "9. Saves figure to an in-memory `io.BytesIO` buffer with `fig.savefig(buf, format=export_format.lower(), dpi=dpi, bbox_inches=\"tight\")`.\n"
-        "10. Returns `(fig, buf.getvalue())`."
+        "2. Initializes a Figure and single Axes with a figure size of 7 by 4.5 inches at the specified resolution (`figsize=(7, 4.5)`, `dpi=dpi`).\n"
+        "3. Plots data points with error bars (`yerr=y_err`, marker and line format `\"-o\"`, `color=\"#0f172a\"`, `ecolor=\"#64748b\"`, `elinewidth=1.5`, `capsize=4`, `capthick=1.5`, `markersize=5`, `label=\"Measurements\"`).\n"
+        "4. Restyles chart spines following clean publication standards:\n"
+        "   - Remove the top and right chart spines\n"
+        "   - Set left spine linewidth to 1.2\n"
+        "   - Set bottom spine linewidth to 1.2\n"
+        "5. Configures axis tick marks to point outward with a length of 5 and width of 1.2 (`direction=\"out\"`, `length=5`, `width=1.2`).\n"
+        "6. Sets the title to `\"Experimental Response Function\"`, the x-axis label to `\"Independent Variable (X)\"`, and the y-axis label to `\"Response (Y)\"`.\n"
+        "7. Adds a borderless legend (`frameon=False`).\n"
+        "8. Applies tight layout padding.\n"
+        "9. Renders the figure into an in-memory byte buffer in the requested export format with a tight bounding box (`bbox_inches=\"tight\"`).\n"
+        "10. Returns a tuple containing the Figure object and the serialized bytes `(fig, buf.getvalue())`."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
 import numpy as np
@@ -407,7 +406,7 @@ def build_publication_figure(
     Returns:
         (fig, image_bytes)
     """
-    # TODO: Validate format/inputs, plot errorbars, despine top/right, export to BytesIO, return (fig, bytes)
+    # TODO: Validate format and inputs, plot error bars, remove top and right spines, export to in-memory buffer, and return (fig, bytes)
     pass
 ''',
     "reference_solution": r'''import matplotlib

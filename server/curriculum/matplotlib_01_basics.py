@@ -133,8 +133,8 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Plotting Foundations",
     "description": (
-        "Create an explicit Figure and Axes to plot training vs validation loss curves over epochs. "
-        "Apply distinct colors, linestyles, line widths, clear axis labels, a plot title, gridlines, "
+        "Construct an object-oriented visualization comparing model training and validation loss curves across epochs. "
+        "Configure distinct line styles and widths, meaningful axis labels, a descriptive title, grid lines, "
         "and an informative legend."
     ),
     "instructions": (
@@ -142,14 +142,14 @@ CHALLENGE_1 = {
         "1. Validates inputs:\n"
         "   - If `len(epochs) == 0`, `len(train_loss) == 0`, or `len(val_loss) == 0`, raise `ValueError(\"Input sequences cannot be empty\")`.\n"
         "   - If lengths do not match (`len(epochs) != len(train_loss)` or `len(epochs) != len(val_loss)`), raise `ValueError(\"All input sequences must have identical length\")`.\n"
-        "2. Creates an explicit Figure and Axes using `fig, ax = plt.subplots(figsize=(8, 5))`.\n"
-        "3. Plots `train_loss` vs `epochs` with `label=\"Train Loss\"`, solid line (`linestyle=\"-\"`), and `linewidth=2`.\n"
-        "4. Plots `val_loss` vs `epochs` with `label=\"Validation Loss\"`, dashed line (`linestyle=\"--\"`), and `linewidth=2`.\n"
-        "5. Sets the title to `\"Model Training vs Validation Loss\"`.\n"
-        "6. Sets x-axis label to `\"Epoch\"` and y-axis label to `\"Loss\"`.\n"
-        "7. Enables the grid with `ax.grid(True)`.\n"
-        "8. Adds a legend with `ax.legend()`.\n"
-        "9. Returns the `(fig, ax)` tuple."
+        "2. Initializes an explicit Figure and single Axes with a figure size of 8 by 5 inches (`figsize=(8, 5)`).\n"
+        "3. Plots the training loss curve across epochs with label `\"Train Loss\"`, solid line style (`linestyle=\"-\"`), and line width of 2 (`linewidth=2`).\n"
+        "4. Plots the validation loss curve across epochs with label `\"Validation Loss\"`, dashed line style (`linestyle=\"--\"`), and line width of 2 (`linewidth=2`).\n"
+        "5. Sets the plot title to `\"Model Training vs Validation Loss\"`.\n"
+        "6. Sets the x-axis label to `\"Epoch\"` and the y-axis label to `\"Loss\"`.\n"
+        "7. Enables the chart grid lines.\n"
+        "8. Displays the chart legend.\n"
+        "9. Returns a tuple containing the Figure and Axes objects `(fig, ax)`."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
 from typing import List, Tuple, Any
@@ -170,7 +170,7 @@ def plot_metric_curves(
     Returns:
         (fig, ax) tuple containing the Figure and Axes objects
     """
-    # TODO: Validate inputs, create figure/axes, plot curves, style, and return (fig, ax)
+    # TODO: Validate inputs, initialize figure/axes, plot metric curves, configure styling, and return (fig, ax)
     pass
 ''',
     "reference_solution": r'''import matplotlib.pyplot as plt
@@ -315,14 +315,14 @@ CHALLENGE_2 = {
         "1. Validates inputs:\n"
         "   - If `len(time_steps) == 0` or `len(trajectories) == 0`, raise `ValueError(\"Inputs cannot be empty\")`.\n"
         "   - If any trajectory series has a length different from `len(time_steps)`, raise `ValueError(\"All trajectories must match time_steps length\")`.\n"
-        "2. Creates `fig, ax = plt.subplots(figsize=(9, 5))`.\n"
-        "3. Cycles through distinct linestyles (`[\"-\", \"--\", \"-.\", \":\"]`) and markers (`[\"o\", \"s\", \"^\", \"D\", \"v\"]`) "
+        "2. Initializes a Figure and single Axes with a figure size of 9 by 5 inches (`figsize=(9, 5)`).\n"
+        "3. Cycles through distinct line styles (`[\"-\", \"--\", \"-.\", \":\"]`) and markers (`[\"o\", \"s\", \"^\", \"D\", \"v\"]`) "
         "   for each trajectory in `trajectories.items()`.\n"
-        "4. Plots each trajectory series with its corresponding name as the label.\n"
-        "5. Sets title to `\"Multi-Agent Trajectory Tracking\"`.\n"
-        "6. Sets x-axis label to `\"Time (s)\"` and y-axis label to `\"Position (m)\"`.\n"
-        "7. Enables grid with `ax.grid(True, linestyle=\":\", alpha=0.6)`.\n"
-        "8. Places the legend with `ax.legend(loc=\"best\")`.\n"
+        "4. Plots each trajectory curve across `time_steps` with its entity name as the legend label, applying the cycled line style and marker.\n"
+        "5. Sets the plot title to `\"Multi-Agent Trajectory Tracking\"`.\n"
+        "6. Sets the x-axis label to `\"Time (s)\"` and the y-axis label to `\"Position (m)\"`.\n"
+        "7. Enables subtle dotted grid lines (`linestyle=\":\"`, `alpha=0.6`).\n"
+        "8. Displays the legend positioned at the optimal automatic location (`loc=\"best\"`).\n"
         "9. Returns the `(fig, ax)` tuple."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
@@ -342,7 +342,7 @@ def plot_trajectories(
     Returns:
         (fig, ax) tuple containing the Figure and Axes objects
     """
-    # TODO: Validate inputs, cycle styles/markers, plot each trajectory, style, and return (fig, ax)
+    # TODO: Validate inputs, initialize figure/axes, cycle styles and markers, plot trajectories, style, and return (fig, ax)
     pass
 ''',
     "reference_solution": r'''import matplotlib.pyplot as plt

@@ -399,7 +399,7 @@ all_ok = bool(np.all(~anomaly_mask))`
       slug: 'sensor-anomaly-detector-clipper',
       difficulty: 'Beginner',
       category: 'Boolean Masking & Filtering',
-      summary: 'Detect corrupted IoT sensor spikes, count anomalies, extract valid subsets, and repair faulty readings using np.where without loops.',
+      summary: 'Detect corrupted IoT sensor spikes, count anomalies, extract valid subsets, and repair faulty readings without loops.',
       mentalModel5s: 'Combine (arr < low) | (arr > high) for anomaly mask. Use arr[~mask] for clean data and np.where for conditional repair and clipping.',
       visualAnalogy: 'A quality-control scanner on a factory conveyor belt tagging defective parts with red laser dots, discarding the bad ones, and trimming rough edges.',
       pitfalls: [
@@ -422,12 +422,12 @@ all_ok = bool(np.all(~anomaly_mask))`
 
 **Requirements:**
 1. Compute \`anomaly_mask\`: boolean array matching \`readings.shape\` where values are \`< lower_limit\` OR \`> upper_limit\`.
-2. Compute \`anomaly_count\`: integer representing the total count of anomalies (\`np.sum\`).
-3. Compute \`has_anomalies\`: bool indicating whether ANY anomaly exists (\`np.any\`).
-4. Compute \`all_valid\`: bool indicating whether ALL readings are valid (\`np.all\`).
-5. Compute \`valid_readings\`: 1D array of only valid values extracted via boolean indexing (\`readings[~anomaly_mask]\`).
-6. Compute \`replaced_readings\`: array matching \`readings.shape\` where anomalies are replaced with \`fill_value\` using \`np.where\`.
-7. Compute \`clipped_readings\`: array matching \`readings.shape\` where values below \`lower_limit\` are clamped to \`lower_limit\` and values above \`upper_limit\` are clamped to \`upper_limit\` using \`np.where\`.
+2. Compute \`anomaly_count\`: integer representing the total count of anomalies.
+3. Compute \`has_anomalies\`: bool indicating whether any anomaly exists.
+4. Compute \`all_valid\`: bool indicating whether all readings are valid.
+5. Compute \`valid_readings\`: 1D array containing only the valid readings extracted via boolean indexing.
+6. Compute \`replaced_readings\`: array matching \`readings.shape\`, conditionally replacing elements matching \`anomaly_mask\` with \`fill_value\`, otherwise \`readings\`.
+7. Compute \`clipped_readings\`: array matching \`readings.shape\`, clamped within the specified lower and upper bounds.
 8. Return all outputs in a dictionary. NO Python loops allowed!`,
       hints: [
         'Build the mask via `(readings < lower_limit) | (readings > upper_limit)`.',
@@ -461,10 +461,10 @@ def clean_sensor_readings(
             - 'has_anomalies': bool True if any anomaly exists
             - 'all_valid': bool True if no anomalies exist
             - 'valid_readings': 1D array of only valid values
-            - 'replaced_readings': array with anomalies replaced by fill_value via np.where
-            - 'clipped_readings': array with values clamped to [lower_limit, upper_limit] via np.where
+            - 'replaced_readings': array with anomalies replaced by fill_value
+            - 'clipped_readings': array with values clamped to [lower_limit, upper_limit]
     """
-    # TODO: Implement boolean masks, any/all, filtering, and np.where without Python loops
+    # TODO: Implement boolean masks, any/all, filtering, and conditional replacement without Python loops
     pass
 `,
       solutionCode: `import numpy as np
@@ -656,7 +656,7 @@ Mask:  [0x01 ]  [0x00 ]  [0x00 ]  [0x01 ]  (1 byte per boolean)`,
       slug: 'multi-condition-data-sieve',
       difficulty: 'Intermediate',
       category: 'Advanced Boolean Indexing & Conditional Branching',
-      summary: 'Sieve server telemetry into Critical, Warning, and Healthy states using simultaneous bitwise conditions and nested np.where without loops.',
+      summary: 'Sieve server telemetry into Critical, Warning, and Healthy states using simultaneous bitwise conditions and conditional branching without loops.',
       mentalModel5s: 'Combine multiple column criteria with & and | to partition rows into mutually exclusive health tiers with zero loops.',
       visualAnalogy: 'An airport security baggage scanner sorting luggage into Green (clear), Yellow (hand check), and Red (hazard) belts simultaneously.',
       pitfalls: [
@@ -685,11 +685,11 @@ Mask:  [0x01 ]  [0x00 ]  [0x00 ]  [0x01 ]  (1 byte per boolean)`,
 **Requirements:**
 1. Compute \`critical_mask\`: True if \`(cpu >= cpu_limit AND mem >= mem_limit) OR (errors > max_errors)\`.
 2. Compute \`healthy_mask\`: True if \`cpu < cpu_limit AND mem < mem_limit AND errors == 0.0\`.
-3. Compute \`warning_mask\`: True if server is NOT Critical and NOT Healthy (\`~critical_mask & ~healthy_mask\`).
-4. Extract \`critical_servers\`: 2D array of rows matching \`critical_mask\` (\`telemetry[critical_mask]\`).
+3. Compute \`warning_mask\`: True where servers are neither Critical nor Healthy.
+4. Extract \`critical_servers\`: 2D array of all rows corresponding to critical servers.
 5. Extract \`critical_ids\`: 1D array of server IDs matching \`critical_mask\`.
 6. Extract \`healthy_ids\`: 1D array of server IDs matching \`healthy_mask\`.
-7. Compute \`status_codes\`: 1D integer array (0=Healthy, 1=Warning, 2=Critical) using nested \`np.where\`.
+7. Compute \`status_codes\`: 1D integer array where each server is assigned a status code (0=Healthy, 1=Warning, 2=Critical) via conditional selection.
 8. Compute \`triage_summary\`: dict containing integer counts \`total_servers\`, \`critical_count\`, \`warning_count\`, \`healthy_count\`.
 9. Return all outputs in a dictionary. NO Python loops allowed!`,
       hints: [
@@ -730,7 +730,7 @@ def sieve_server_telemetry(
             - 'status_codes': 1D int array (0=Healthy, 1=Warning, 2=Critical)
             - 'triage_summary': dict of count totals
     """
-    # TODO: Implement multi-condition boolean indexing and np.where without Python loops
+    # TODO: Implement multi-condition boolean indexing and conditional selection without Python loops
     pass
 `,
       solutionCode: `import numpy as np

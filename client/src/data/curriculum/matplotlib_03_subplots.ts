@@ -287,24 +287,24 @@ Write a function \`create_diagnostic_grid(epochs: list, train_loss: list, val_lo
 1. Validates inputs:
    - If any sequence is empty, raise \`ValueError("Inputs cannot be empty")\`.
    - If \`conf_matrix\` is not a 2D array of shape \`(2, 2)\`, raise \`ValueError("conf_matrix must be 2x2")\`.
-2. Creates a 2x2 subplot figure: \`fig, axes = plt.subplots(2, 2, figsize=(11, 9))\`.
+2. Creates a 2x2 grid of subplot axes with a figure size of 11 by 9 inches (\`figsize=(11, 9)\`).
 3. Panel (0, 0) - ROC Curve:
-   - Plots \`fpr\` vs \`tpr\` with \`color="#2563eb"\`, \`linewidth=2\`, \`label="ROC"\`.
-   - Plots dashed baseline \`[0, 1]\` vs \`[0, 1]\` with \`color="gray"\`, \`linestyle="--"\`.
-   - Sets title to \`"ROC Curve"\`, x-label to \`"False Positive Rate"\`, y-label to \`"True Positive Rate"\`, enables legend and grid.
+   - Plots \`fpr\` vs \`tpr\` with \`color="#2563eb"\`, \`linewidth=2\`, and \`label="ROC"\`.
+   - Plots dashed chance baseline \`[0, 1]\` vs \`[0, 1]\` with \`color="gray"\` and \`linestyle="--"\`.
+   - Sets the title to \`"ROC Curve"\`, the x-axis label to \`"False Positive Rate"\`, the y-axis label to \`"True Positive Rate"\`, and enables the legend and grid.
 4. Panel (0, 1) - Precision-Recall Curve:
-   - Plots \`recall\` vs \`precision\` with \`color="#059669"\`, \`linewidth=2\`, \`label="PR"\`.
-   - Sets title to \`"Precision-Recall Curve"\`, x-label to \`"Recall"\`, y-label to \`"Precision"\`, enables legend and grid.
+   - Plots \`recall\` vs \`precision\` with \`color="#059669"\`, \`linewidth=2\`, and \`label="PR"\`.
+   - Sets the title to \`"Precision-Recall Curve"\`, the x-axis label to \`"Recall"\`, the y-axis label to \`"Precision"\`, and enables the legend and grid.
 5. Panel (1, 0) - Loss Curves:
    - Plots \`epochs\` vs \`train_loss\` (\`color="#2563eb"\`, \`label="Train Loss"\`).
    - Plots \`epochs\` vs \`val_loss\` (\`color="#dc2626"\`, \`linestyle="--"\`, \`label="Val Loss"\`).
-   - Sets title to \`"Epoch Loss"\`, x-label to \`"Epoch"\`, y-label to \`"Loss"\`, enables legend and grid.
+   - Sets the title to \`"Epoch Loss"\`, the x-axis label to \`"Epoch"\`, the y-axis label to \`"Loss"\`, and enables the legend and grid.
 6. Panel (1, 1) - Confusion Matrix:
-   - Calls \`axes[1, 1].imshow(conf_matrix, cmap="Blues")\`.
-   - Iterates over each cell $(i, j)$ and calls \`axes[1, 1].text(j, i, str(val), ha="center", va="center", color=..., fontweight="bold")\` using white text if \`val > conf_matrix.max() / 2\` else black.
-   - Sets xticks and yticks to \`[0, 1]\` with labels \`["Pred 0", "Pred 1"]\` and \`["True 0", "True 1"]\`.
-   - Sets title to \`"Confusion Matrix"\`, x-label to \`"Predicted"\`, y-label to \`"Actual"\`.
-7. Applies \`fig.tight_layout()\` and returns \`(fig, axes)\`.`,
+   - Displays the confusion matrix as a heatmap image (\`cmap="Blues"\`).
+   - Annotates each cell $(i, j)$ with its integer value centered within the cell in bold text, using white text if \`val > conf_matrix.max() / 2\` else black for contrast.
+   - Sets x-ticks and y-ticks to \`[0, 1]\` with tick labels \`["Pred 0", "Pred 1"]\` and \`["True 0", "True 1"]\`.
+   - Sets the title to \`"Confusion Matrix"\`, the x-axis label to \`"Predicted"\`, and the y-axis label to \`"Actual"\`.
+7. Applies tight layout padding and returns \`(fig, axes)\`.`,
       hints: [
         'Access panels with axes[0, 0], axes[0, 1], axes[1, 0], axes[1, 1].',
         'Use imshow(conf_matrix, cmap="Blues") for the confusion matrix.',
@@ -330,7 +330,7 @@ def create_diagnostic_grid(
     Returns:
         (fig, axes) where axes is a 2x2 ndarray of Axes
     """
-    # TODO: Validate inputs, create 2x2 grid, populate panels, tight_layout, return (fig, axes)
+    # TODO: Validate inputs, create 2x2 grid of subplot axes, populate all panels, apply tight layout, and return (fig, axes)
     pass
 `,
       solutionCode: `import matplotlib.pyplot as plt
@@ -468,8 +468,8 @@ fig.tight_layout()`,
       slug: 'twin-axes-volume-price',
       difficulty: 'Intermediate',
       category: 'Subplots & Grids',
-      summary: 'Pair primary and secondary axes via ax.twinx() to plot trading volume bars and stock price curves across a shared timeline.',
-      mentalModel5s: 'ax.twinx() shares the horizontal X space while decoupling the vertical Y scales.',
+      summary: 'Pair primary and secondary axes to plot trading volume bars and stock price curves across a shared timeline.',
+      mentalModel5s: 'A secondary twin axis shares the horizontal X space while decoupling the vertical Y scales.',
       visualAnalogy: 'Two transparent film sheets laid over each other: sheet 1 has volume bars, sheet 2 has price line.',
       pitfalls: [
         'Plotting volume and price on the same axis, causing the smaller metric to flatten into a horizontal line.',
@@ -493,18 +493,18 @@ Write a function \`plot_volume_price_twin(dates: list, prices: list, volumes: li
 1. Validates inputs:
    - If \`len(dates) == 0\`, \`len(prices) == 0\`, or \`len(volumes) == 0\`, raise \`ValueError("Inputs cannot be empty")\`.
    - If lengths do not match (\`len(dates) != len(prices)\` or \`len(dates) != len(volumes)\`), raise \`ValueError("Sequence lengths must match")\`.
-2. Creates a primary figure and axes: \`fig, ax_vol = plt.subplots(figsize=(10, 5))\`.
-3. Creates a secondary twin axis: \`ax_price = ax_vol.twinx()\`.
+2. Initializes a primary Figure and single Axes with a figure size of 10 by 5 inches (\`figsize=(10, 5)\`).
+3. Creates a secondary y-axis sharing the same x-axis (\`ax_price\`).
 4. Primary Axis (\`ax_vol\`):
-   - Plots volume as bars: \`ax_vol.bar(dates, volumes, color="#94a3b8", alpha=0.4, width=0.6, label="Volume")\`.
-   - Sets y-label to \`"Volume (Shares)"\` and x-label to \`"Date"\`.
-   - Sets title to \`"Price & Volume History"\`.
+   - Renders trading volume as a bar chart (\`color="#94a3b8"\`, \`alpha=0.4\`, \`width=0.6\`, \`label="Volume"\`).
+   - Sets the y-axis label to \`"Volume (Shares)"\` and the x-axis label to \`"Date"\`.
+   - Sets the chart title to \`"Price & Volume History"\`.
 5. Secondary Axis (\`ax_price\`):
-   - Plots price as a line: \`ax_price.plot(dates, prices, color="#2563eb", linewidth=2.2, label="Price ($)")\`.
-   - Sets y-label to \`"Price ($)"\`.
+   - Plots closing price as a line curve across \`dates\` (\`color="#2563eb"\`, \`linewidth=2.2\`, \`label="Price ($)"\`).
+   - Sets the secondary y-axis label to \`"Price ($)"\`.
 6. Unified Legend:
-   - Extracts lines/handles and labels from both \`ax_vol\` and \`ax_price\` and displays a merged legend on \`ax_price\` or \`ax_vol\`.
-7. Returns \`(fig, (ax_vol, ax_price))\`.`,
+   - Combines artist handles and labels from both the primary volume axis and secondary price axis to display a single consolidated legend on either axis.
+7. Returns the \`(fig, (ax_vol, ax_price))\` tuple.`,
       hints: [
         'Call ax_price = ax_vol.twinx() to make the secondary axis.',
         'Use ax_vol.bar for volume and ax_price.plot for price.',
@@ -524,7 +524,7 @@ def plot_volume_price_twin(
     Returns:
         (fig, (ax_vol, ax_price))
     """
-    # TODO: Validate inputs, create twinx, plot volume bars and price line, merge legend, return
+    # TODO: Validate inputs, create a secondary y-axis sharing the same x-axis, plot volume bars and price line, merge legend, and return (fig, (ax_vol, ax_price))
     pass
 `,
       solutionCode: `import matplotlib.pyplot as plt

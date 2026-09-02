@@ -299,16 +299,16 @@ Write a function \`plot_scatter_and_bar(x: np.ndarray, y: np.ndarray, categories
    - If \`len(x) == 0\`, \`len(y) == 0\`, or \`len(categories) == 0\`, raise \`ValueError("Inputs cannot be empty")\`.
    - If lengths do not match (\`len(x) != len(y)\` or \`len(x) != len(categories)\`), raise \`ValueError("Length mismatch between features and categories")\`.
    - If \`color_values\` is provided and \`len(color_values) != len(x)\`, raise \`ValueError("color_values length must match feature length")\`.
-2. Creates a 1-row by 2-column figure: \`fig, (ax_scatter, ax_bar) = plt.subplots(1, 2, figsize=(12, 5))\`.
+2. Creates a 1-row by 2-column subplot grid with a figure size of 12 by 5 inches (\`figsize=(12, 5)\`).
 3. Left Subplot (\`ax_scatter\`):
-   - If \`color_values\` is provided, call \`sc = ax_scatter.scatter(x, y, c=color_values, cmap="viridis", alpha=0.7, s=50)\` and add a colorbar to \`ax_scatter\` with \`fig.colorbar(sc, ax=ax_scatter)\`.
-   - If \`color_values\` is None, call \`ax_scatter.scatter(x, y, color="#4f46e5", alpha=0.7, s=50)\`.
-   - Sets title to \`"Feature Correlation"\`, x-label to \`"Feature X"\`, y-label to \`"Feature Y"\`. Enables grid.
+   - If \`color_values\` is provided, create a scatter plot showing feature correlation with color mapping (\`c=color_values\`, \`cmap="viridis"\`, \`alpha=0.7\`, \`s=50\`) and attach an associated colorbar to the scatter axes.
+   - If \`color_values\` is None, create a scatter plot showing feature correlation with a uniform color (\`color="#4f46e5"\`, \`alpha=0.7\`, \`s=50\`).
+   - Sets the title to \`"Feature Correlation"\`, the x-axis label to \`"Feature X"\`, and the y-axis label to \`"Feature Y"\`. Enables grid lines.
 4. Right Subplot (\`ax_bar\`):
    - Counts occurrences of each unique category in \`categories\` (sorted alphabetically).
-   - Plots a vertical bar chart using \`ax_bar.bar(unique_cats, counts, color="#059669", alpha=0.85, edgecolor="#064e3b", width=0.6)\`.
-   - Sets title to \`"Category Distribution"\`, x-label to \`"Category"\`, y-label to \`"Count"\`. Enables y-axis grid.
-5. Applies \`fig.tight_layout()\` and returns \`(fig, (ax_scatter, ax_bar))\`.`,
+   - Renders a bar chart displaying frequency counts across categories (\`color="#059669"\`, \`alpha=0.85\`, \`edgecolor="#064e3b"\`, \`width=0.6\`).
+   - Sets the title to \`"Category Distribution"\`, the x-axis label to \`"Category"\`, and the y-axis label to \`"Count"\`. Enables horizontal grid lines along the y-axis.
+5. Applies tight layout padding and returns \`(fig, (ax_scatter, ax_bar))\`.`,
       hints: [
         'Use plt.subplots(1, 2, figsize=(12, 5)) for side-by-side plots.',
         'Use sorted(list(set(categories))) to get alphabetical category labels.',
@@ -336,7 +336,7 @@ def plot_scatter_and_bar(
     Returns:
         (fig, (ax_scatter, ax_bar))
     """
-    # TODO: Validate inputs, create 1x2 subplots, plot scatter and bar charts, return (fig, (ax_scatter, ax_bar))
+    # TODO: Validate inputs, create 1x2 subplots, render scatter plot and categorical bar chart, adjust layout, and return (fig, (ax_scatter, ax_bar))
     pass
 `,
       solutionCode: `import matplotlib.pyplot as plt
@@ -475,14 +475,14 @@ Write a function \`plot_distribution_with_density(data: np.ndarray, bins: int = 
    - If \`bins < 1\`, raise \`ValueError("bins must be at least 1")\`.
    - If standard deviation of data is 0 (\`np.std(data) == 0\`), raise \`ValueError("Data must have non-zero variance")\`.
 2. Calculates sample mean (\`mu = np.mean(data)\`) and standard deviation (\`sigma = np.std(data)\`).
-3. Creates \`fig, ax = plt.subplots(figsize=(8, 5))\`.
-4. Plots histogram with \`density=True\`, \`bins=bins\`, \`color="#60a5fa"\`, \`alpha=0.6\`, \`edgecolor="white"\`, and \`label="Empirical Density"\`.
-5. Computes Gaussian PDF over 200 evenly spaced points from \`min(data)\` to \`max(data)\` using:
+3. Initializes a Figure and single Axes with a figure size of 8 by 5 inches (\`figsize=(8, 5)\`).
+4. Generates a normalized histogram of the distribution (\`density=True\`, \`bins=bins\`, \`color="#60a5fa"\`, \`alpha=0.6\`, \`edgecolor="white"\`, and \`label="Empirical Density"\`).
+5. Computes the theoretical Gaussian PDF over 200 evenly spaced points from \`min(data)\` to \`max(data)\` using:
    \`pdf = (1.0 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x_eval - mu) / sigma) ** 2)\`.
-6. Plots the Gaussian curve on \`ax\` with \`color="#dc2626"\`, \`linewidth=2.2\`, and \`label=f"Normal Fit (μ={mu:.2f}, σ={sigma:.2f})"\`.
-7. Adds a vertical dashed line for the mean: \`ax.axvline(mu, color="#1e3a8a", linestyle="--", linewidth=1.8, label=f"Mean = {mu:.2f}")\`.
-8. Sets title to \`"Distribution with Fitted Normal Density"\`, x-label to \`"Value"\`, and y-label to \`"Probability Density"\`.
-9. Adds grid and legend, then returns \`(fig, ax)\`.`,
+6. Overlays the fitted Gaussian density curve (\`color="#dc2626"\`, \`linewidth=2.2\`, and \`label=f"Normal Fit (μ={mu:.2f}, σ={sigma:.2f})"\`).
+7. Draws a vertical dashed reference line indicating the sample mean (\`color="#1e3a8a"\`, \`linestyle="--"\`, \`linewidth=1.8\`, \`label=f"Mean = {mu:.2f}"\`).
+8. Sets the title to \`"Distribution with Fitted Normal Density"\`, the x-axis label to \`"Value"\`, and the y-axis label to \`"Probability Density"\`.
+9. Enables grid lines, displays the legend, and returns the \`(fig, ax)\` tuple.`,
       hints: [
         'Set density=True in ax.hist().',
         'Use np.linspace(arr.min(), arr.max(), 200) for smooth PDF evaluation.',
@@ -506,7 +506,7 @@ def plot_distribution_with_density(
     Returns:
         (fig, ax) tuple
     """
-    # TODO: Validate inputs, compute mean/std, plot histogram, overlay PDF, add mean line, return (fig, ax)
+    # TODO: Validate inputs, compute mean/std, generate normalized histogram, overlay normal curve, mark mean, and return (fig, ax)
     pass
 `,
       solutionCode: `import matplotlib.pyplot as plt

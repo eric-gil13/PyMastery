@@ -111,8 +111,8 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Regression",
     "description": (
-        "Fit a LinearRegression model to continuous target data, generate predictions on unseen "
-        "test records, and compute diagnostic regression metrics: MAE, MSE, RMSE, and R-squared."
+        "Train an ordinary least squares regression model on continuous housing features, predict "
+        "test set target values, and evaluate standard continuous error metrics: MAE, MSE, RMSE, and R-squared."
     ),
     "instructions": (
         "Write a function `train_housing_regressor(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> dict` that:\n"
@@ -120,13 +120,13 @@ CHALLENGE_1 = {
         "   - If `len(X_train) != len(y_train)`, raise `ValueError(\"X_train and y_train length mismatch\")`.\n"
         "   - If `len(X_test) != len(y_test)`, raise `ValueError(\"X_test and y_test length mismatch\")`.\n"
         "   - If `len(X_train) == 0` or `len(X_test) == 0`, raise `ValueError(\"Arrays must contain at least 1 sample\")`.\n"
-        "2. Fits a `LinearRegression()` model on `(X_train, y_train)`.\n"
-        "3. Computes test set predictions: `y_pred = model.predict(X_test)`.\n"
-        "4. Computes:\n"
-        "   - `mae`: float from `mean_absolute_error(y_test, y_pred)`\n"
-        "   - `mse`: float from `mean_squared_error(y_test, y_pred)`\n"
-        "   - `rmse`: float computed as `float(np.sqrt(mse))`\n"
-        "   - `r2`: float from `r2_score(y_test, y_pred)`\n"
+        "2. Trains an ordinary least squares linear regression model on the training split `(X_train, y_train)`.\n"
+        "3. Generates continuous predictions on the test features (`X_test`) into `y_pred`.\n"
+        "4. Computes regression evaluation metrics comparing test targets and predictions:\n"
+        "   - `mae`: float mean absolute error\n"
+        "   - `mse`: float mean squared error\n"
+        "   - `rmse`: float root mean squared error (square root of MSE)\n"
+        "   - `r2`: float coefficient of determination (R-squared score)\n"
         "5. Returns a dictionary:\n"
         "   `{\"model\": model, \"y_pred\": y_pred, \"mae\": mae, \"mse\": mse, \"rmse\": rmse, \"r2\": r2}`"
     ),
@@ -136,7 +136,7 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 
 def train_housing_regressor(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray) -> dict:
     """
-    Fit LinearRegression model and compute MAE, MSE, RMSE, and R2 metrics.
+    Train an ordinary least squares regression model and compute MAE, MSE, RMSE, and R2 metrics.
 
     Args:
         X_train: Training features of shape (n_samples, n_features)
@@ -147,7 +147,7 @@ def train_housing_regressor(X_train: np.ndarray, y_train: np.ndarray, X_test: np
     Returns:
         dict with model, y_pred, mae, mse, rmse, r2
     """
-    # TODO: Validate inputs, fit LinearRegression, predict, compute metrics, return dict
+    # TODO: Validate inputs, fit regression model, predict, compute metrics, return dict
     pass
 ''',
     "reference_solution": r'''import numpy as np
@@ -244,8 +244,8 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "Regression",
     "description": (
-        "Fit both an Ordinary Least Squares (OLS) model and an L2 Regularized Ridge model on "
-        "collinear feature data, and compare coefficient shrinkage and test R2 scores."
+        "Train both an unregularized ordinary least squares model and an L2-regularized linear model on "
+        "collinear feature data, and evaluate coefficient shrinkage alongside generalization performance."
     ),
     "instructions": (
         "Write a function `compare_ols_and_ridge(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, alpha: float = 1.0) -> dict` that:\n"
@@ -254,10 +254,10 @@ CHALLENGE_2 = {
         "   - If `len(X_train) != len(y_train)`, raise `ValueError(\"X_train and y_train length mismatch\")`.\n"
         "   - If `len(X_test) != len(y_test)`, raise `ValueError(\"X_test and y_test length mismatch\")`.\n"
         "   - If `len(X_train) == 0` or `len(X_test) == 0`, raise `ValueError(\"Arrays must contain at least 1 sample\")`.\n"
-        "2. Fits an Ordinary Least Squares model: `ols = LinearRegression()`, fitted on `(X_train, y_train)`.\n"
-        "3. Fits a Ridge model: `ridge = Ridge(alpha=alpha, random_state=42)`, fitted on `(X_train, y_train)`.\n"
-        "4. Generates predictions on `X_test` for both models and computes test R-squared scores (`ols_r2` and `ridge_r2`).\n"
-        "5. Computes the Euclidean L2 norm of the coefficient vectors (`float(np.linalg.norm(ols.coef_))` and `float(np.linalg.norm(ridge.coef_))`)\n"
+        "2. Trains an unregularized ordinary least squares model (`ols`) on `(X_train, y_train)`.\n"
+        "3. Trains an L2-regularized linear regression model (`ridge`) on `(X_train, y_train)` with the specified regularization strength `alpha` and `random_state=42`.\n"
+        "4. Evaluates continuous predictions on the test split (`X_test`) for both models and computes their respective test R-squared scores (`ols_r2` and `ridge_r2`).\n"
+        "5. Computes the Euclidean L2 norm of the learned coefficient weight vectors (`ols_norm` and `ridge_norm`).\n"
         "6. Returns a dictionary:\n"
         "   `{\"ols_model\": ols, \"ridge_model\": ridge, \"ols_coef\": ols.coef_, \"ridge_coef\": ridge.coef_, \"ols_r2\": ols_r2, \"ridge_r2\": ridge_r2, \"ols_norm\": ols_norm, \"ridge_norm\": ridge_norm}`"
     ),
@@ -267,7 +267,7 @@ from sklearn.metrics import r2_score
 
 def compare_ols_and_ridge(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, alpha: float = 1.0) -> dict:
     """
-    Compare Ordinary Least Squares and Ridge L2 regularized regression.
+    Compare unregularized ordinary least squares and L2-regularized ridge regression.
 
     Args:
         X_train: Training features

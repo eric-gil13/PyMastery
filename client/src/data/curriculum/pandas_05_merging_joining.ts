@@ -228,13 +228,13 @@ print(merged)`,
       instructions: `In e-commerce analytics, transaction logs and customer profiles live in separate tables. Your task is to link these tables and generate spending summaries.
 
 Write a function \`join_customer_orders(customers: pd.DataFrame, orders: pd.DataFrame) -> dict\` that:
-1. **\`inner_merged\`**: Performs an **inner join** between \`orders\` and \`customers\` on \`'customer_id'\`. Unregistered guests or customers without orders should not be included.
-2. **\`customer_orders_all\`**: Performs a **left join** with \`customers\` on the left and \`orders\` on the right on \`'customer_id'\`. Fill missing values in the \`'amount'\` column with \`0.0\`.
-3. **\`customer_summary\`**: Aggregates \`customer_orders_all\` grouped by \`['customer_id', 'name']\` to compute:
+1. **\`inner_merged\`**: Performs an inner join between \`orders\` and \`customers\` matching on the customer identifier (\`'customer_id'\`). Only orders linked to registered customers should be included.
+2. **\`customer_orders_all\`**: Performs a left join starting with \`customers\` on the left and \`orders\` on the right matching on the customer identifier (\`'customer_id'\`), ensuring every customer is kept. Imputes missing values in the \`'amount'\` column with \`0.0\`.
+3. **\`customer_summary\`**: Aggregates \`customer_orders_all\` grouped by customer identifier and name (\`['customer_id', 'name']\`) to compute:
    - \`'total_spend'\`: sum of \`'amount'\` (float, rounded to 2 decimal places).
    - \`'order_count'\`: count of valid \`'order_id'\` entries (customers with no orders must have count \`0\`).
    - \`'completed_spend'\`: sum of \`'amount'\` where \`'status' == 'completed'\` (if none, \`0.0\`).
-   Reset index and sort ascending by \`'customer_id'\`.
+   Resets the index so \`customer_id\` and \`name\` are columns, and sorts ascending by \`'customer_id'\`.
 4. Returns a dictionary:
    \`{"inner_merged": inner_merged, "customer_orders_all": customer_orders_all, "customer_summary": customer_summary}\``,
       hints: [
@@ -256,7 +256,7 @@ def join_customer_orders(customers: pd.DataFrame, orders: pd.DataFrame) -> dict:
     Returns:
         dict with 'inner_merged', 'customer_orders_all', and 'customer_summary'
     """
-    # TODO: Implement inner join, left join with fillna, and customer summary aggregation
+    # TODO: Perform inner join, left join with missing value handling, and customer summary aggregation
     pass
 `,
       solutionCode: `import pandas as pd
@@ -362,7 +362,7 @@ summary = merged.groupby('customer_id')['amount'].sum()`,
       slug: 'multi-source-data-combiner',
       difficulty: 'Intermediate',
       category: 'Merging & Joining',
-      summary: 'Concatenate quarterly sales tables vertically using pd.concat and enrich them with store location metadata.',
+      summary: 'Concatenate quarterly sales tables vertically and enrich them with store location metadata via relational joins.',
       mentalModel5s: 'Stack quarterly tables vertically with pd.concat(..., ignore_index=True), then attach location metadata using a left join on store_id.',
       visualAnalogy: 'Stacking 4 quarterly accounting binders into one annual binder, then stamping each store with its regional headquarters address.',
       pitfalls: [
@@ -384,14 +384,14 @@ summary = merged.groupby('customer_id')['amount'].sum()`,
       instructions: `Retail enterprises track sales across separate quarterly sheets. Your task is to combine these sheets into an annual master table, attach store location metadata, and generate regional performance reports.
 
 Write a function \`combine_retail_data(quarterly_dfs: list, store_locations: pd.DataFrame) -> dict\` that:
-1. **\`annual_sales\`**: Vertically concatenates the list of quarterly DataFrames (\`quarterly_dfs\`) using \`pd.concat(..., ignore_index=True)\`.
-2. **\`enriched_sales\`**: Performs a **left join** of \`annual_sales\` with \`store_locations\` on \`'store_id'\` to attach \`'city'\`, \`'region'\`, and \`'manager'\`.
+1. **\`annual_sales\`**: Vertically stacks and concatenates the list of quarterly DataFrames (\`quarterly_dfs\`) into a unified table with a fresh, sequential row index.
+2. **\`enriched_sales\`**: Performs a left join between \`annual_sales\` and \`store_locations\` matching on the store identifier (\`'store_id'\`) to attach \`'city'\`, \`'region'\`, and \`'manager'\`.
 3. **\`region_summary\`**: Groups \`enriched_sales\` by \`'region'\` and calculates:
    - \`'total_revenue'\`: sum of \`'revenue'\` (float, rounded to 2 decimal places).
    - \`'total_units'\`: sum of \`'units_sold'\` (int).
    - \`'avg_quarterly_revenue'\`: mean of \`'revenue'\` (float, rounded to 2 decimal places).
-   - \`'store_count'\`: number of distinct stores in that region (\`nunique()\` on \`'store_id'\`).
-   Reset index and sort descending by \`'total_revenue'\`.
+   - \`'store_count'\`: number of distinct stores in the region (int).
+   Resets the row index, and sorts descending by \`'total_revenue'\`.
 4. Returns a dictionary:
    \`{"annual_sales": annual_sales, "enriched_sales": enriched_sales, "region_summary": region_summary}\``,
       hints: [

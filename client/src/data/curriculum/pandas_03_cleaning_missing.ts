@@ -367,12 +367,12 @@ Write a function \`clean_and_impute_dataset(df: pd.DataFrame, critical_cols: lis
 1. Validates inputs:
    - If \`df\` is not a \`pd.DataFrame\`, raise \`ValueError("df must be a pandas DataFrame")\`.
    - If any column in \`critical_cols\` or \`numeric_impute_cols\` is not in \`df.columns\`, raise \`KeyError("Specified column not found in DataFrame")\`.
-2. Audits initial missing values: computes a dictionary \`initial_null_counts\` mapping each column name to its integer count of null values (\`int(df[col].isna().sum())\`).
-3. Drops rows where ANY column in \`critical_cols\` is null using \`df.dropna(subset=critical_cols)\`.
-4. For each column in \`numeric_impute_cols\`, computes the median of that column on the filtered dataset and fills missing values using \`.fillna(median_val)\`.
-5. Computes \`rows_dropped\` as an integer (\`int(len(df) - len(df_clean))\`).
+2. Audits initial missing values: computes a dictionary \`initial_null_counts\` mapping each column name to its integer count of missing/null values.
+3. Drops rows with unrecoverable missing values where any column in \`critical_cols\` contains null values.
+4. For each column in \`numeric_impute_cols\`, computes the median of that column across the filtered dataset and imputes missing values using the calculated column median.
+5. Computes \`rows_dropped\` as the integer difference in row count between the initial dataset and the filtered dataset.
 6. Computes \`remaining_nulls\` as an integer sum of nulls across the \`numeric_impute_cols\` in the cleaned DataFrame.
-7. Resets the index with \`.reset_index(drop=True)\`.
+7. Resets the index of the cleaned DataFrame to a sequential 0-based index.
 8. Returns a dictionary:
    \`{"cleaned_df": df_clean, "initial_null_counts": initial_null_counts, "rows_dropped": rows_dropped, "remaining_nulls": remaining_nulls}\`.`,
       hints: [
@@ -500,7 +500,7 @@ df['score'] = df['score'].fillna(df['score'].median())`,
       slug: 'customer-email-name-normalizer',
       difficulty: 'Beginner',
       category: 'String Cleaning (.str)',
-      summary: 'Clean customer records using the vectorized .str accessor, standardizing casing, stripping whitespace, and extracting domain and name components.',
+      summary: 'Clean customer records using vectorized string operations, standardizing casing, stripping whitespace, and extracting domain and name components.',
       mentalModel5s: 'Use .str to apply string methods across entire columns: .str.strip(), .str.lower(), .str.split().',
       visualAnalogy: 'A postal sorting machine that cleans smudges, standardizes capitalization, and stamps routing codes on every envelope.',
       pitfalls: [
@@ -525,10 +525,10 @@ Write a function \`normalize_customer_records(df: pd.DataFrame) -> pd.DataFrame\
    - If \`df\` is not a \`pd.DataFrame\`, raise \`ValueError("df must be a pandas DataFrame")\`.
    - If \`'full_name'\` or \`'email'\` is missing from \`df.columns\`, raise \`KeyError("Missing 'full_name' or 'email' column")\`.
 2. Creates a copy of the DataFrame.
-3. Cleans \`'email'\`: strips leading/trailing whitespace and converts to lowercase: \`df['email'].str.strip().str.lower()\`.
-4. Extracts \`'email_domain'\`: splits \`'email'\` by \`'@'\` and extracts the domain token (\`df['email'].str.split('@').str[1]\`).
-5. Cleans \`'full_name'\`: strips whitespace and converts to Title Case: \`df['full_name'].str.strip().str.title()\`.
-6. Extracts \`'first_name'\` and \`'last_name'\`: splits \`'full_name'\` on the first space (\`str.split(pat=' ', n=1, expand=True)\`). The first column becomes \`'first_name'\`, and the second column becomes \`'last_name'\` (fill any nulls with \`""\`).
+3. Cleanses \`'email'\` text by trimming leading/trailing whitespace and converting all characters to lowercase.
+4. Extracts the \`'email_domain'\` by isolating the domain token following the \`'@'\` delimiter in the email address.
+5. Normalizes \`'full_name'\` by trimming whitespace and converting to Title Case.
+6. Splits \`'full_name'\` into separate \`'first_name'\` and \`'last_name'\` columns at the first whitespace delimiter (for single-word names, \`'first_name'\` takes the word and \`'last_name'\` should be an empty string \`""\`).
 7. Returns the updated DataFrame.`,
       hints: [
         'Chain email operations: `df["email"].str.strip().str.lower()`.',
@@ -547,7 +547,7 @@ def normalize_customer_records(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned pandas DataFrame with new 'email_domain', 'first_name', and 'last_name' columns.
     """
-    # TODO: Validate inputs, normalize strings with .str, and return cleaned DataFrame
+    # TODO: Validate inputs, normalize strings, and return cleaned DataFrame
     pass
 `,
       solutionCode: `import pandas as pd

@@ -401,7 +401,7 @@ CHALLENGE_2 = {
     "description": (
         "In algorithmic trading and asset management, evaluating portfolio performance requires "
         "combining individual asset returns by their allocation weights. Compute multi-period weighted "
-        "portfolio returns in a single operation using NumPy matrix multiplication (@)."
+        "portfolio returns in a single operation using matrix multiplication."
     ),
     "instructions": (
         "1. Implement `compute_portfolio_returns(returns: np.ndarray, weights: np.ndarray) -> np.ndarray`.\n"
@@ -411,7 +411,7 @@ CHALLENGE_2 = {
         "   - A 2D array of shape `(N, P)` representing `P` different portfolio strategies.\n"
         "4. Ensure weights are normalized so they sum to 1.0 along the asset axis (`axis=0`). If the sum of weights is zero or close to zero, raise `ValueError('Weights sum to zero')`.\n"
         "5. Verify dimension alignment: the number of assets in `returns` (`shape[1]`) must equal the number of assets in `weights` (`shape[0]`). If not, raise `ValueError`.\n"
-        "6. Compute the portfolio return using the matrix multiplication operator `@`:\n"
+        "6. Compute the portfolio return by computing the matrix-vector or matrix-matrix product:\n"
         "   - For 1D weights `(N,)`, returns a 1D array of shape `(T,)`.\n"
         "   - For 2D weights `(N, P)`, returns a 2D array of shape `(T, P)`.\n"
         "7. STRICT REQUIREMENT: No Python loops."
@@ -420,7 +420,7 @@ CHALLENGE_2 = {
 
 def compute_portfolio_returns(returns: np.ndarray, weights: np.ndarray) -> np.ndarray:
     """
-    Compute weighted portfolio returns using matrix multiplication (@).
+    Compute weighted portfolio returns using matrix multiplication.
     
     Args:
         returns: (T, N) array of asset returns over T time periods
@@ -545,7 +545,7 @@ CHALLENGE_3 = {
         "OPTIONAL BONUS CAPSTONE: In clustering (K-Means), spatial indexing (KNN), and physics simulations, "
         "calculating all pairwise distances between two sets of points is fundamental. Given point set X "
         "of shape (N, D) and Y of shape (M, D), compute the (N, M) distance matrix using binomial expansion, "
-        "broadcasting, and matrix multiplication (@) with ZERO Python loops."
+        "broadcasting, and matrix multiplication with ZERO Python loops."
     ),
     "instructions": (
         "1. Implement `pairwise_euclidean_distance(X: np.ndarray, Y: np.ndarray) -> np.ndarray`.\n"
@@ -553,10 +553,10 @@ CHALLENGE_3 = {
         "3. Output is a 2D float64 array of shape `(N, M)` where element `(i, j)` is the Euclidean distance $\\|X_i - Y_j\\|_2$.\n"
         "4. Use the binomial expansion formula:\n"
         "   $$\\|X_i - Y_j\\|^2 = \\|X_i\\|^2 + \\|Y_j\\|^2 - 2 (X_i \\cdot Y_j)$$\n"
-        "   - Compute row squared norms of `X` as shape `(N, 1)`: `np.sum(X**2, axis=1, keepdims=True)`\n"
-        "   - Compute row squared norms of `Y` as shape `(1, M)`: `np.sum(Y**2, axis=1, keepdims=True).T`\n"
-        "   - Compute cross dot products via matrix multiplication: `X @ Y.T` of shape `(N, M)`\n"
-        "5. Clamp squared distances using `np.maximum(dist_sq, 0.0)` before `np.sqrt` to prevent negative values from floating-point inaccuracies.\n"
+        "   - Compute row squared norms of `X` as a column vector of shape `(N, 1)`.\n"
+        "   - Compute row squared norms of `Y` as a row vector of shape `(1, M)`.\n"
+        "   - Compute cross dot products across all pairs as an `(N, M)` matrix.\n"
+        "5. Clamp squared distances at a lower bound of `0.0` before taking the square root to prevent negative values from floating-point inaccuracies.\n"
         "6. STRICT REQUIREMENT: No `for` or `while` loops."
     ),
     "starter_code": r'''import numpy as np
@@ -572,7 +572,7 @@ def pairwise_euclidean_distance(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     Returns:
         (N, M) float64 array of pairwise Euclidean distances
     """
-    # TODO: Implement zero-loop pairwise distance using expansion, broadcasting, and @
+    # TODO: Implement zero-loop pairwise distance using expansion, broadcasting, and linear algebra
     pass
 ''',
     "reference_solution": r'''import numpy as np

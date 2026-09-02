@@ -194,26 +194,26 @@ CHALLENGE_1 = {
     "difficulty": "Intermediate",
     "category": "Neural Architectures",
     "description": (
-        "Construct a modular Convolutional Neural Network with Conv2d, BatchNorm2d, ReLU, "
-        "MaxPool2d, adaptive global average pooling, and a linear classification head. "
+        "Construct a modular 2-stage CNN feature extractor with normalization, non-linear activation, "
+        "spatial pooling, adaptive pooling, and a linear classification head. "
         "Support arbitrary spatial resolutions and variable channel configurations."
     ),
     "instructions": (
         "Implement a PyTorch neural network class `ConvFeatureExtractor(nn.Module)` with:\n"
         "1. `__init__(self, in_channels: int = 3, num_classes: int = 10, base_channels: int = 16)`:\n"
         "   - Call `super().__init__()`.\n"
-        "   - Construct a convolutional backbone using `nn.Sequential`:\n"
+        "   - Construct a sequential convolutional backbone named `self.features` containing two sequential processing stages:\n"
         "     - Stage 1:\n"
-        "       - `nn.Conv2d(in_channels, base_channels, kernel_size=3, padding=1)`\n"
-        "       - `nn.BatchNorm2d(base_channels)`\n"
-        "       - `nn.ReLU(inplace=True)`\n"
-        "       - `nn.MaxPool2d(kernel_size=2, stride=2)`\n"
+        "       - 2D convolution from `in_channels` to `base_channels` with 3x3 kernel and unit padding\n"
+        "       - 2D batch normalization over `base_channels`\n"
+        "       - In-place rectified linear activation\n"
+        "       - 2D max pooling with 2x2 kernel and stride 2\n"
         "     - Stage 2:\n"
-        "       - `nn.Conv2d(base_channels, base_channels * 2, kernel_size=3, padding=1)`\n"
-        "       - `nn.BatchNorm2d(base_channels * 2)`\n"
-        "       - `nn.ReLU(inplace=True)`\n"
-        "       - `nn.MaxPool2d(kernel_size=2, stride=2)`\n"
-        "   - Add global pooling: `self.pool = nn.AdaptiveAvgPool2d((1, 1))`.\n"
+        "       - 2D convolution from `base_channels` to `base_channels * 2` with 3x3 kernel and unit padding\n"
+        "       - 2D batch normalization over `base_channels * 2`\n"
+        "       - In-place rectified linear activation\n"
+        "       - 2D max pooling with 2x2 kernel and stride 2\n"
+        "   - Add global pooling collapsing spatial dimensions to 1x1: `self.pool = nn.AdaptiveAvgPool2d((1, 1))`.\n"
         "   - Add flattening: `self.flatten = nn.Flatten()`.\n"
         "   - Add classifier: `self.classifier = nn.Linear(base_channels * 2, num_classes)`.\n"
         "2. `forward(self, x: torch.Tensor) -> torch.Tensor`:\n"
@@ -235,11 +235,11 @@ class ConvFeatureExtractor(nn.Module):
         base_channels: int = 16
     ):
         super().__init__()
-        # TODO: Define stage 1, stage 2, adaptive pool, flatten, and classifier head
+        # TODO: Construct convolutional stages with normalization and pooling, followed by adaptive pooling, flatten, and classifier
         pass
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Forward pass through features, pooling, flatten, and classifier
+        # TODO: Forward pass through features, pooling, flatten, and classifier head
         pass
 ''',
     "reference_solution": r'''import torch
@@ -345,20 +345,20 @@ CHALLENGE_2 = {
     "difficulty": "Intermediate",
     "category": "Neural Architectures",
     "description": (
-        "Implement a Transformer self-attention block featuring PyTorch's nn.MultiheadAttention, "
-        "a residual skip connection, and Layer Normalization. Process sequence embeddings and output both "
+        "Implement a Transformer self-attention block featuring multi-head attention, "
+        "a residual skip connection, and layer normalization. Process sequence embeddings and output both "
         "transformed representations and attention weight matrices."
     ),
     "instructions": (
         "Implement a PyTorch module `SelfAttentionBlock(nn.Module)` with:\n"
         "1. `__init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0)`:\n"
         "   - Call `super().__init__()`.\n"
-        "   - Initialize `self.mha = nn.MultiheadAttention(embed_dim=embed_dim, num_heads=num_heads, dropout=dropout, batch_first=True)`.\n"
-        "   - Initialize `self.norm = nn.LayerNorm(embed_dim)`.\n"
+        "   - Initialize a multi-head self-attention module (`self.mha`) with embedding dimension `embed_dim`, `num_heads` attention heads, the specified dropout rate, and batch dimension placed first.\n"
+        "   - Initialize layer normalization over `embed_dim` as `self.norm`.\n"
         "2. `forward(self, x: torch.Tensor, key_padding_mask: Optional[torch.Tensor] = None) -> Tuple[torch.Tensor, torch.Tensor]`:\n"
         "   - Takes `x` of shape `(batch_size, seq_len, embed_dim)`.\n"
-        "   - Computes multi-head self-attention by passing `query=x, key=x, value=x` and `key_padding_mask=key_padding_mask` to `self.mha`.\n"
-        "   - Applies residual skip connection and LayerNorm: `out = self.norm(x + attn_output)`.\n"
+        "   - Computes multi-head self-attention with query, key, and value all sourced from input `x`, passing the optional `key_padding_mask`.\n"
+        "   - Applies residual skip connection adding input `x` to attention output, followed by layer normalization, producing `out`.\n"
         "   - Returns tuple `(out, attn_weights)` where `out` is shape `(batch_size, seq_len, embed_dim)`."
     ),
     "starter_code": r'''import torch
@@ -371,7 +371,7 @@ class SelfAttentionBlock(nn.Module):
     """
     def __init__(self, embed_dim: int, num_heads: int, dropout: float = 0.0):
         super().__init__()
-        # TODO: Initialize MultiheadAttention with batch_first=True and LayerNorm
+        # TODO: Initialize multi-head attention with batch-first layout and layer normalization
         pass
 
     def forward(
@@ -379,7 +379,7 @@ class SelfAttentionBlock(nn.Module):
         x: torch.Tensor,
         key_padding_mask: Optional[torch.Tensor] = None
     ) -> Tuple[torch.Tensor, torch.Tensor]:
-        # TODO: Compute self-attention, apply residual skip and LayerNorm, return (out, attn_weights)
+        # TODO: Compute self-attention, apply residual skip and layer normalization, and return (out, attn_weights)
         pass
 ''',
     "reference_solution": r'''import torch

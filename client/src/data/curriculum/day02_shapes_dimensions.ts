@@ -367,7 +367,7 @@ val = mat[0, 1]  # Works correctly: 2`,
       slug: 'image-grid-reshaper',
       difficulty: 'Beginner',
       category: 'Shapes & Reshaping',
-      summary: 'Transform flat 1D data streams into 2D matrices using shape inference (-1) and flatten them back.',
+      summary: 'Transform flat 1D data streams into 2D matrices by automatically inferring dimensions and unfolding them back.',
       mentalModel5s: 'Reshaping does not change numbers—it only changes how many numbers you put on each row before starting a new line.',
       visualAnalogy: 'A long ribbon of 24 postage stamps (1D). You can fold the ribbon into a grid of 4 rows and 6 columns (2D). The stamps themselves never moved or changed.',
       pitfalls: [
@@ -393,8 +393,8 @@ Write a function \`reshape_stream_to_grid(stream: np.ndarray, num_cols: int) -> 
    - If \`stream.ndim != 1\`, raise \`ValueError("Input stream must be a 1D array")\`.
    - If \`num_cols <= 0\`, raise \`ValueError("num_cols must be positive")\`.
    - If \`stream.size % num_cols != 0\`, raise \`ValueError(f"Stream of size {stream.size} cannot be reshaped into {num_cols} columns")\`.
-2. Reshapes \`stream\` into a 2D matrix named \`"grid"\` using \`-1\` to let NumPy infer the row count: \`grid = stream.reshape(-1, num_cols)\`.
-3. Flattens \`grid\` back into a 1D array named \`"recovered_flat"\` using \`grid.flatten()\`.
+2. Reshapes \`stream\` into a 2D matrix named \`"grid"\` with \`num_cols\` columns, automatically inferring the row count.
+3. Flattens \`grid\` back into a 1D array named \`"recovered_flat"\`, unfolded into a flat 1D sequence.
 4. Returns a dictionary with:
    - \`"original_shape"\`: \`stream.shape\`
    - \`"original_ndim"\`: \`int(stream.ndim)\`
@@ -422,7 +422,7 @@ def reshape_stream_to_grid(stream: np.ndarray, num_cols: int) -> dict:
     Returns:
         Dictionary containing metadata, reshaped grid, and recovered 1D array
     """
-    # TODO: Validate inputs, reshape to 2D with -1, flatten back, and return dict
+    # TODO: Validate inputs, reshape to a 2D grid with inferred row count, flatten back to 1D, and return dict
     pass
 `,
       solutionCode: `import numpy as np
@@ -554,15 +554,15 @@ grid = stream.reshape(-1, num_cols)`,
       instructions: `In robotics, image processing, and audio machine learning, multi-sensor recordings arrive as a continuous stream of data points. To process them with modern algorithms, you must pack them into a 3D tensor organized as \`(Channels, Height, Width)\`.
 
 Write a function \`format_multichannel_tensor(raw_stream: np.ndarray, num_channels: int, height: int, width: int = -1) -> dict\` that:
-1. Normalizes input: If \`raw_stream.ndim > 1\`, flatten it first using \`raw = raw_stream.flatten()\`; otherwise \`raw = raw_stream\`.
+1. Normalizes input: If \`raw_stream\` has more than 1 dimension, flatten it first into a 1D array named \`raw\`; otherwise \`raw = raw_stream\`.
 2. Validates parameters:
    - If \`num_channels <= 0\` or \`height <= 0\`, raise \`ValueError("Channels and height must be positive integers")\`.
    - If \`width == -1\`: verify that \`raw.size % (num_channels * height) == 0\`. If not, raise \`ValueError(f"Data of size {raw.size} cannot be divided into {num_channels} channels of height {height}")\`.
    - If \`width > 0\`: verify that \`raw.size == num_channels * height * width\`. If not, raise \`ValueError(f"Expected {num_channels * height * width} elements, but got {raw.size}")\`.
    - If \`width <= 0\` and \`width != -1\`: raise \`ValueError("width must be positive or -1")\`.
 3. Reshapes \`raw\` into a 3D tensor of shape \`(num_channels, height, inferred_or_given_width)\`.
-4. Extracts the 2D slice for channel 0: \`channel_0 = tensor[0, :, :]\` (which has shape \`(height, width)\`).
-5. Computes \`channel_means\` as a Python list of float mean values for each channel: \`[float(np.mean(tensor[c])) for c in range(num_channels)]\`.
+4. Extracts the 2D slice for channel 0 named \`"channel_0"\` (which has shape \`(height, width)\`).
+5. Computes \`channel_means\` as a Python list of float values representing the mean of each channel across all its elements.
 6. Returns a dictionary:
    - \`"tensor"\`: \`tensor\`
    - \`"shape"\`: \`tensor.shape\`

@@ -119,9 +119,8 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Data Partitioning",
     "description": (
-        "Partition an imbalanced classification dataset into training and testing subsets using "
-        "Scikit-Learn's train_test_split while guaranteeing that class proportions are preserved "
-        "in both subsets via stratification."
+        "Partition an imbalanced classification dataset into training and testing subsets while "
+        "guaranteeing that class proportions are preserved in both subsets via stratification."
     ),
     "instructions": (
         "Write a function `stratified_train_test_split(X: np.ndarray, y: np.ndarray, test_size: float = 0.2, random_state: int = 42) -> dict` that:\n"
@@ -130,7 +129,7 @@ CHALLENGE_1 = {
         "   - If `test_size <= 0.0` or `test_size >= 1.0`, raise `ValueError(\"test_size must be between 0.0 and 1.0\")`.\n"
         "   - If `len(np.unique(y)) < 2`, raise `ValueError(\"y must contain at least 2 distinct classes\")`.\n"
         "   - If any class in `y` has fewer than 2 samples, raise `ValueError(\"Each class must have at least 2 samples for stratified splitting\")`.\n"
-        "2. Performs a stratified split using `train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)`.\n"
+        "2. Partitions the dataset into train and test subsets with stratified class balancing using the specified test proportion and random state seed.\n"
         "3. Computes class distribution dictionaries for `y_train` and `y_test` mapping each unique class label to its float proportion (count / total_samples in that subset).\n"
         "4. Returns a dictionary with keys:\n"
         "   - `\"X_train\"`: ndarray\n"
@@ -288,9 +287,7 @@ CHALLENGE_2 = {
         "   - If `len(X) < 2`, raise `ValueError(\"At least 2 samples required\")`.\n"
         "2. Computes the chronological split index: `split_index = int(len(X) * train_ratio)`.\n"
         "3. Validates that `split_index > 0` and `split_index < len(X)`; if not, raise `ValueError(\"Split ratio results in an empty split\")`.\n"
-        "4. Slices arrays strictly by time without shuffling:\n"
-        "   - `X_train = X[:split_index]`, `X_val = X[split_index:]`\n"
-        "   - `y_train = y[:split_index]`, `y_val = y[split_index:]`\n"
+        "4. Slices feature matrix and target arrays sequentially at the split index without shuffling to isolate earlier training history from later validation records.\n"
         "5. Returns a dictionary:\n"
         "   `{\"X_train\": X_train, \"X_val\": X_val, \"y_train\": y_train, \"y_val\": y_val, \"split_index\": split_index}`"
     ),

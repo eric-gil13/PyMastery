@@ -153,18 +153,18 @@ CHALLENGE_1 = {
     "category": "Tensor Foundations",
     "description": (
         "Construct typed 2D PyTorch tensors from nested Python lists, validate dimensional "
-        "compatibility for linear algebra, and execute matrix multiplication with torch.matmul."
+        "compatibility for linear algebra, and execute matrix multiplication between tensors."
     ),
     "instructions": (
         "Write a function `init_tensor_matrices(matrix_a: list, matrix_b: list, zeros_shape: tuple = (2, 2)) -> dict` that:\n"
-        "1. Converts `matrix_a` to a PyTorch tensor with `dtype=torch.float32`.\n"
-        "2. Converts `matrix_b` to a PyTorch tensor with `dtype=torch.float32`.\n"
-        "3. Validates that both tensors are 2-dimensional. If either `tensor_a.ndim != 2` or `tensor_b.ndim != 2`, "
+        "1. Converts `matrix_a` to a 32-bit floating point PyTorch tensor named `tensor_a`.\n"
+        "2. Converts `matrix_b` to a 32-bit floating point PyTorch tensor named `tensor_b`.\n"
+        "3. Validates that both tensors are 2-dimensional. If either tensor is not 2-dimensional, "
         "raise `ValueError(\"Inputs must be 2D matrices\")`.\n"
         "4. Validates that the inner dimensions match for matrix multiplication (`tensor_a.shape[1] == tensor_b.shape[0]`). "
         "If not, raise `ValueError(\"Incompatible shapes for matmul\")`.\n"
-        "5. Computes the matrix multiplication product using `torch.matmul(tensor_a, tensor_b)`.\n"
-        "6. Allocates an all-zeros tensor named `zeros_tensor` with the specified `zeros_shape` and `dtype=torch.float32`.\n"
+        "5. Computes the matrix multiplication product between `tensor_a` and `tensor_b` as `product`.\n"
+        "6. Allocates an all-zeros 32-bit floating point tensor named `zeros_tensor` with the specified `zeros_shape`.\n"
         "7. Returns a dictionary containing:\n"
         "   `{\"tensor_a\": tensor_a, \"tensor_b\": tensor_b, \"product\": product, \"zeros_tensor\": zeros_tensor, \"shape_product\": tuple(product.shape)}`"
     ),
@@ -182,7 +182,7 @@ def init_tensor_matrices(matrix_a: list, matrix_b: list, zeros_shape: tuple = (2
     Returns:
         Dictionary with 'tensor_a', 'tensor_b', 'product', 'zeros_tensor', 'shape_product'
     """
-    # TODO: Implement tensor initialization, validation, matmul, and zeros buffer
+    # TODO: Implement tensor initialization, validation, matrix multiplication, and zeros buffer
     pass
 ''',
     "reference_solution": r'''import torch
@@ -287,12 +287,11 @@ CHALLENGE_2 = {
     "instructions": (
         "Write a function `bridge_numpy_to_tensor(np_arr: np.ndarray, target_device: str = \"cpu\") -> dict` that:\n"
         "1. Validates that `np_arr` is an instance of `np.ndarray`. If not, raise `TypeError(\"Input must be a numpy.ndarray\")`.\n"
-        "2. Converts `np_arr` to a PyTorch tensor named `tensor` using `torch.from_numpy(np_arr)` (zero-copy memory sharing).\n"
-        "3. Verifies zero-copy memory sharing by checking `np.shares_memory(np_arr, tensor.numpy())` and stores boolean `shares_memory`.\n"
-        "4. Safely resolves `target_device`: If `target_device.startswith(\"cuda\")` and `not torch.cuda.is_available()`, "
-        "fallback to `\"cpu\"`. Create a device object `device = torch.device(resolved_device)`.\n"
-        "5. Transfers the tensor to the resolved device: `device_tensor = tensor.to(device)`.\n"
-        "6. Creates an independent, cloned tensor `cloned_tensor = tensor.clone()` that does not share memory with `np_arr`.\n"
+        "2. Creates a PyTorch tensor named `tensor` that shares underlying memory with the NumPy array `np_arr`.\n"
+        "3. Verifies whether the NumPy array and tensor share the same underlying memory buffer, storing the boolean result in `shares_memory`.\n"
+        "4. Safely resolves `target_device`: if CUDA is requested but unavailable on the host system, fallback to `\"cpu\"`. Construct the corresponding device object.\n"
+        "5. Transfers the tensor to the resolved target device, storing it as `device_tensor`.\n"
+        "6. Creates an independent clone of the tensor named `cloned_tensor` that does not share memory with `np_arr`.\n"
         "7. Returns a dictionary containing:\n"
         "   `{\"tensor\": tensor, \"device_tensor\": device_tensor, \"cloned_tensor\": cloned_tensor, \"shares_memory\": shares_memory, \"device\": str(device_tensor.device)}`"
     ),

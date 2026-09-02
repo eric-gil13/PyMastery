@@ -163,7 +163,7 @@ best_model = grid.best_estimator_
       slug: 'stratified-cross-validator',
       difficulty: 'Beginner',
       category: 'Model Selection',
-      summary: 'Evaluate model generalization variance using Stratified K-Fold cross-validation and compute summary performance statistics.',
+      summary: 'Evaluate model generalization variance using stratified K-fold cross-validation and compute summary performance statistics.',
       mentalModel5s: 'Rotate 5 folds so every single sample gets evaluated once, then calculate the average and stability.',
       visualAnalogy: 'Asking 5 different judges to evaluate an ice skater and computing both the average score and the consistency across judges.',
       pitfalls: [
@@ -186,13 +186,13 @@ best_model = grid.best_estimator_
    - If \`n_splits < 2\`, raise \`ValueError("n_splits must be at least 2")\`.
    - If \`len(X) != len(y)\`, raise \`ValueError("X and y length mismatch")\`.
    - If \`len(X) == 0\`, raise \`ValueError("Arrays cannot be empty")\`.
-2. Sets up \`cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=random_state)\`.
-3. Computes cross-validation scores via \`cross_val_score(estimator, X, y, cv=cv, scoring=scoring)\`.
-4. Calculates summary statistics:
-   - \`mean_score\`: float from \`np.mean(scores)\`
-   - \`std_score\`: float from \`np.std(scores)\`
-   - \`min_score\`: float from \`np.min(scores)\`
-   - \`max_score\`: float from \`np.max(scores)\`
+2. Configures a stratified K-fold cross-validation splitting strategy with \`n_splits\` folds, shuffling enabled, and the specified \`random_state\` seed.
+3. Evaluates model generalization across the cross-validation splits using the requested \`scoring\` metric to obtain \`cv_scores\`.
+4. Calculates summary performance statistics across all fold scores:
+   - \`mean_score\`: float average score across folds
+   - \`std_score\`: float standard deviation of scores
+   - \`min_score\`: float lowest score observed across folds
+   - \`max_score\`: float highest score observed across folds
 5. Returns a dictionary:
    \`{"cv_scores": scores, "mean_score": mean_score, "std_score": std_score, "min_score": min_score, "max_score": max_score}\`.`,
       hints: [
@@ -205,7 +205,7 @@ from sklearn.model_selection import StratifiedKFold, cross_val_score
 
 def evaluate_model_cv(estimator, X: np.ndarray, y: np.ndarray, n_splits: int = 5, scoring: str = "accuracy", random_state: int = 42) -> dict:
     """
-    Evaluate estimator performance using Stratified K-Fold cross-validation.
+    Evaluate model generalization using stratified K-fold cross-validation.
 
     Args:
         estimator: Scikit-learn classifier
@@ -218,7 +218,7 @@ def evaluate_model_cv(estimator, X: np.ndarray, y: np.ndarray, n_splits: int = 5
     Returns:
         dict with cv_scores, mean_score, std_score, min_score, max_score
     """
-    # TODO: Validate inputs, run StratifiedKFold cross_val_score, compute stats, return dict
+    # TODO: Validate inputs, evaluate cross-validation scores, compute stats, return dict
     pass
 `,
       solutionCode: `import numpy as np
@@ -311,7 +311,7 @@ scores = cross_val_score(clf, X, y, cv=cv)`,
       slug: 'hyperparameter-grid-search-optimizer',
       difficulty: 'Beginner',
       category: 'Model Selection',
-      summary: 'Systematically optimize DecisionTreeClassifier hyperparameters over a grid of candidate configurations using GridSearchCV.',
+      summary: 'Perform an exhaustive hyperparameter search over candidate configurations across cross-validation splits and extract the optimal parameters, score, and fitted estimator.',
       mentalModel5s: 'GridSearchCV tests every parameter recipe across multiple folds and returns the winning model baked on the whole dataset.',
       visualAnalogy: 'A chef systematically testing different combinations of oven temperature and baking time to find the crispiest cookie recipe.',
       pitfalls: [
@@ -334,11 +334,11 @@ scores = cross_val_score(clf, X, y, cv=cv)`,
    - If \`param_grid\` is empty or not a dict, raise \`ValueError("param_grid cannot be empty")\`.
    - If \`len(X) != len(y)\`, raise \`ValueError("X and y length mismatch")\`.
    - If \`cv < 2\`, raise \`ValueError("cv must be at least 2")\`.
-2. Instantiates base estimator \`tree = DecisionTreeClassifier(random_state=random_state)\`.
-3. Creates \`GridSearchCV(estimator=tree, param_grid=param_grid, cv=cv, scoring=scoring, n_jobs=1)\`.
-4. Fits the grid search on \`(X, y)\`.
+2. Instantiates a baseline decision tree classifier seeded with \`random_state\` for reproducibility.
+3. Configures an exhaustive hyperparameter grid search optimizer across cross-validation splits using \`param_grid\`, \`cv\` folds, the requested \`scoring\` metric, and \`n_jobs=1\`.
+4. Executes the hyperparameter grid search optimization across the dataset \`(X, y)\`.
 5. Returns a dictionary:
-   - \`"grid_search"\`: the fitted GridSearchCV instance
+   - \`"grid_search"\`: the fitted grid search instance
    - \`"best_params"\`: dict of best parameters (\`grid.best_params_\`)
    - \`"best_score"\`: float average validation score (\`float(grid.best_score_)\`)
    - \`"best_estimator"\`: the refitted best estimator (\`grid.best_estimator_\`).`,
@@ -353,7 +353,7 @@ from sklearn.model_selection import GridSearchCV
 
 def tune_decision_tree_grid(X: np.ndarray, y: np.ndarray, param_grid: dict, cv: int = 5, scoring: str = "f1_weighted", random_state: int = 42) -> dict:
     """
-    Tune DecisionTreeClassifier hyperparameters using exhaustive grid search.
+    Tune decision tree hyperparameters using exhaustive grid search across cross-validation folds.
 
     Args:
         X: Feature matrix
@@ -366,7 +366,7 @@ def tune_decision_tree_grid(X: np.ndarray, y: np.ndarray, param_grid: dict, cv: 
     Returns:
         dict with grid_search, best_params, best_score, best_estimator
     """
-    # TODO: Validate inputs, instantiate DecisionTreeClassifier and GridSearchCV, fit, return dict
+    # TODO: Validate inputs, configure grid search across CV folds, fit, return dict
     pass
 `,
       solutionCode: `import numpy as np

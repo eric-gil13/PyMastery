@@ -394,12 +394,12 @@ balance = np.cumsum(daily_cashflows)`
       instructions: `Given a 2D NumPy array \`scores\` of shape \`(N, M)\` representing exam scores for $N$ students across $M$ exams, compute summary analytics:
 
 **Requirements:**
-1. Compute \`student_averages\`: 1D array of shape \`(N,)\` with each student's average across all exams (\`axis=1\`).
-2. Compute \`exam_means\`: 1D array of shape \`(M,)\` with the class average for each exam (\`axis=0\`).
-3. Compute \`exam_stds\`: 1D array of shape \`(M,)\` with the standard deviation for each exam (\`axis=0\`).
-4. Identify \`top_student_idx\`: integer index of the student with the highest average score (\`np.argmax\`).
-5. Identify \`hardest_exam_idx\`: integer index of the exam with the lowest average score (\`np.argmin\`).
-6. Compute \`mean_centered_scores\`: 2D array of shape \`(N, M)\` where each student's personal mean is subtracted from their scores (use \`keepdims=True\` for clean broadcasting).
+1. Compute \`student_averages\`: 1D array of shape \`(N,)\` representing each student's average across all exams.
+2. Compute \`exam_means\`: 1D array of shape \`(M,)\` representing the class average for each exam.
+3. Compute \`exam_stds\`: 1D array of shape \`(M,)\` representing the standard deviation for each exam.
+4. Identify \`top_student_idx\`: integer index of the student with the highest average score.
+5. Identify \`hardest_exam_idx\`: integer index of the exam with the lowest average score.
+6. Compute \`mean_centered_scores\`: 2D array of shape \`(N, M)\` where each student's personal mean is subtracted from their scores, preserving dimensions during the intermediate average calculation for clean broadcasting.
 7. Return all 6 outputs in a dictionary. NO Python loops allowed!`,
       hints: [
         'Use `np.mean(scores, axis=1)` to average across exams for each student.',
@@ -604,7 +604,7 @@ def idiomatic_scorecard(scores):
       slug: 'cumulative-cashflow-outlier-flagging',
       difficulty: 'Intermediate',
       category: 'Cumulative Operations & Statistics',
-      summary: 'Track running treasury balances with cumsum and detect extreme transaction outliers using standard deviation thresholds without loops.',
+      summary: 'Track running treasury balances and detect extreme transaction outliers using standard deviation thresholds without loops.',
       mentalModel5s: 'np.cumsum accumulates running balance across time. Flag transactions whose absolute distance from the mean exceeds k * std.',
       visualAnalogy: 'Like watching a bank account balance line chart rise and fall with every paycheck and bill, while an automated fraud detector flags unexpected giant spikes.',
       pitfalls: [
@@ -626,14 +626,14 @@ def idiomatic_scorecard(scores):
       instructions: `A quantitative hedge fund tracks a sequence of daily cashflow events (deposits as positive values, withdrawals as negative values). Build a vectorized analytics function:
 
 **Requirements:**
-1. Compute \`running_balance\`: 1D array of cumulative balances over time using \`np.cumsum\`.
-2. Compute \`net_cashflow\`: float total net cash moved (\`np.sum\`).
-3. Compute \`mean_transaction\`: float mean of transactions (\`np.mean\`).
-4. Compute \`std_transaction\`: float standard deviation of transactions (\`np.std\`).
-5. Identify \`min_balance_idx\`: integer index where \`running_balance\` dipped to its lowest point (\`np.argmin\`).
-6. Identify \`max_balance_idx\`: integer index where \`running_balance\` reached its peak (\`np.argmax\`).
+1. Compute \`running_balance\`: 1D array representing the running cumulative balance over time.
+2. Compute \`net_cashflow\`: float total net cash moved.
+3. Compute \`mean_transaction\`: float mean of transactions.
+4. Compute \`std_transaction\`: float standard deviation of transactions.
+5. Identify \`min_balance_idx\`: integer index where \`running_balance\` reached its minimum value.
+6. Identify \`max_balance_idx\`: integer index where \`running_balance\` reached its peak value.
 7. Compute \`outlier_mask\`: 1D boolean array where \`True\` flags transactions where $|\\text{tx} - \\text{mean}| > \\text{threshold\\_std} \\times \\text{std}$.
-8. Compute \`outlier_indices\`: 1D integer array containing the index locations of outliers (\`np.flatnonzero\`).
+8. Compute \`outlier_indices\`: 1D integer array containing the index locations of outliers.
 9. Return all metrics in a dictionary. NO Python loops allowed!`,
       hints: [
         'Compute running balance via `np.cumsum(transactions)`.',

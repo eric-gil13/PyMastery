@@ -160,9 +160,9 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Shapes & Reshaping",
     "description": (
-        "Transform flat 1D data streams into 2D matrices using shape inference (-1) and flatten them back. "
-        "Learn to validate dimensions, inspect .shape and .ndim, let NumPy infer row counts with -1, "
-        "and restore flat sequences using .flatten()."
+        "Transform flat 1D data streams into 2D matrices by automatically inferring dimensions and unfolding them back. "
+        "Learn to validate dimensions, inspect .shape and .ndim, infer row counts dynamically, "
+        "and restore flat sequences."
     ),
     "instructions": (
         "Write a function `reshape_stream_to_grid(stream: np.ndarray, num_cols: int) -> dict` that:\n"
@@ -170,8 +170,8 @@ CHALLENGE_1 = {
         "   - If `stream.ndim != 1`, raise `ValueError(\"Input stream must be a 1D array\")`.\n"
         "   - If `num_cols <= 0`, raise `ValueError(\"num_cols must be positive\")`.\n"
         "   - If `stream.size % num_cols != 0`, raise `ValueError(f\"Stream of size {stream.size} cannot be reshaped into {num_cols} columns\")`.\n"
-        "2. Reshapes `stream` into a 2D matrix named `\"grid\"` using `-1` to infer rows: `stream.reshape(-1, num_cols)`.\n"
-        "3. Flattens `grid` back into a 1D array named `\"recovered_flat\"` using `grid.flatten()`.\n"
+        "2. Reshapes `stream` into a 2D matrix named `\"grid\"` with `num_cols` columns, automatically inferring the row count.\n"
+        "3. Flattens `grid` back into a 1D array named `\"recovered_flat\"`, unfolded into a flat 1D sequence.\n"
         "4. Returns a dictionary with:\n"
         "   `{\"original_shape\": stream.shape, \"original_ndim\": int(stream.ndim), \"grid\": grid, \"grid_shape\": grid.shape, \"grid_rows\": int(grid.shape[0]), \"grid_cols\": int(grid.shape[1]), \"recovered_flat\": recovered_flat}`"
     ),
@@ -188,7 +188,7 @@ def reshape_stream_to_grid(stream: np.ndarray, num_cols: int) -> dict:
     Returns:
         Dictionary containing metadata, reshaped grid, and recovered 1D array
     """
-    # TODO: Validate inputs, reshape to 2D with -1, flatten back, and return dict
+    # TODO: Validate inputs, reshape to a 2D grid with inferred row count, flatten back to 1D, and return dict
     pass
 ''',
     "reference_solution": r'''import numpy as np
@@ -302,15 +302,15 @@ CHALLENGE_2 = {
     ),
     "instructions": (
         "Write a function `format_multichannel_tensor(raw_stream: np.ndarray, num_channels: int, height: int, width: int = -1) -> dict` that:\n"
-        "1. Normalizes input: If `raw_stream.ndim > 1`, flatten it first using `raw = raw_stream.flatten()`; otherwise `raw = raw_stream`.\n"
+        "1. Normalizes input: If `raw_stream` has more than 1 dimension, flatten it first into a 1D array named `raw`; otherwise `raw = raw_stream`.\n"
         "2. Validates parameters:\n"
         "   - If `num_channels <= 0` or `height <= 0`, raise `ValueError(\"Channels and height must be positive integers\")`.\n"
         "   - If `width == -1`: verify that `raw.size % (num_channels * height) == 0`. If not, raise `ValueError(f\"Data of size {raw.size} cannot be divided into {num_channels} channels of height {height}\")`.\n"
         "   - If `width > 0`: verify that `raw.size == num_channels * height * width`. If not, raise `ValueError(f\"Expected {num_channels * height * width} elements, but got {raw.size}\")`.\n"
         "   - If `width <= 0` and `width != -1`: raise `ValueError(\"width must be positive or -1\")`.\n"
         "3. Reshapes `raw` into a 3D tensor of shape `(num_channels, height, inferred_or_given_width)`.\n"
-        "4. Extracts the 2D slice for channel 0: `channel_0 = tensor[0, :, :]` (shape `(height, width)`).\n"
-        "5. Computes `channel_means` as a list of float average values for each channel: `[float(np.mean(tensor[c])) for c in range(num_channels)]`.\n"
+        "4. Extracts the 2D slice for channel 0 named `\"channel_0\"` (shape `(height, width)`).\n"
+        "5. Computes `channel_means` as a list of float values representing the mean of each channel across all its elements.\n"
         "6. Returns a dictionary with:\n"
         "   `{\"tensor\": tensor, \"shape\": tensor.shape, \"ndim\": int(tensor.ndim), \"size\": int(tensor.size), \"channel_0\": channel_0, \"channel_means\": channel_means}`"
     ),

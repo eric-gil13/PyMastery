@@ -155,7 +155,7 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Boolean Filtering & Selection",
     "description": (
-        "Filter records meeting compound salary and experience conditions using .loc, "
+        "Filter records meeting compound salary and experience conditions, "
         "project target columns safely with defensive copying, and reset the index."
     ),
     "instructions": (
@@ -164,9 +164,9 @@ CHALLENGE_1 = {
         "   - If `df` is not a `pd.DataFrame`, raise `ValueError(\"df must be a pandas DataFrame\")`.\n"
         "   - If `min_salary < 0` or `min_experience < 0`, raise `ValueError(\"Thresholds must be non-negative\")`.\n"
         "   - If any column in `target_columns` is not present in `df.columns`, raise `ValueError(\"Target column not found in DataFrame\")`.\n"
-        "2. Filters rows where `(df['salary'] >= min_salary) & (df['years_experience'] >= min_experience)`.\n"
-        "3. Uses `.loc` to select only `target_columns` and calls `.copy()` to avoid SettingWithCopyWarning.\n"
-        "4. Resets the index with `.reset_index(drop=True)`.\n"
+        "2. Filters rows where salary is greater than or equal to `min_salary`, and years of experience is greater than or equal to `min_experience`.\n"
+        "3. Selects only the columns specified in `target_columns` and creates a defensive copy of the subset to avoid SettingWithCopyWarning.\n"
+        "4. Resets the row index to a clean 0-based sequence (dropping the previous index).\n"
         "5. Returns the filtered DataFrame."
     ),
     "starter_code": r'''import pandas as pd
@@ -184,7 +184,7 @@ def filter_high_earners(df: pd.DataFrame, min_salary: float, min_experience: int
     Returns:
         Filtered, copied DataFrame with reset index.
     """
-    # TODO: Validate inputs, apply boolean mask with .loc, copy, and reset index
+    # TODO: Validate inputs, apply boolean filter, copy subset, and reset index
     pass
 ''',
     "reference_solution": r'''import pandas as pd
@@ -288,8 +288,7 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "Positional Indexing",
     "description": (
-        "Extract sub-tables and corner coordinates using purely integer positional indexing (.iloc), "
-        "with robust boundary checking."
+        "Extract sub-tables and corner coordinates using integer positional indexing with robust boundary checking."
     ),
     "instructions": (
         "Write a function `slice_subtable(df: pd.DataFrame, row_start: int, row_end: int, col_indices: list) -> dict` that:\n"
@@ -297,17 +296,17 @@ CHALLENGE_2 = {
         "   - If `df` is not a `pd.DataFrame`, raise `ValueError(\"df must be a pandas DataFrame\")`.\n"
         "   - If `row_start < 0` or `row_end > len(df)` or `row_start >= row_end`, raise `IndexError(\"Invalid row slice boundaries\")`.\n"
         "   - If any index in `col_indices` is `< 0` or `>= df.shape[1]`, raise `IndexError(\"Column index out of bounds\")`.\n"
-        "2. Extracts the sub-table using `.iloc[row_start:row_end, col_indices].copy()`.\n"
-        "3. Extracts the scalar value at the top-left: `sub_df.iloc[0, 0]`.\n"
-        "4. Extracts the scalar value at the bottom-right: `sub_df.iloc[-1, -1]`.\n"
-        "5. Computes the shape as a tuple of ints: `(int(sub_df.shape[0]), int(sub_df.shape[1]))`.\n"
+        "2. Extracts the sub-table bounded by row positions `[row_start:row_end]` and column positions in `col_indices`, creating a defensive copy.\n"
+        "3. Extracts the scalar value at the top-left corner (`top_left`).\n"
+        "4. Extracts the scalar value at the bottom-right corner (`bottom_right`).\n"
+        "5. Computes the shape of the sliced sub-table as a tuple of integers (`shape`: `(num_rows, num_cols)`).\n"
         "6. Returns a dictionary with keys: `\"sub_table\"`, `\"top_left\"`, `\"bottom_right\"`, `\"shape\"`."
     ),
     "starter_code": r'''import pandas as pd
 
 def slice_subtable(df: pd.DataFrame, row_start: int, row_end: int, col_indices: list) -> dict:
     """
-    Extract a sub-table and its corner elements using integer positional indexing (.iloc).
+    Extract a sub-table and its corner elements using integer positional indexing.
     
     Args:
         df: Input pandas DataFrame.
@@ -318,7 +317,7 @@ def slice_subtable(df: pd.DataFrame, row_start: int, row_end: int, col_indices: 
     Returns:
         Dictionary with keys: 'sub_table', 'top_left', 'bottom_right', 'shape'.
     """
-    # TODO: Validate boundaries, slice sub-table with .iloc, extract corners, and return dict
+    # TODO: Validate boundaries, slice sub-table, extract corners, and return dict
     pass
 ''',
     "reference_solution": r'''import pandas as pd

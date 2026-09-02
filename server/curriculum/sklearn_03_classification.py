@@ -115,9 +115,9 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Classification",
     "description": (
-        "Train a Logistic Regression classifier on customer usage data, generate test predictions, "
-        "and calculate comprehensive diagnostic metrics: accuracy, precision, recall, F1-score, "
-        "and the confusion matrix."
+        "Train a logistic regression classifier for customer churn prediction, generate test set "
+        "predictions, and evaluate model performance across key diagnostic metrics: accuracy, precision, "
+        "recall, F1 score, and the classification confusion matrix."
     ),
     "instructions": (
         "Write a function `train_churn_classifier(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, random_state: int = 42) -> dict` that:\n"
@@ -125,14 +125,14 @@ CHALLENGE_1 = {
         "   - If `len(X_train) != len(y_train)`, raise `ValueError(\"X_train and y_train length mismatch\")`.\n"
         "   - If `len(X_test) != len(y_test)`, raise `ValueError(\"X_test and y_test length mismatch\")`.\n"
         "   - If `len(X_train) == 0` or `len(X_test) == 0`, raise `ValueError(\"Arrays must contain at least 1 sample\")`.\n"
-        "2. Fits a `LogisticRegression(max_iter=1000, random_state=random_state)` on `(X_train, y_train)`.\n"
-        "3. Predicts test classes: `y_pred = model.predict(X_test)`.\n"
-        "4. Computes:\n"
-        "   - `accuracy`: float from `accuracy_score(y_test, y_pred)`\n"
-        "   - `precision`: float from `precision_score(y_test, y_pred, zero_division=0)`\n"
-        "   - `recall`: float from `recall_score(y_test, y_pred, zero_division=0)`\n"
-        "   - `f1`: float from `f1_score(y_test, y_pred, zero_division=0)`\n"
-        "   - `confusion_matrix`: ndarray from `confusion_matrix(y_test, y_pred)`\n"
+        "2. Trains a logistic regression classifier on the training split `(X_train, y_train)` with maximum iterations set to 1000 and the specified `random_state` seed.\n"
+        "3. Generates discrete class predictions on the test set (`X_test`) into `y_pred`.\n"
+        "4. Computes test set diagnostic metrics:\n"
+        "   - `accuracy`: float classification accuracy score\n"
+        "   - `precision`: float positive predictive value (handling zero-division gracefully by setting to 0)\n"
+        "   - `recall`: float sensitivity / true positive rate (handling zero-division gracefully by setting to 0)\n"
+        "   - `f1`: float harmonic mean of precision and recall (handling zero-division gracefully by setting to 0)\n"
+        "   - `confusion_matrix`: ndarray representing the classification confusion matrix\n"
         "5. Returns a dictionary:\n"
         "   `{\"model\": model, \"y_pred\": y_pred, \"accuracy\": accuracy, \"precision\": precision, \"recall\": recall, \"f1\": f1, \"confusion_matrix\": confusion_matrix}`"
     ),
@@ -142,7 +142,7 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 def train_churn_classifier(X_train: np.ndarray, y_train: np.ndarray, X_test: np.ndarray, y_test: np.ndarray, random_state: int = 42) -> dict:
     """
-    Train Logistic Regression churn classifier and compute diagnostic metrics.
+    Train a logistic regression classifier and evaluate diagnostic metrics.
 
     Args:
         X_train: Training features of shape (n_samples, n_features)
@@ -248,7 +248,7 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "Classification",
     "description": (
-        "Train a DecisionTreeClassifier, extract Gini impurity-based feature importances, and rank "
+        "Train a decision tree classifier, extract impurity-based feature importances, and rank "
         "features in descending order to identify the most predictive driver."
     ),
     "instructions": (
@@ -257,9 +257,9 @@ CHALLENGE_2 = {
         "   - If `len(X_train) != len(y_train)`, raise `ValueError(\"X_train and y_train length mismatch\")`.\n"
         "   - If `X_train.shape[1] != len(feature_names)`, raise `ValueError(\"feature_names count must match number of columns in X_train\")`.\n"
         "   - If `len(feature_names) == 0`, raise `ValueError(\"feature_names cannot be empty\")`.\n"
-        "2. Fits a `DecisionTreeClassifier(max_depth=max_depth, random_state=random_state)` on `(X_train, y_train)`.\n"
-        "3. Extracts `tree.feature_importances_`.\n"
-        "4. Ranks features from highest importance to lowest importance.\n"
+        "2. Trains a decision tree classifier on the training split `(X_train, y_train)` using `max_depth` and the provided `random_state` seed.\n"
+        "3. Extracts the computed feature importance scores from the trained tree.\n"
+        "4. Ranks feature names in descending order based on their importance values.\n"
         "5. Returns a dictionary:\n"
         "   - `\"model\"`: fitted DecisionTreeClassifier\n"
         "   - `\"feature_importances\"`: dict mapping each feature name to its float importance\n"
@@ -272,7 +272,7 @@ from sklearn.tree import DecisionTreeClassifier
 
 def inspect_tree_feature_importances(X_train: np.ndarray, y_train: np.ndarray, feature_names: list[str], max_depth: Optional[int] = None, random_state: int = 42) -> dict:
     """
-    Train a DecisionTreeClassifier and rank features by Gini importance.
+    Train a decision tree classifier and rank features by importance.
 
     Args:
         X_train: Training feature matrix

@@ -8,7 +8,7 @@ export const CHALLENGE_1: Challenge = {
   slug: 'multi-dimensional-tensor-initializer',
   difficulty: 'Beginner',
   category: 'Tensor Foundations',
-  summary: 'Create typed float32 tensors from nested lists, validate dimensional compatibility, and compute matrix multiplication with torch.matmul.',
+  summary: 'Create typed float32 tensors from nested lists, validate dimensional compatibility, and perform matrix multiplication between tensors.',
   mentalModel5s: 'NumPy has ndarrays; PyTorch has Tensors. Tensors are typed arrays that execute on GPUs and record computation graphs for automatic differentiation.',
   visualAnalogy: 'Think of standard Python lists as loose folders of loose papers, while a PyTorch Tensor is an industrialized steel tray of identical numeric blocks ready for GPU factory processing.',
   pitfalls: [
@@ -30,12 +30,12 @@ export const CHALLENGE_1: Challenge = {
   instructions: `In deep learning, every layer transforms input representations via linear algebraic matrix projections: Y = X @ W + b.
 
 Write a function \`init_tensor_matrices(matrix_a: list, matrix_b: list, zeros_shape: tuple = (2, 2)) -> dict\` that:
-1. Converts \`matrix_a\` to a PyTorch tensor named \`"tensor_a"\` with \`dtype=torch.float32\`.
-2. Converts \`matrix_b\` to a PyTorch tensor named \`"tensor_b"\` with \`dtype=torch.float32\`.
-3. Validates that both tensors are 2-dimensional. If either \`tensor_a.ndim != 2\` or \`tensor_b.ndim != 2\`, raise \`ValueError("Inputs must be 2D matrices")\`.
+1. Converts \`matrix_a\` to a 32-bit floating point PyTorch tensor named \`"tensor_a"\`.
+2. Converts \`matrix_b\` to a 32-bit floating point PyTorch tensor named \`"tensor_b"\`.
+3. Validates that both tensors are 2-dimensional. If either tensor is not 2-dimensional, raise \`ValueError("Inputs must be 2D matrices")\`.
 4. Validates that the inner dimensions match for matrix multiplication (\`tensor_a.shape[1] == tensor_b.shape[0]\`). If not, raise \`ValueError("Incompatible shapes for matmul")\`.
-5. Computes the matrix multiplication product using \`torch.matmul(tensor_a, tensor_b)\`.
-6. Allocates an all-zeros tensor named \`"zeros_tensor"\` with the specified \`zeros_shape\` and \`dtype=torch.float32\`.
+5. Computes the matrix multiplication product between \`tensor_a\` and \`tensor_b\` as \`product\`.
+6. Allocates an all-zeros 32-bit floating point tensor named \`"zeros_tensor"\` with the specified \`zeros_shape\`.
 7. Returns a dictionary containing:
    \`{"tensor_a": tensor_a, "tensor_b": tensor_b, "product": product, "zeros_tensor": zeros_tensor, "shape_product": tuple(product.shape)}\``,
   hints: [
@@ -58,7 +58,7 @@ def init_tensor_matrices(matrix_a: list, matrix_b: list, zeros_shape: tuple = (2
     Returns:
         Dictionary with 'tensor_a', 'tensor_b', 'product', 'zeros_tensor', 'shape_product'
     """
-    # TODO: Implement tensor initialization, validation, matmul, and zeros buffer
+    # TODO: Implement tensor initialization, validation, matrix multiplication, and zeros buffer
     pass
 `,
   solutionCode: `import torch
@@ -189,11 +189,11 @@ export const CHALLENGE_2: Challenge = {
 
 Write a function \`bridge_numpy_to_tensor(np_arr: np.ndarray, target_device: str = "cpu") -> dict\` that:
 1. Validates that \`np_arr\` is an instance of \`np.ndarray\`. If not, raise \`TypeError("Input must be a numpy.ndarray")\`.
-2. Converts \`np_arr\` to a PyTorch tensor named \`"tensor"\` using \`torch.from_numpy(np_arr)\` (zero-copy memory sharing).
-3. Verifies zero-copy memory sharing by checking \`np.shares_memory(np_arr, tensor.numpy())\` and stores the boolean \`"shares_memory"\`.
-4. Safely resolves \`target_device\`: If \`target_device.startswith("cuda")\` and \`not torch.cuda.is_available()\`, fallback to \`"cpu"\`. Create a device object \`device = torch.device(resolved_device)\`.
-5. Transfers the tensor to the resolved device: \`device_tensor = tensor.to(device)\`.
-6. Creates an independent, cloned tensor \`"cloned_tensor" = tensor.clone()\` that does not share memory with \`np_arr\`.
+2. Creates a PyTorch tensor named \`"tensor"\` that shares underlying memory with the NumPy array \`np_arr\`.
+3. Verifies whether the NumPy array and tensor share the same underlying memory buffer, storing the boolean result in \`"shares_memory"\`.
+4. Safely resolves \`target_device\`: if CUDA is requested but unavailable on the host system, fallback to \`"cpu"\`. Construct the corresponding device object.
+5. Transfers the tensor to the resolved target device, storing it as \`"device_tensor"\`.
+6. Creates an independent clone of the tensor named \`"cloned_tensor"\` that does not share memory with \`np_arr\`.
 7. Returns a dictionary containing:
    \`{"tensor": tensor, "device_tensor": device_tensor, "cloned_tensor": cloned_tensor, "shares_memory": shares_memory, "device": str(device_tensor.device)}\``,
   hints: [
@@ -327,7 +327,7 @@ export const DAY01_TRACK: DayTrack = {
   id: 1,
   title: 'Part 1: Tensor Foundations & Math',
   subtitle: 'Understand multi-dimensional tensors, dtypes, device placement, and the NumPy bridge',
-  description: 'Master PyTorch tensor foundations: create multi-dimensional tensors, control floating-point precision, perform accelerated matrix multiplication with torch.matmul, bridge NumPy with zero-copy memory sharing, and handle device placement safely.',
+  description: 'Master PyTorch tensor foundations: create multi-dimensional tensors, control floating-point precision, perform accelerated matrix multiplication, bridge NumPy with zero-copy memory sharing, and handle device placement safely.',
   iconName: 'Cpu',
   badge: 'Part 1 • Tensor Foundations',
   libraryMechanics: {

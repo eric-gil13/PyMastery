@@ -158,24 +158,24 @@ CHALLENGE_1 = {
         "1. Validates inputs:\n"
         "   - If any sequence is empty, raise `ValueError(\"Inputs cannot be empty\")`.\n"
         "   - If `conf_matrix` is not a 2D array of shape `(2, 2)`, raise `ValueError(\"conf_matrix must be 2x2\")`.\n"
-        "2. Creates a 2x2 subplot figure: `fig, axes = plt.subplots(2, 2, figsize=(11, 9))`.\n"
+        "2. Creates a 2x2 grid of subplot axes with a figure size of 11 by 9 inches (`figsize=(11, 9)`).\n"
         "3. Panel (0, 0) - ROC Curve:\n"
-        "   - Plots `fpr` vs `tpr` with `color=\"#2563eb\"`, `linewidth=2`, `label=\"ROC\"`.\n"
-        "   - Plots dashed baseline `[0, 1]` vs `[0, 1]` with `color=\"gray\"`, `linestyle=\"--\"`.\n"
-        "   - Sets title to `\"ROC Curve\"`, x-label to `\"False Positive Rate\"`, y-label to `\"True Positive Rate\"`, enables legend and grid.\n"
+        "   - Plots `fpr` vs `tpr` with `color=\"#2563eb\"`, `linewidth=2`, and `label=\"ROC\"`.\n"
+        "   - Plots dashed chance baseline `[0, 1]` vs `[0, 1]` with `color=\"gray\"` and `linestyle=\"--\"`.\n"
+        "   - Sets the title to `\"ROC Curve\"`, the x-axis label to `\"False Positive Rate\"`, the y-axis label to `\"True Positive Rate\"`, and enables the legend and grid.\n"
         "4. Panel (0, 1) - Precision-Recall Curve:\n"
-        "   - Plots `recall` vs `precision` with `color=\"#059669\"`, `linewidth=2`, `label=\"PR\"`.\n"
-        "   - Sets title to `\"Precision-Recall Curve\"`, x-label to `\"Recall\"`, y-label to `\"Precision\"`, enables legend and grid.\n"
+        "   - Plots `recall` vs `precision` with `color=\"#059669\"`, `linewidth=2`, and `label=\"PR\"`.\n"
+        "   - Sets the title to `\"Precision-Recall Curve\"`, the x-axis label to `\"Recall\"`, the y-axis label to `\"Precision\"`, and enables the legend and grid.\n"
         "5. Panel (1, 0) - Loss Curves:\n"
         "   - Plots `epochs` vs `train_loss` (`color=\"#2563eb\"`, `label=\"Train Loss\"`).\n"
         "   - Plots `epochs` vs `val_loss` (`color=\"#dc2626\"`, `linestyle=\"--\"`, `label=\"Val Loss\"`).\n"
-        "   - Sets title to `\"Epoch Loss\"`, x-label to `\"Epoch\"`, y-label to `\"Loss\"`, enables legend and grid.\n"
+        "   - Sets the title to `\"Epoch Loss\"`, the x-axis label to `\"Epoch\"`, the y-axis label to `\"Loss\"`, and enables the legend and grid.\n"
         "6. Panel (1, 1) - Confusion Matrix:\n"
-        "   - Calls `axes[1, 1].imshow(conf_matrix, cmap=\"Blues\")`.\n"
-        "   - Iterates over each cell $(i, j)$ and calls `axes[1, 1].text(j, i, str(val), ha=\"center\", va=\"center\", color=..., fontweight=\"bold\")` using white text if `val > conf_matrix.max() / 2` else black.\n"
-        "   - Sets xticks and yticks to `[0, 1]` with labels `[\"Pred 0\", \"Pred 1\"]` and `[\"True 0\", \"True 1\"]`.\n"
-        "   - Sets title to `\"Confusion Matrix\"`, x-label to `\"Predicted\"`, y-label to `\"Actual\"`.\n"
-        "7. Applies `fig.tight_layout()` and returns `(fig, axes)`."
+        "   - Displays the confusion matrix as a heatmap image (`cmap=\"Blues\"`).\n"
+        "   - Annotates each cell $(i, j)$ with its integer value centered within the cell in bold text, using white text if `val > conf_matrix.max() / 2` else black for contrast.\n"
+        "   - Sets x-ticks and y-ticks to `[0, 1]` with tick labels `[\"Pred 0\", \"Pred 1\"]` and `[\"True 0\", \"True 1\"]`.\n"
+        "   - Sets the title to `\"Confusion Matrix\"`, the x-axis label to `\"Predicted\"`, and the y-axis label to `\"Actual\"`.\n"
+        "7. Applies tight layout padding and returns `(fig, axes)`."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
 import numpy as np
@@ -197,7 +197,7 @@ def create_diagnostic_grid(
     Returns:
         (fig, axes) where axes is a 2x2 ndarray of Axes
     """
-    # TODO: Validate inputs, create 2x2 grid, populate panels, tight_layout, return (fig, axes)
+    # TODO: Validate inputs, create 2x2 grid of subplot axes, populate all panels, apply tight layout, and return (fig, axes)
     pass
 ''',
     "reference_solution": r'''import matplotlib.pyplot as plt
@@ -393,18 +393,18 @@ CHALLENGE_2 = {
         "1. Validates inputs:\n"
         "   - If `len(dates) == 0`, `len(prices) == 0`, or `len(volumes) == 0`, raise `ValueError(\"Inputs cannot be empty\")`.\n"
         "   - If lengths do not match (`len(dates) != len(prices)` or `len(dates) != len(volumes)`), raise `ValueError(\"Sequence lengths must match\")`.\n"
-        "2. Creates a primary figure and axes: `fig, ax_vol = plt.subplots(figsize=(10, 5))`.\n"
-        "3. Creates a secondary twin axis: `ax_price = ax_vol.twinx()`.\n"
+        "2. Initializes a primary Figure and single Axes with a figure size of 10 by 5 inches (`figsize=(10, 5)`).\n"
+        "3. Creates a secondary y-axis sharing the same x-axis (`ax_price`).\n"
         "4. Primary Axis (`ax_vol`):\n"
-        "   - Plots volume as bars: `ax_vol.bar(dates, volumes, color=\"#94a3b8\", alpha=0.4, width=0.6, label=\"Volume\")`.\n"
-        "   - Sets y-label to `\"Volume (Shares)\"` and x-label to `\"Date\"`.\n"
-        "   - Sets title to `\"Price & Volume History\"`.\n"
+        "   - Renders trading volume as a bar chart (`color=\"#94a3b8\"`, `alpha=0.4`, `width=0.6`, `label=\"Volume\"`).\n"
+        "   - Sets the y-axis label to `\"Volume (Shares)\"` and the x-axis label to `\"Date\"`.\n"
+        "   - Sets the chart title to `\"Price & Volume History\"`.\n"
         "5. Secondary Axis (`ax_price`):\n"
-        "   - Plots price as a line: `ax_price.plot(dates, prices, color=\"#2563eb\", linewidth=2.2, label=\"Price ($)\")`.\n"
-        "   - Sets y-label to `\"Price ($)\"`.\n"
+        "   - Plots closing price as a line curve across `dates` (`color=\"#2563eb\"`, `linewidth=2.2`, `label=\"Price ($)\"`).\n"
+        "   - Sets the secondary y-axis label to `\"Price ($)\"`.\n"
         "6. Unified Legend:\n"
-        "   - Extracts lines/handles and labels from both `ax_vol` and `ax_price` and displays a merged legend on `ax_price` or `ax_vol`.\n"
-        "7. Returns `(fig, (ax_vol, ax_price))`."
+        "   - Combines artist handles and labels from both the primary volume axis and secondary price axis to display a single consolidated legend on either axis.\n"
+        "7. Returns the `(fig, (ax_vol, ax_price))` tuple."
     ),
     "starter_code": r'''import matplotlib.pyplot as plt
 from typing import List, Tuple, Any
@@ -420,7 +420,7 @@ def plot_volume_price_twin(
     Returns:
         (fig, (ax_vol, ax_price))
     """
-    # TODO: Validate inputs, create twinx, plot volume bars and price line, merge legend, return
+    # TODO: Validate inputs, create a secondary y-axis sharing the same x-axis, plot volume bars and price line, merge legend, and return (fig, (ax_vol, ax_price))
     pass
 ''',
     "reference_solution": r'''import matplotlib.pyplot as plt

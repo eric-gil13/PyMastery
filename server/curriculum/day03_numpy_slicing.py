@@ -198,12 +198,12 @@ CHALLENGE_1 = {
     "instructions": (
         "1. Implement `crop_bounding_box(grid: np.ndarray, row_start: int, row_end: int, col_start: int, col_end: int) -> dict`.\n"
         "2. `grid` is a 2D NumPy array of shape (H, W).\n"
-        "3. Slice the subgrid using `grid[row_start:row_end, col_start:col_end]`.\n"
-        "4. Extract the boundaries of the cropped subgrid:\n"
-        "   - `'top_row'`: the 1D first row of the crop (`crop[0, :]`)\n"
-        "   - `'bottom_row'`: the 1D last row of the crop (`crop[-1, :]`)\n"
-        "   - `'left_col'`: the 1D first column of the crop (`crop[:, 0]`)\n"
-        "   - `'right_col'`: the 1D last column of the crop (`crop[:, -1]`)\n"
+        "3. Extract the rectangular subgrid defined by the row and column boundaries, storing it under `'cropped'`.\n"
+        "4. Extract the perimeter boundaries of the cropped subgrid as 1D arrays:\n"
+        "   - `'top_row'`: the first row of the crop\n"
+        "   - `'bottom_row'`: the last row of the crop\n"
+        "   - `'left_col'`: the first column of the crop\n"
+        "   - `'right_col'`: the last column of the crop\n"
         "5. Return a dictionary with keys `'cropped'`, `'top_row'`, `'bottom_row'`, `'left_col'`, and `'right_col'`.\n"
         "6. Do not copy the arrays; return zero-copy views directly from slicing."
     ),
@@ -232,7 +232,7 @@ def crop_bounding_box(
             'top_row': 1D top boundary row (first row of cropped region)
             'bottom_row': 1D bottom boundary row (last row of cropped region)
             'left_col': 1D left boundary column (first column of cropped region)
-            'right_col': 1D last column of cropped region)
+            'right_col': 1D last column of cropped region
     """
     # TODO: Extract cropped subgrid and its 4 perimeter edges using 2D slicing
     pass
@@ -346,17 +346,17 @@ CHALLENGE_2 = {
     "category": "Striding & Views",
     "description": (
         "In signal processing and image manipulation, downsampling (decimation) skips elements at regular intervals. "
-        "Your task is to write `decimate_and_isolate` which downsamples a 2D matrix using stride stepping (`::step`), "
+        "Your task is to write `decimate_and_isolate` which downsamples a 2D matrix using stride stepping, "
         "extracts alternating patterns (even indices, odd indices, and full reversal), and produces an independent "
-        "detached copy using `.copy()` so that subsequent mutations will not affect the original array."
+        "detached copy so that subsequent mutations will not affect the original array."
     ),
     "instructions": (
         "1. Implement `decimate_and_isolate(grid: np.ndarray, step: int = 2) -> dict`.\n"
         "2. Input `grid` is a 2D NumPy array, and `step` is a positive integer decimation factor.\n"
-        "3. Extract `'even_sample'`: a 2D view taking every `step` element starting from index 0 across both axes (`grid[::step, ::step]`).\n"
-        "4. Extract `'odd_sample'`: a 2D view taking every `step` element starting from index 1 across both axes (`grid[1::step, 1::step]`).\n"
-        "5. Extract `'reversed_grid'`: a 2D view with all rows and columns reversed (`grid[::-1, ::-1]`).\n"
-        "6. Create `'isolated_copy'`: an independent deep copy of `even_sample` using `.copy()`.\n"
+        "3. Extract `'even_sample'`: a 2D view taking every `step` element starting from index 0 across both axes.\n"
+        "4. Extract `'odd_sample'`: a 2D view taking every `step` element starting from index 1 across both axes.\n"
+        "5. Extract `'reversed_grid'`: a 2D view with all rows and columns reversed.\n"
+        "6. Create `'isolated_copy'`: an independent deep copy of `even_sample` that does not share memory with the original array.\n"
         "7. Return a dictionary containing these 4 keys.\n"
         "8. Verify that `even_sample`, `odd_sample`, and `reversed_grid` share memory with `grid`, but `isolated_copy` does NOT."
     ),
@@ -373,10 +373,10 @@ def decimate_and_isolate(grid: np.ndarray, step: int = 2) -> dict:
         
     Returns:
         dict containing:
-            'even_sample': 2D view taking every `step` element from index 0: grid[::step, ::step]
-            'odd_sample': 2D view taking every `step` element from index 1: grid[1::step, 1::step]
-            'reversed_grid': 2D view with all rows and columns reversed: grid[::-1, ::-1]
-            'isolated_copy': an independent deep copy of 'even_sample' using .copy()
+            'even_sample': 2D view taking every `step` element from index 0 across both axes
+            'odd_sample': 2D view taking every `step` element from index 1 across both axes
+            'reversed_grid': 2D view with all rows and columns reversed
+            'isolated_copy': an independent deep copy of 'even_sample'
     """
     # TODO: Implement stride stepping and independent copy isolation
     pass

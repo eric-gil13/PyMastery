@@ -177,13 +177,13 @@ CHALLENGE_1 = {
         "1. Validates inputs:\n"
         "   - If `df` is not a `pd.DataFrame` or `df.empty`, raise `ValueError(\"df must be a non-empty DataFrame\")`.\n"
         "   - If any of `['department', 'salary', 'employee_id']` are missing from `df.columns`, raise `KeyError(\"Missing required columns\")`.\n"
-        "2. Groups by `'department'` with `as_index=False` and applies named aggregations:\n"
-        "   - `'mean_salary'`: mean of `'salary'`\n"
-        "   - `'max_salary'`: max of `'salary'`\n"
-        "   - `'headcount'`: count of `'employee_id'`\n"
-        "3. Rounds `'mean_salary'` to 2 decimal places (`.round(2)`).\n"
-        "4. Sorts the output table by `'headcount'` descending, breaking ties by `'mean_salary'` descending (`ascending=[False, False]`).\n"
-        "5. Resets the index with `.reset_index(drop=True)`.\n"
+        "2. Groups records by department (retaining `'department'` as a standard column) and aggregates metrics:\n"
+        "   - `'mean_salary'`: average salary\n"
+        "   - `'max_salary'`: maximum salary\n"
+        "   - `'headcount'`: total count of employee IDs\n"
+        "3. Rounds `'mean_salary'` to 2 decimal places.\n"
+        "4. Sorts the resulting table by `'headcount'` descending, breaking ties by `'mean_salary'` descending.\n"
+        "5. Resets the row index to a sequential 0-based index.\n"
         "6. Returns the aggregated DataFrame."
     ),
     "starter_code": r'''import pandas as pd
@@ -198,7 +198,7 @@ def aggregate_department_metrics(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Aggregated, sorted pandas DataFrame with reset index.
     """
-    # TODO: Validate inputs, perform groupby named aggregation, sort, and return DataFrame
+    # TODO: Validate inputs, aggregate department metrics, sort, and return DataFrame
     pass
 ''',
     "reference_solution": r'''import pandas as pd
@@ -322,13 +322,13 @@ CHALLENGE_2 = {
         "   - If `sales_df` is not a `pd.DataFrame` or `sales_df.empty`, raise `ValueError(\"sales_df must be a non-empty DataFrame\")`.\n"
         "   - If `top_n <= 0`, raise `ValueError(\"top_n must be a positive integer\")`.\n"
         "   - If any of `['region', 'category', 'revenue', 'profit']` are missing from `sales_df.columns`, raise `KeyError(\"Missing required sales columns\")`.\n"
-        "2. Groups by `['region', 'category']` with `as_index=False` and aggregates:\n"
-        "   - `'total_revenue'`: sum of `'revenue'`\n"
-        "   - `'total_profit'`: sum of `'profit'`\n"
-        "3. Computes `'profit_margin'` as `(total_profit / total_revenue).round(4)`.\n"
-        "4. Sorts by `'region'` ascending and `'profit_margin'` descending (`by=['region', 'profit_margin'], ascending=[True, False]`).\n"
-        "5. Selects the top `top_n` rows per region using `.groupby('region', as_index=False).head(top_n)`.\n"
-        "6. Resets the index with `.reset_index(drop=True)`.\n"
+        "2. Groups records by region and category (retaining grouping keys as regular columns) and aggregates metrics:\n"
+        "   - `'total_revenue'`: sum of revenue\n"
+        "   - `'total_profit'`: sum of profit\n"
+        "3. Computes `'profit_margin'` as total profit divided by total revenue, rounded to 4 decimal places.\n"
+        "4. Sorts the aggregated records by `'region'` ascending, breaking ties by `'profit_margin'` descending.\n"
+        "5. Extracts the top `top_n` highest-margin categories within each region.\n"
+        "6. Resets the row index to a clean 0-based sequence.\n"
         "7. Returns the ranked DataFrame."
     ),
     "starter_code": r'''import pandas as pd
@@ -344,7 +344,7 @@ def rank_regional_performance(sales_df: pd.DataFrame, top_n: int = 3) -> pd.Data
     Returns:
         Ranked pandas DataFrame with reset index.
     """
-    # TODO: Validate inputs, multi-column groupby, compute margin, rank with head(top_n), and return DataFrame
+    # TODO: Validate inputs, group by region and category, compute margin, rank top categories, and return DataFrame
     pass
 ''',
     "reference_solution": r'''import pandas as pd

@@ -158,13 +158,13 @@ CHALLENGE_1 = {
     "description": (
         "Convert raw sensor readings into typed NumPy arrays, and initialize zero and one reference buffers. "
         "Learn the basics of creating 1D arrays from Python lists, selecting explicit dtypes (float64, int32), "
-        "and allocating constant buffers with np.zeros and np.ones."
+        "and allocating constant baseline buffers."
     ),
     "instructions": (
         "Write a function `init_sensor_data(raw_readings: list, baseline_count: int = 5) -> dict` that:\n"
         "1. Converts `raw_readings` into a NumPy array named `\"readings\"` with `dtype=np.float64`.\n"
         "2. Creates an array of zeros named `\"baseline_zeros\"` of length `baseline_count` with `dtype=np.float64`.\n"
-        "3. Creates an array of ones named `\"scale_ones\"` of length equal to `len(raw_readings)` with `dtype=np.float64`.\n"
+        "3. Creates an array of ones named `\"scale_ones\"` of length equal to the number of elements in `raw_readings` with `dtype=np.float64`.\n"
         "4. Creates an array of 32-bit integer status codes named `\"int_codes\"` by converting `raw_readings` to `dtype=np.int32`.\n"
         "5. Returns a dictionary containing all four arrays:\n"
         "   `{\"readings\": ..., \"baseline_zeros\": ..., \"scale_ones\": ..., \"int_codes\": ...}`"
@@ -278,8 +278,8 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "Array Creation",
     "description": (
-        "Generate linear stepped intervals using np.arange and evenly spaced coordinate samples using np.linspace. "
-        "Learn the distinction between step-driven sequences (arange) and count-driven sequences (linspace), "
+        "Generate linear stepped intervals and evenly spaced coordinate samples. "
+        "Learn the distinction between step-driven sequences and count-driven sequences, "
         "and validate numeric inputs against invalid bounds."
     ),
     "instructions": (
@@ -287,10 +287,10 @@ CHALLENGE_2 = {
         "1. Validates inputs:\n"
         "   - If `step <= 0`, raise `ValueError(\"Step size must be positive\")`.\n"
         "   - If `num_samples < 1`, raise `ValueError(\"num_samples must be at least 1\")`.\n"
-        "2. Generates a 1D array named `\"stepped_range\"` using `np.arange(start, stop, step)`.\n"
-        "3. Generates a 1D array named `\"linear_samples\"` using `np.linspace(start, stop, num_samples)`.\n"
-        "4. Generates a 1D array named `\"unit_intervals\"` of `num_samples` points between `0.0` and `1.0` using `np.linspace(0.0, 1.0, num_samples)`.\n"
-        "5. Calculates `\"step_count\"` as an integer representing the number of items in `stepped_range` (`int(stepped_range.size)`).\n"
+        "2. Generates a 1D array named `\"stepped_range\"` containing values starting from start, stopping before stop, incrementing by step.\n"
+        "3. Generates a 1D array named `\"linear_samples\"` containing num_samples evenly spaced values across [start, stop].\n"
+        "4. Generates a 1D array named `\"unit_intervals\"` containing num_samples evenly spaced values across [0.0, 1.0].\n"
+        "5. Calculates `\"step_count\"` as an integer representing the total count of elements in `stepped_range`.\n"
         "6. Returns a dictionary:\n"
         "   `{\"stepped_range\": ..., \"linear_samples\": ..., \"unit_intervals\": ..., \"step_count\": ...}`"
     ),
@@ -303,8 +303,8 @@ def generate_range_and_samples(start: float, stop: float, step: float, num_sampl
     Args:
         start: Start of the interval
         stop: End of the interval
-        step: Step size for np.arange
-        num_samples: Total number of points for np.linspace
+        step: Step size between sequence values
+        num_samples: Total number of evenly spaced sample points
         
     Returns:
         Dictionary with 'stepped_range', 'linear_samples', 'unit_intervals', 'step_count'

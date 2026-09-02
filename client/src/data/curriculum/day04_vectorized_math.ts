@@ -326,10 +326,10 @@ print("Clamped exp activations:", out)`,
       instructions: `Implement \`compute_financial_metrics\` to calculate essential pricing analytics using vectorized NumPy operations with ZERO Python loops.
 
 **Requirements:**
-1. Calculate \`'pct_return'\`: Percentage change \`(current_prices - baseline_prices) / baseline_prices\`.
-2. Calculate \`'abs_diff'\`: Absolute price movement \`np.abs(current_prices - baseline_prices)\`.
-3. Calculate \`'discounted'\`: Promotional prices \`current_prices * (1.0 - discount_rate)\`.
-4. Calculate \`'capped_prices'\`: Discounted prices clamped within \`[min_price_cap, max_price_cap]\` using \`np.clip\`.
+1. Calculate \`'pct_return'\`: Percentage change relative to baseline prices ((current - baseline) / baseline).
+2. Calculate \`'abs_diff'\`: Absolute price difference between current and baseline prices.
+3. Calculate \`'discounted'\`: Promotional prices after applying the fractional discount rate.
+4. Calculate \`'capped_prices'\`: Discounted prices clamped within \`[min_price_cap, max_price_cap]\`.
 5. Return a dictionary with keys: \`'pct_return'\`, \`'abs_diff'\`, \`'discounted'\`, and \`'capped_prices'\`.
 6. Works seamlessly across both 1D and 2D pricing matrices.
 7. Must NOT contain any \`for\` or \`while\` loops.`,
@@ -350,10 +350,10 @@ def compute_financial_metrics(
 ) -> dict:
     """
     Compute financial metrics using zero Python loops:
-    1. Percentage return: (current_prices - baseline_prices) / baseline_prices
-    2. Absolute price change: |current_prices - baseline_prices|
-    3. Discounted prices: current_prices * (1.0 - discount_rate)
-    4. Capped prices: discounted prices clamped to [min_price_cap, max_price_cap] using np.clip
+    1. Percentage return: relative change compared to baseline prices
+    2. Absolute price change: absolute difference between current and baseline prices
+    3. Discounted prices: prices after applying the specified discount rate
+    4. Capped prices: discounted prices clamped within [min_price_cap, max_price_cap]
     
     Args:
         current_prices: numpy array of current prices
@@ -549,7 +549,7 @@ AVX Operation:       [ * (1 - discount_rate) in 1 clock cycle ]`,
       slug: 'clamped-activation-function',
       difficulty: 'Intermediate',
       category: 'Universal Functions',
-      summary: 'Implement a custom clamped exponential decay activation function using np.clip and np.exp.',
+      summary: 'Implement a custom clamped exponential decay activation function with bounded outputs.',
       mentalModel5s: 'Chain ufuncs: np.clip(scale * np.exp(-decay * x) + bias, min_val, max_val). Each ufunc passes contiguous array data through fast C kernels.',
       visualAnalogy: 'A natural damping spring that smoothly decays large inputs toward zero, equipped with physical upper and lower stoppers (clamps) that prevent overshooting.',
       pitfalls: [
@@ -573,8 +573,8 @@ AVX Operation:       [ * (1 - discount_rate) in 1 clock cycle ]`,
 $$y = \\text{clip}\\left(\\text{scale} \\cdot e^{-\\text{decay} \\cdot x} + \\text{bias}, \\, \\text{min\\_val}, \\, \\text{max\\_val}\\right)$$
 
 **Requirements:**
-1. Calculate the raw transformation using \`scale * np.exp(-decay * x) + bias\`.
-2. Clamp values within \`[min_val, max_val]\` using \`np.clip\`.
+1. Calculate the raw exponential transformation: scale times the exponential of (-decay * x) plus bias.
+2. Clamp values within \`[min_val, max_val]\`.
 3. Return the clamped activation array with the identical shape as input \`x\`.
 4. Support arrays of any shape (1D, 2D, 3D) with zero Python loops.`,
       hints: [
@@ -594,7 +594,7 @@ def clamped_exp_activation(
 ) -> np.ndarray:
     """
     Compute clamped exponential decay activation using fast ufuncs:
-    y = np.clip(scale * np.exp(-decay * x) + bias, min_val, max_val)
+    y = scale * exp(-decay * x) + bias, clamped within [min_val, max_val]
     
     Args:
         x: input numpy array of arbitrary shape

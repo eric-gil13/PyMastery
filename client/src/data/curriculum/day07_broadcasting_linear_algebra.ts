@@ -610,7 +610,7 @@ def idiomatic_normalize(X, eps=1e-8):
       slug: 'weighted-portfolio-multiplier',
       difficulty: 'Intermediate',
       category: 'Matrix Multiplication & Finance',
-      summary: 'Compute multi-period weighted portfolio returns across multiple time steps using matrix-vector multiplication (@).',
+      summary: 'Compute multi-period weighted portfolio returns across multiple time steps using matrix multiplication.',
       mentalModel5s: 'Instead of looping over each asset to multiply and sum its contribution day by day, matrix multiplication returns @ weights evaluates the dot product of every day with the allocation vector in a single fast BLAS call.',
       visualAnalogy: 'Imagine a sound mixing board: each day brings several audio tracks (asset returns), and the slider weights blend them all down into one crisp master soundtrack (the portfolio return).',
       pitfalls: [
@@ -639,7 +639,7 @@ def idiomatic_normalize(X, eps=1e-8):
    - A 2D array of shape \`(N, P)\` representing \`P\` different portfolio strategies.
 3. Automatically normalize weights so they sum to 1.0 along the asset axis (\`axis=0\`). If the sum of weights is close to 0, raise \`ValueError("Weights sum to zero")\`.
 4. Validate dimensions: verify that \`returns.shape[1] == weights.shape[0]\`. If not, raise \`ValueError\`.
-5. Compute portfolio returns using the matrix multiplication operator \`@\`:
+5. Compute portfolio returns by computing the matrix-vector or matrix-matrix product:
    - Returns a 1D array of shape \`(T,)\` when weights is 1D.
    - Returns a 2D array of shape \`(T, P)\` when weights is 2D.
 6. STRICT REQUIREMENT: Zero Python loops.`,
@@ -652,7 +652,7 @@ def idiomatic_normalize(X, eps=1e-8):
 
 def compute_portfolio_returns(returns: np.ndarray, weights: np.ndarray) -> np.ndarray:
     """
-    Compute weighted portfolio returns using matrix multiplication (@).
+    Compute weighted portfolio returns using matrix multiplication.
     
     Args:
         returns: (T, N) array of asset returns over T time periods
@@ -861,12 +861,12 @@ Day 2: [Stock A, Stock B, Stock C]     [wC]  --> Port_Return[2]`,
 **Requirements:**
 1. Implement \`pairwise_euclidean_distance(X: np.ndarray, Y: np.ndarray) -> np.ndarray\`.
 2. \`X\` and \`Y\` are 2D arrays of shape \`(N, D)\` and \`(M, D)\`. If inputs are not 2D or feature dimensions mismatch, raise \`ValueError\`.
-3. Use the binomial expansion formula with NumPy broadcasting and matrix multiplication (\`@\`):
+3. Use the binomial expansion formula with NumPy broadcasting and matrix multiplication:
    $$\\|X_i - Y_j\\|^2 = \\|X_i\\|^2 + \\|Y_j\\|^2 - 2 (X_i \\cdot Y_j)$$
-   - Compute \`x_sq = np.sum(X**2, axis=1, keepdims=True)\` of shape \`(N, 1)\`
-   - Compute \`y_sq = np.sum(Y**2, axis=1, keepdims=True).T\` of shape \`(1, M)\`
-   - Compute \`cross = X @ Y.T\` of shape \`(N, M)\`
-4. Guarantee numerical stability: clamp squared distances to \`0.0\` using \`np.maximum(dist_sq, 0.0)\` before applying \`np.sqrt\`.
+   - Compute row squared norms of \`X\` as a column vector of shape \`(N, 1)\`
+   - Compute row squared norms of \`Y\` as a row vector of shape \`(1, M)\`
+   - Compute cross dot products across all pairs as an \`(N, M)\` matrix
+4. Guarantee numerical stability: clamp squared distances at a lower bound of \`0.0\` before applying the square root to prevent negative values from floating-point inaccuracies.
 5. Return a \`float64\` array of shape \`(N, M)\`.
 6. STRICT REQUIREMENT: Zero Python loops.`,
       hints: [
@@ -889,7 +889,7 @@ def pairwise_euclidean_distance(X: np.ndarray, Y: np.ndarray) -> np.ndarray:
     Returns:
         (N, M) float64 array of pairwise Euclidean distances
     """
-    # TODO: Implement zero-loop pairwise distance using expansion, broadcasting, and @
+    # TODO: Implement zero-loop pairwise distance using expansion, broadcasting, and linear algebra
     pass
 `,
       solutionCode: `import numpy as np

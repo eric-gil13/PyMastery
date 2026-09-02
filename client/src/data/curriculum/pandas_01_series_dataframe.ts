@@ -374,11 +374,11 @@ df = pd.DataFrame({
 
 Write a function \`build_employee_directory(raw_data: dict, bonus_rate: float = 0.10) -> dict\` that:
 1. Validates inputs: If \`raw_data\` is not a dict or is empty, raise \`ValueError("raw_data must be a non-empty dictionary")\`. If \`bonus_rate < 0\`, raise \`ValueError("bonus_rate must be non-negative")\`.
-2. Constructs a \`pandas.DataFrame\` from \`raw_data\`.
+2. Constructs a DataFrame table from \`raw_data\`.
 3. Adds a new column named \`"total_compensation"\` computed as \`salary + (salary * bonus_rate)\`.
-4. Extracts row count as an integer \`num_rows = int(df.shape[0])\` and column count \`num_cols = int(df.shape[1])\`.
-5. Extracts column names as a list of strings: \`columns = list(df.columns)\`.
-6. Calculates total payroll as a float: \`total_payroll = float(df["total_compensation"].sum())\`.
+4. Extracts the integer row count (\`num_rows\`) and column count (\`num_cols\`).
+5. Extracts the column names as a list of strings (\`columns\`).
+6. Calculates total payroll as a float (\`total_payroll\`) representing the sum of all employee total compensation values.
 7. Returns a dictionary:
    \`{"dataframe": df, "num_rows": num_rows, "num_cols": num_cols, "columns": columns, "total_payroll": total_payroll}\`.`,
       hints: [
@@ -521,15 +521,15 @@ df['total_compensation'] = df['salary'] + (df['salary'] * bonus_rate)`,
 
 Write a function \`inspect_dataframe(df: pd.DataFrame) -> dict\` that:
 1. Validates input: If \`df\` is not a \`pd.DataFrame\` or \`df.empty\`, raise \`ValueError("df must be a non-empty pandas DataFrame")\`.
-2. Extracts dimensions as a tuple: \`shape = (int(df.shape[0]), int(df.shape[1]))\`.
-3. Extracts data types as a dictionary mapping column names to dtype strings: \`{col: str(dtype) for col, dtype in df.dtypes.items()}\`.
-4. Identifies numeric columns using \`list(df.select_dtypes(include='number').columns)\`.
+2. Extracts dimensions as an integer tuple \`shape\` containing \`(num_rows, num_cols)\`.
+3. Extracts data types as a dictionary \`dtypes\` mapping column names to dtype strings.
+4. Identifies numeric columns dynamically as a list of strings (\`numeric_columns\`).
 5. Computes summary stats for each numeric column in a dictionary \`stats\`:
-   - \`"mean"\`: \`float(df[col].mean())\`
-   - \`"std"\`: \`float(df[col].std(ddof=1))\` if row count > 1 else \`0.0\`
-   - \`"min"\`: \`float(df[col].min())\`
-   - \`"max"\`: \`float(df[col].max())\`
-6. Extracts the first row as a dictionary: \`first_row = df.iloc[0].to_dict()\`.
+   - \`"mean"\`: average value across the column as a float
+   - \`"std"\`: sample standard deviation (using 1 degree of freedom, \`ddof=1\`) as a float if row count > 1, else \`0.0\`
+   - \`"min"\`: minimum value in the column as a float
+   - \`"max"\`: maximum value in the column as a float
+6. Extracts the first row as a dictionary: \`first_row\` mapping column names to their values.
 7. Returns a dictionary:
    \`{"shape": shape, "dtypes": dtypes, "numeric_columns": numeric_cols, "stats": stats, "first_row": first_row}\`.`,
       hints: [

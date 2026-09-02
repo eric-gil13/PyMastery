@@ -358,12 +358,12 @@ sub = arr[0:3, :]  # Only extracts rows 0, 1, 2!`,
       instructions: `Given a 2D NumPy array \`grid\` of shape $(H, W)$, implement \`crop_bounding_box\` to crop a rectangular sub-matrix and extract its 4 perimeter boundaries.
 
 **Requirements:**
-1. Slice the subgrid using coordinate bounds: \`grid[row_start:row_end, col_start:col_end]\`.
-2. Extract the boundary edges from the cropped region:
-   - \`'top_row'\`: The first row of the crop (\`cropped[0, :]\`).
-   - \`'bottom_row'\`: The last row of the crop (\`cropped[-1, :]\`).
-   - \`'left_col'\`: The first column of the crop (\`cropped[:, 0]\`).
-   - \`'right_col'\`: The last column of the crop (\`cropped[:, -1]\`).
+1. Extract the rectangular subgrid defined by the row and column boundaries, storing it under \`'cropped'\`.
+2. Extract the boundary edges from the cropped region as 1D arrays:
+   - \`'top_row'\`: The first row of the crop.
+   - \`'bottom_row'\`: The last row of the crop.
+   - \`'left_col'\`: The first column of the crop.
+   - \`'right_col'\`: The last column of the crop.
 3. Return a dictionary containing keys: \`'cropped'\`, \`'top_row'\`, \`'bottom_row'\`, \`'left_col'\`, and \`'right_col'\`.
 4. Return zero-copy views directly from slicing without copying data.`,
       hints: [

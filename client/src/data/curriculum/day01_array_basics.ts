@@ -395,7 +395,7 @@ flags[0] = 4.9  # Correctly stores 4.9`,
 Write a function \`init_sensor_data(raw_readings: list, baseline_count: int = 5) -> dict\` that:
 1. Converts \`raw_readings\` into a NumPy array named \`"readings"\` with \`dtype=np.float64\`.
 2. Creates an array of zeros named \`"baseline_zeros"\` of length \`baseline_count\` with \`dtype=np.float64\`.
-3. Creates an array of ones named \`"scale_ones"\` of length equal to the number of readings (\`len(raw_readings)\`) with \`dtype=np.float64\`.
+3. Creates an array of ones named \`"scale_ones"\` of length equal to the number of elements in \`raw_readings\` with \`dtype=np.float64\`.
 4. Creates an array of 32-bit integer status codes named \`"int_codes"\` by converting \`raw_readings\` to \`dtype=np.int32\` (which truncates decimal values).
 5. Returns a dictionary containing all four arrays: \`{"readings": ..., "baseline_zeros": ..., "scale_ones": ..., "int_codes": ...}\`.`,
       hints: [
@@ -521,7 +521,7 @@ int_codes = readings.astype(np.int32)`,
       slug: 'range-sampling-generator',
       difficulty: 'Beginner',
       category: 'Array Creation',
-      summary: 'Generate stepped intervals using np.arange and evenly spaced coordinate samples using np.linspace.',
+      summary: 'Generate stepped intervals and evenly spaced coordinate samples across specified intervals.',
       mentalModel5s: 'np.arange asks "what step size do you want?" np.linspace asks "how many points do you want in total?"',
       visualAnalogy: 'A wooden ruler with tick marks every 1 millimeter (np.arange) vs stretching a rubber band with 10 equally spaced beads between two posts (np.linspace).',
       pitfalls: [
@@ -546,10 +546,10 @@ int_codes = readings.astype(np.int32)`,
 
 Write a function \`generate_range_and_samples(start: float, stop: float, step: float, num_samples: int) -> dict\` that:
 1. Validates inputs: If \`step <= 0\`, raise \`ValueError("Step size must be positive")\`. If \`num_samples < 1\`, raise \`ValueError("num_samples must be at least 1")\`.
-2. Generates a 1D array named \`"stepped_range"\` using \`np.arange(start, stop, step)\`.
-3. Generates a 1D array named \`"linear_samples"\` using \`np.linspace(start, stop, num_samples)\`.
-4. Generates a 1D array named \`"unit_intervals"\` of \`num_samples\` evenly spaced values between \`0.0\` and \`1.0\` using \`np.linspace(0.0, 1.0, num_samples)\`.
-5. Calculates \`"step_count"\` as an integer representing the number of elements in \`stepped_range\` (\`int(stepped_range.size)\`).
+2. Generates a 1D array named \`"stepped_range"\` containing values starting from start, stopping before stop, incrementing by step.
+3. Generates a 1D array named \`"linear_samples"\` containing num_samples evenly spaced values across [start, stop].
+4. Generates a 1D array named \`"unit_intervals"\` containing num_samples evenly spaced values across [0.0, 1.0].
+5. Calculates \`"step_count"\` as an integer representing the total count of elements in \`stepped_range\`.
 6. Returns a dictionary: \`{"stepped_range": ..., "linear_samples": ..., "unit_intervals": ..., "step_count": ...}\`.`,
       hints: [
         'np.arange(start, stop, step) takes start, stop, and step.',
@@ -565,8 +565,8 @@ def generate_range_and_samples(start: float, stop: float, step: float, num_sampl
     Args:
         start: Start of the interval
         stop: End of the interval
-        step: Step size for np.arange
-        num_samples: Total number of points for np.linspace
+        step: Step size between sequence values
+        num_samples: Total number of evenly spaced sample points
         
     Returns:
         Dictionary with 'stepped_range', 'linear_samples', 'unit_intervals', 'step_count'

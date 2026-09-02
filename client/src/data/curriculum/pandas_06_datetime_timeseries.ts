@@ -235,14 +235,14 @@ print(monthly)`,
       instructions: `In quantitative finance, analysts track asset momentum and risk using moving averages and rolling return volatility.
 
 Write a function \`calculate_stock_metrics(stock_df: pd.DataFrame, short_window: int = 7, long_window: int = 30) -> pd.DataFrame\` that:
-1. Makes a copy of \`stock_df\` and converts the \`'date'\` column to datetime using \`pd.to_datetime()\`.
-2. Sorts the DataFrame chronologically by \`'date'\` ascending and resets the index (\`drop=True\`).
+1. Makes a copy of \`stock_df\` and parses the \`'date'\` column into proper datetime timestamps.
+2. Sorts the records chronologically by \`'date'\` in ascending order and resets the row index.
 3. Computes and adds the following 5 columns:
-   - \`'daily_return'\`: Percentage change of \`'close'\` compared to the prior day (\`pct_change()\`, first value will be NaN).
+   - \`'daily_return'\`: Percentage return of \`'close'\` compared to the previous trading day (the initial entry will be missing/NaN).
    - \`'ma_short'\`: Rolling moving average of \`'close'\` using window size \`short_window\`.
    - \`'ma_long'\`: Rolling moving average of \`'close'\` using window size \`long_window\`.
-   - \`'rolling_volatility'\`: Rolling standard deviation (\`.std()\`) of \`'daily_return'\` using window size \`short_window\`.
-   - \`'day_of_week'\`: Name of the day of the week as a string (e.g., \`'Monday'\`, \`'Friday'\`) via \`date.dt.day_name()\`.
+   - \`'rolling_volatility'\`: Rolling standard deviation of \`'daily_return'\` using window size \`short_window\`.
+   - \`'day_of_week'\`: Name of the day of the week as a string (e.g., \`'Monday'\`, \`'Friday'\`) extracted from the date.
 4. Returns the enriched DataFrame containing all original columns plus the 5 new columns.`,
       hints: [
         'Use pd.to_datetime(df["date"]) to convert dates.',
@@ -389,15 +389,15 @@ df['ma_7'] = df['close'].rolling(7).mean()`,
       instructions: `E-commerce platforms log millions of raw hourly transactions. Your task is to downsample hourly records into monthly financial performance summaries and detect peak sales months.
 
 Write a function \`resample_sales_and_detect_peaks(transactions_df: pd.DataFrame) -> dict\` that:
-1. Makes a copy of \`transactions_df\`, converts \`'timestamp'\` to datetime, and sets \`'timestamp'\` as the DataFrame index.
-2. Resamples the data to monthly frequency (\`'ME'\` for Month End, or \`'M'\`) and aggregates:
-   - \`'total_sales'\`: sum of \`'sales_amount'\` (float, rounded to 2 decimal places).
-   - \`'total_transactions'\`: sum of \`'transaction_count'\` (int).
-3. Adds a column \`'avg_transaction_value'\` to the resampled DataFrame: \`'total_sales' / 'total_transactions'\` (float, rounded to 2 decimal places).
+1. Makes a copy of \`transactions_df\`, parses \`'timestamp'\` into datetime objects, and promotes \`'timestamp'\` to be the DataFrame index.
+2. Resamples transactions into monthly intervals (month-end) and aggregates metrics:
+   - \`'total_sales'\`: total sum of sales amount across the month (float, rounded to 2 decimal places).
+   - \`'total_transactions'\`: total sum of transaction counts across the month (int).
+3. Adds a column \`'avg_transaction_value'\` to the resampled DataFrame, calculated as \`'total_sales'\` divided by \`'total_transactions'\`, rounded to 2 decimal places.
 4. Identifies peak and lowest sales periods:
-   - \`'peak_month'\`: The year-month string (\`'%Y-%m'\`, e.g., \`'2024-03'\`) corresponding to the month with the highest \`'total_sales'\`.
+   - \`'peak_month'\`: The year-month string in \`YYYY-MM\` format (e.g., \`'2024-03'\`) corresponding to the month with the highest \`'total_sales'\`.
    - \`'peak_sales'\`: The maximum \`'total_sales'\` value (float, rounded to 2 decimal places).
-   - \`'lowest_month'\`: The year-month string (\`'%Y-%m'\`, e.g., \`'2024-01'\`) corresponding to the month with the lowest \`'total_sales'\`.
+   - \`'lowest_month'\`: The year-month string in \`YYYY-MM\` format (e.g., \`'2024-01'\`) corresponding to the month with the lowest \`'total_sales'\`.
 5. Returns a dictionary:
    \`{"monthly_sales": monthly_sales, "peak_month": peak_month, "peak_sales": peak_sales, "lowest_month": lowest_month}\``,
       hints: [

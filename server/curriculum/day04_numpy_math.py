@@ -189,10 +189,10 @@ CHALLENGE_1 = {
     "instructions": (
         "1. Implement `compute_financial_metrics(current_prices: np.ndarray, baseline_prices: np.ndarray, discount_rate: float = 0.15, min_price_cap: float = 5.0, max_price_cap: float = 500.0) -> dict`.\n"
         "2. Input arrays `current_prices` and `baseline_prices` have identical shapes.\n"
-        "3. Compute `'pct_return'`: percentage change `(current_prices - baseline_prices) / baseline_prices`.\n"
-        "4. Compute `'abs_diff'`: absolute price difference `np.abs(current_prices - baseline_prices)`.\n"
-        "5. Compute `'discounted'`: prices after applying discount `current_prices * (1.0 - discount_rate)`.\n"
-        "6. Compute `'capped_prices'`: discounted prices clamped between `min_price_cap` and `max_price_cap` using `np.clip`.\n"
+        "3. Compute `'pct_return'`: percentage change relative to baseline prices ((current - baseline) / baseline).\n"
+        "4. Compute `'abs_diff'`: absolute price difference between current and baseline prices.\n"
+        "5. Compute `'discounted'`: promotional prices after applying the fractional discount rate.\n"
+        "6. Compute `'capped_prices'`: discounted prices clamped within [min_price_cap, max_price_cap].\n"
         "7. Return a dictionary containing all 4 metric arrays.\n"
         "8. Absolutely NO `for`, `while`, or list comprehensions are permitted."
     ),
@@ -207,10 +207,10 @@ def compute_financial_metrics(
 ) -> dict:
     """
     Compute financial metrics using zero Python loops:
-    1. Percentage return: (current_prices - baseline_prices) / baseline_prices
-    2. Absolute price change: |current_prices - baseline_prices|
-    3. Discounted prices: current_prices * (1.0 - discount_rate)
-    4. Capped prices: discounted prices clamped to [min_price_cap, max_price_cap] using np.clip
+    1. Percentage return: relative change compared to baseline prices
+    2. Absolute price change: absolute difference between current and baseline prices
+    3. Discounted prices: prices after applying the specified discount rate
+    4. Capped prices: discounted prices clamped within [min_price_cap, max_price_cap]
     
     Args:
         current_prices: numpy array of current prices
@@ -342,12 +342,12 @@ CHALLENGE_2 = {
         "In deep learning and neural signal processing, activation functions transform input activations into bounded "
         "ranges while preventing exploding or vanishing values. Your task is to implement `clamped_exp_activation`, "
         "a custom mathematical transformation that computes an exponential decay with optional bias, strictly clamped "
-        "within specified upper and lower thresholds using `np.exp` and `np.clip` with zero Python loops."
+        "within specified upper and lower thresholds using vectorized exponential operations and bounding functions with zero Python loops."
     ),
     "instructions": (
         "1. Implement `clamped_exp_activation(x: np.ndarray, scale: float = 1.0, decay: float = 0.5, bias: float = 0.0, min_val: float = 0.01, max_val: float = 0.99) -> np.ndarray`.\n"
-        "2. Compute the raw exponential transformation: `raw = scale * np.exp(-decay * x) + bias`.\n"
-        "3. Clamp the values to the range `[min_val, max_val]` using `np.clip(raw, min_val, max_val)`.\n"
+        "2. Compute the raw exponential transformation: scale times the exponential of (-decay * x) plus bias.\n"
+        "3. Clamp the values within [min_val, max_val].\n"
         "4. Return the resulting array with the exact same shape as input `x`.\n"
         "5. The function must work seamlessly on arrays of any shape (1D, 2D, 3D, etc.) and handle large positive or negative values without errors."
     ),
@@ -363,7 +363,7 @@ def clamped_exp_activation(
 ) -> np.ndarray:
     """
     Compute clamped exponential decay activation using fast ufuncs:
-    y = np.clip(scale * np.exp(-decay * x) + bias, min_val, max_val)
+    y = scale * exp(-decay * x) + bias, clamped within [min_val, max_val]
     
     Args:
         x: input numpy array of arbitrary shape

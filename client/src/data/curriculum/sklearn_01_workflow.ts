@@ -204,7 +204,7 @@ y_train, y_val = y[:split_idx], y[split_idx:]
    - If \`test_size <= 0.0\` or \`test_size >= 1.0\`, raise \`ValueError("test_size must be between 0.0 and 1.0")\`.
    - If \`len(np.unique(y)) < 2\`, raise \`ValueError("y must contain at least 2 distinct classes")\`.
    - If any class in \`y\` has fewer than 2 samples, raise \`ValueError("Each class must have at least 2 samples for stratified splitting")\`.
-2. Splits dataset using \`train_test_split(X, y, test_size=test_size, random_state=random_state, stratify=y)\`.
+2. Partitions the dataset into train and test subsets with stratified class balancing using the specified test proportion and random state seed.
 3. Computes class proportion dictionaries for \`y_train\` and \`y_test\` mapping each class label to its float fraction (\`count / total\`).
 4. Returns a dictionary:
    \`{"X_train": X_train, "X_test": X_test, "y_train": y_train, "y_test": y_test, "train_proportions": train_props, "test_proportions": test_props}\`.`,
@@ -367,9 +367,7 @@ X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, rando
    - If \`len(X) < 2\`, raise \`ValueError("At least 2 samples required")\`.
 2. Computes the chronological split index: \`split_index = int(len(X) * train_ratio)\`.
 3. Validates that \`split_index > 0\` and \`split_index < len(X)\`; if not, raise \`ValueError("Split ratio results in an empty split")\`.
-4. Slices arrays strictly by index without shuffling:
-   - \`X_train = X[:split_index]\`, \`X_val = X[split_index:]\`
-   - \`y_train = y[:split_index]\`, \`y_val = y[split_index:]\`
+4. Slices feature matrix and target arrays sequentially at the split index without shuffling to isolate earlier training history from later validation records.
 5. Returns a dictionary:
    \`{"X_train": X_train, "X_val": X_val, "y_train": y_train, "y_val": y_val, "split_index": split_index}\`.`,
       hints: [

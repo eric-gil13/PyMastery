@@ -248,9 +248,9 @@ print("Days since last order:", recency_days.tolist())`,
 
 Write a function \`build_rfm_pipeline(orders_df: pd.DataFrame, snapshot_date: str = '2024-07-01', churn_threshold_days: int = 90) -> dict\` that:
 1. **Clean & Filter**:
-   - Drop rows where \`'customer_id'\` or \`'order_amount'\` is NaN.
-   - Filter to keep only orders where \`'status' != 'cancelled'\` and \`'order_amount' > 0\`.
-   - Convert \`'order_date'\` to datetime (\`pd.to_datetime\`).
+   - Drop rows where \`'customer_id'\` or \`'order_amount'\` is missing/null.
+   - Filter to keep only positive orders where \`'status' != 'cancelled'\` and \`'order_amount' > 0\`.
+   - Parse \`'order_date'\` into datetime timestamps.
 2. **RFM Aggregation**:
    Group the cleaned orders by \`'customer_id'\` and compute:
    - \`'last_order'\`: maximum \`'order_date'\`
@@ -258,13 +258,13 @@ Write a function \`build_rfm_pipeline(orders_df: pd.DataFrame, snapshot_date: st
    - \`'monetary_total'\`: sum of \`'order_amount'\` (float, rounded to 2 decimal places)
    - \`'avg_order_value'\`: mean of \`'order_amount'\` (float, rounded to 2 decimal places)
 3. **Recency & Segmentation**:
-   - \`'recency_days'\`: integer number of days between \`pd.to_datetime(snapshot_date)\` and \`'last_order'\`.
+   - \`'recency_days'\`: integer elapsed days between the snapshot reference date and the customer's \`'last_order'\`.
    - \`'is_churned'\`: boolean flag \`True\` if \`recency_days > churn_threshold_days\`, else \`False\`.
    - \`'segment'\`: Categorize each user as:
      * \`'At-Risk'\` if \`is_churned\` is \`True\`
      * \`'VIP'\` if \`is_churned\` is \`False\` and \`frequency >= 3\`
      * \`'Regular'\` otherwise
-   Sort \`rfm_table\` ascending by \`'customer_id'\` and reset index.
+   Sort \`rfm_table\` ascending by \`'customer_id'\` and reset the row index.
 4. **Executive Summary Metrics** (dict):
    - \`'total_customers'\`: Total number of unique customers (int).
    - \`'churn_rate'\`: Fraction of customers with \`is_churned == True\` (float rounded to 4 decimal places).
@@ -453,40 +453,40 @@ Write a function \`build_production_kpi_pipeline(transactions: pd.DataFrame, pro
 1. **Cleaning & Preprocessing**:
    - Drop transaction rows where \`'transaction_id'\`, \`'user_id'\`, or \`'product_id'\` is null.
    - Filter transactions to retain only records where \`'quantity' >= 1\`.
-   - Fill missing \`'discount_rate'\` values with \`0.0\`.
-   - Convert \`'timestamp'\` to datetime (\`pd.to_datetime\`).
+   - Impute missing \`'discount_rate'\` values with \`0.0\`.
+   - Parse \`'timestamp'\` into datetime timestamps.
 
 2. **Multi-Table Relational Merges**:
-   - Merge \`transactions\` with \`products\` on \`'product_id'\` (left join).
-   - Merge resulting table with \`users\` on \`'user_id'\` (left join).
-   - Fill missing \`'country'\` with \`'Unknown'\` and missing \`'acquisition_channel'\` with \`'Organic'\`.
+   - Perform a left join between \`transactions\` and \`products\` matching on \`'product_id'\`.
+   - Perform a left join between the resulting table and \`users\` matching on \`'user_id'\`.
+   - Impute missing \`'country'\` values with \`'Unknown'\` and missing \`'acquisition_channel'\` values with \`'Organic'\`.
 
 3. **Unit Economics & Feature Engineering**:
-   - \`'gross_revenue'\`: \`quantity * unit_price\` (rounded to 2 decimal places).
-   - \`'net_revenue'\`: \`gross_revenue * (1.0 - discount_rate)\` (rounded to 2 decimal places).
-   - \`'total_cost'\`: \`quantity * cogs\` (rounded to 2 decimal places).
-   - \`'profit'\`: \`net_revenue - total_cost\` (rounded to 2 decimal places).
-   - \`'profit_margin'\`: \`np.where(net_revenue > 0, (profit / net_revenue).round(4), 0.0)\`.
+   - \`'gross_revenue'\`: gross revenue calculated as \`quantity * unit_price\`, rounded to 2 decimal places.
+   - \`'net_revenue'\`: gross revenue discounted by \`discount_rate\` (\`gross_revenue * (1.0 - discount_rate)\`), rounded to 2 decimal places.
+   - \`'total_cost'\`: total cost of goods sold (\`quantity * cogs\`), rounded to 2 decimal places.
+   - \`'profit'\`: net revenue minus total cost (\`net_revenue - total_cost\`), rounded to 2 decimal places.
+   - \`'profit_margin'\`: profit divided by net revenue where net revenue > 0 (otherwise \`0.0\`), rounded to 4 decimal places.
 
 4. **Daily Rolling Trend**:
-   - Sort by \`'timestamp'\` ascending and set \`'timestamp'\` as index.
-   - Resample daily (\`'D'\`) and sum \`'net_revenue'\` and \`'profit'\`.
+   - Sort chronologically by \`'timestamp'\` ascending and set \`'timestamp'\` as the index.
+   - Resample transactions to daily intervals (\`'D'\`) and sum \`'net_revenue'\` and \`'profit'\`.
    - Rename columns to \`'daily_net_revenue'\` and \`'daily_profit'\`.
-   - Add \`'rolling_7d_revenue'\`: 7-day rolling mean of \`'daily_net_revenue'\` with \`min_periods=1\`, rounded to 2 decimal places.
-   - Reset index so \`'timestamp'\` is a column in the output \`daily_trend\` DataFrame.
+   - Add \`'rolling_7d_revenue'\`: 7-day rolling moving average of \`'daily_net_revenue'\` (accounting for initial days with \`min_periods=1\`), rounded to 2 decimal places.
+   - Reset index so \`'timestamp'\` is preserved as a column in the output \`daily_trend\` DataFrame.
 
 5. **Category KPI Summary**:
    - Group the merged table by \`'category'\` and aggregate:
      * \`'total_net_revenue'\`: sum of \`'net_revenue'\` (round 2)
      * \`'total_profit'\`: sum of \`'profit'\` (round 2)
      * \`'order_volume'\`: count of \`'transaction_id'\` (int)
-   - Add \`'overall_profit_margin'\`: \`(total_profit / total_net_revenue).round(4)\`.
-   - Sort by \`'total_net_revenue'\` descending and reset index.
+   - Add \`'overall_profit_margin'\`: \`'total_profit'\` divided by \`'total_net_revenue'\`, rounded to 4 decimal places.
+   - Sort by \`'total_net_revenue'\` descending and reset the row index.
 
 6. **Executive Metrics** (dict):
    - \`'total_net_revenue'\`: float rounded to 2 decimal places.
    - \`'total_gross_profit'\`: float rounded to 2 decimal places.
-   - \`'overall_margin'\`: \`round(total_gross_profit / total_net_revenue, 4)\`.
+   - \`'overall_margin'\`: total gross profit divided by total net revenue, rounded to 4 decimal places.
    - \`'active_countries'\`: int count of unique \`'country'\` values.
 
 7. Return a dictionary:

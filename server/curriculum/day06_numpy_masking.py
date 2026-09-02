@@ -211,12 +211,12 @@ CHALLENGE_1 = {
         "Implement `clean_sensor_readings(readings: np.ndarray, lower_limit: float, upper_limit: float, fill_value: float = 0.0) -> dict` with:\n"
         "1. Input `readings` is a NumPy array (1D or 2D) of numeric measurements.\n"
         "2. Compute `anomaly_mask`: boolean array matching `readings.shape` where values are `< lower_limit` OR `> upper_limit`.\n"
-        "3. Compute `anomaly_count`: int representing the total number of anomalous values (`np.sum` or `np.count_nonzero`).\n"
-        "4. Compute `has_anomalies`: bool indicating whether ANY anomaly exists (`np.any`).\n"
-        "5. Compute `all_valid`: bool indicating whether ALL elements are within valid limits (`np.all`).\n"
-        "6. Compute `valid_readings`: 1D array of only the valid readings extracted via boolean indexing (`readings[~anomaly_mask]`).\n"
-        "7. Compute `replaced_readings`: array matching `readings.shape` where anomalies are replaced by `fill_value` using `np.where`.\n"
-        "8. Compute `clipped_readings`: array matching `readings.shape` where values below `lower_limit` are set to `lower_limit` and values above `upper_limit` are set to `upper_limit` using `np.where`.\n"
+        "3. Compute `anomaly_count`: int representing the total number of anomalous values.\n"
+        "4. Compute `has_anomalies`: bool indicating whether any anomaly exists.\n"
+        "5. Compute `all_valid`: bool indicating whether all elements are within valid limits.\n"
+        "6. Compute `valid_readings`: 1D array containing only the valid readings extracted via boolean indexing.\n"
+        "7. Compute `replaced_readings`: array matching `readings.shape`, conditionally replacing elements matching `anomaly_mask` with `fill_value`, otherwise `readings`.\n"
+        "8. Compute `clipped_readings`: array matching `readings.shape`, clamped within the specified lower and upper bounds.\n"
         "9. Return all results in a dictionary. NO Python loops allowed!"
     ),
     "starter_code": r'''import numpy as np
@@ -243,10 +243,10 @@ def clean_sensor_readings(
             - 'has_anomalies': bool True if any anomaly exists
             - 'all_valid': bool True if no anomalies exist
             - 'valid_readings': 1D array of only valid values
-            - 'replaced_readings': array with anomalies replaced by fill_value via np.where
-            - 'clipped_readings': array with values clamped to [lower_limit, upper_limit] via np.where
+            - 'replaced_readings': array with anomalies replaced by fill_value
+            - 'clipped_readings': array with values clamped to [lower_limit, upper_limit]
     """
-    # TODO: Implement boolean masks, any/all, filtering, and np.where without Python loops
+    # TODO: Implement boolean masks, any/all, filtering, and conditional replacement without Python loops
     pass
 ''',
     "reference_solution": r'''import numpy as np
@@ -406,12 +406,11 @@ CHALLENGE_2 = {
         "   `(cpu >= cpu_limit AND mem >= mem_limit) OR (error_rate > max_errors)`.\n"
         "3. Define `healthy_mask` (1D bool array of shape `(N,)`): A server is Healthy if:\n"
         "   `cpu < cpu_limit AND mem < mem_limit AND error_rate == 0.0`.\n"
-        "4. Define `warning_mask` (1D bool array of shape `(N,)`): A server is Warning if it is NOT Critical and NOT Healthy:\n"
-        "   `~critical_mask & ~healthy_mask`.\n"
-        "5. Extract `critical_servers`: 2D array of all rows where `critical_mask` is True (`telemetry[critical_mask]`).\n"
-        "6. Extract `critical_ids`: 1D array of `server_id` values for critical servers (`telemetry[critical_mask, 0]`).\n"
-        "7. Extract `healthy_ids`: 1D array of `server_id` values for healthy servers (`telemetry[healthy_mask, 0]`).\n"
-        "8. Compute `status_codes`: 1D int array of shape `(N,)` where Healthy=0, Warning=1, and Critical=2 using nested `np.where`.\n"
+        "4. Define `warning_mask` (1D bool array of shape `(N,)`): A server is Warning where servers are neither Critical nor Healthy.\n"
+        "5. Extract `critical_servers`: 2D array of all rows corresponding to critical servers.\n"
+        "6. Extract `critical_ids`: 1D array of `server_id` values for critical servers.\n"
+        "7. Extract `healthy_ids`: 1D array of `server_id` values for healthy servers.\n"
+        "8. Compute `status_codes`: 1D int array of shape `(N,)` where each server is assigned an integer code (Healthy=0, Warning=1, Critical=2) via conditional selection.\n"
         "9. Compute `triage_summary`: dictionary with integer counts `total_servers`, `critical_count`, `warning_count`, `healthy_count`.\n"
         "10. Return all outputs in a dictionary. NO Python loops allowed!"
     ),
@@ -446,7 +445,7 @@ def sieve_server_telemetry(
             - 'status_codes': 1D int array (0=Healthy, 1=Warning, 2=Critical)
             - 'triage_summary': dict of count totals
     """
-    # TODO: Implement multi-condition boolean indexing and np.where without Python loops
+    # TODO: Implement multi-condition boolean indexing and conditional selection without Python loops
     pass
 ''',
     "reference_solution": r'''import numpy as np

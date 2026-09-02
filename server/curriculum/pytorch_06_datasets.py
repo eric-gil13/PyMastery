@@ -166,23 +166,21 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Data Pipelines",
     "description": (
-        "Implement a flexible, production-ready PyTorch Dataset subclass for tabular data. "
-        "Support features and optional labels with automatic type conversion to float32 and int64, "
-        "length validation, custom transforms, and sample indexing."
+        "Implement a custom dataset supporting indexed sample retrieval and length queries, "
+        "with automatic floating-point and integer label casting, length validation, and optional transforms."
     ),
     "instructions": (
         "Implement the class `TabularDataset(torch.utils.data.Dataset)` with methods:\n"
         "1. `__init__(self, features, labels=None, transform=None)`:\n"
-        "   - Accepts `features`: can be `numpy.ndarray`, Python list, or `torch.Tensor`. Convert to `torch.float32` tensor.\n"
+        "   - Accepts `features`: can be `numpy.ndarray`, Python list, or `torch.Tensor`. Store as a standard single-precision float32 tensor.\n"
         "   - Accepts `labels`: optional (`None` by default). If provided:\n"
-        "     - Convert to `torch.Tensor`. If discrete/integer dtype (e.g. `int`, `int32`, `int64`), convert to `torch.int64`. "
-        "If float, convert to `torch.float32`.\n"
-        "     - Validate length: if `len(self.features) != len(self.labels)`, raise `ValueError(\"Features and labels must have the same length\")`.\n"
+        "     - Convert to `torch.Tensor`: if discrete/integer labels, cast to 64-bit integer type (int64); if continuous, cast to float32.\n"
+        "     - Validate that features and labels contain the same number of samples. If not, raise `ValueError(\"Features and labels must have the same length\")`.\n"
         "   - Stores `self.transform = transform`.\n"
         "2. `__len__(self) -> int`:\n"
-        "   - Returns the total number of samples (`len(self.features)`).\n"
+        "   - Returns the total number of samples in the dataset.\n"
         "3. `__getitem__(self, idx: int)`:\n"
-        "   - Retrieves `x = self.features[idx]`.\n"
+        "   - Retrieves the feature sample at index `idx` as `x`.\n"
         "   - If `self.transform is not None`: applies `x = self.transform(x)`.\n"
         "   - If `self.labels is not None`: returns tuple `(x, self.labels[idx])`.\n"
         "   - If `self.labels is None`: returns `x` directly."
@@ -201,15 +199,15 @@ class TabularDataset(Dataset):
         labels: Optional[Any] = None,
         transform: Optional[Callable[[torch.Tensor], torch.Tensor]] = None
     ):
-        # TODO: Store features as float32 tensor, labels with appropriate dtype, and transform
+        # TODO: Convert features to single-precision float tensor, process optional labels, and store transform
         pass
 
     def __len__(self) -> int:
-        # TODO: Return total sample count
+        # TODO: Return total number of samples
         pass
 
     def __getitem__(self, idx: int) -> Union[torch.Tensor, Tuple[torch.Tensor, torch.Tensor]]:
-        # TODO: Retrieve sample, apply transform, and return (x, y) or x
+        # TODO: Retrieve sample, apply transform if present, and return (x, y) or x
         pass
 ''',
     "reference_solution": r'''import torch
@@ -345,26 +343,27 @@ CHALLENGE_2 = {
     "difficulty": "Intermediate",
     "category": "Data Pipelines",
     "description": (
-        "Construct and inspect a PyTorch DataLoader stream. Validate batch sizes, compute total batch counts, "
+        "Construct and inspect a mini-batch DataLoader stream. Validate batch sizes, compute total batch counts, "
         "extract first-batch tensor dimensions, and detect partial trailing batches."
     ),
     "instructions": (
         "Write a function `create_and_inspect_dataloader(dataset: torch.utils.data.Dataset, "
         "batch_size: int = 32, shuffle: bool = False, drop_last: bool = False) -> dict` that:\n"
         "1. Validates `batch_size`: if `batch_size <= 0`, raise `ValueError(\"batch_size must be positive\")`.\n"
-        "2. Instantiates a `torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, drop_last=drop_last)`.\n"
+        "2. Instantiates a mini-batch data loader for the dataset configured with the given `batch_size`, `shuffle`, "
+        "and `drop_last` parameters, storing it as `dataloader`.\n"
         "3. Computes:\n"
-        "   - `total_batches = len(dataloader)`\n"
-        "   - `dataset_size = len(dataset)`\n"
-        "4. Fetches the first batch from the stream: `first_batch = next(iter(dataloader))`.\n"
+        "   - `total_batches`: total number of batches in the stream\n"
+        "   - `dataset_size`: total number of samples in the dataset\n"
+        "4. Inspects the first mini-batch yielded by the data loader: `first_batch = next(iter(dataloader))`.\n"
         "   - If `first_batch` is a tuple/list `(x_batch, y_batch)`:\n"
         "     - `first_batch_features_shape = tuple(x_batch.shape)`\n"
         "     - `first_batch_labels_shape = tuple(y_batch.shape)`\n"
         "   - Else:\n"
         "     - `first_batch_features_shape = tuple(first_batch.shape)`\n"
         "     - `first_batch_labels_shape = None`\n"
-        "5. Iterates through all batches in `dataloader` to record each batch's sample count (`batch[0].shape[0]` or `batch.shape[0]`).\n"
-        "6. Calculates `has_partial_batch = any(size < batch_size for size in batch_sizes)`.\n"
+        "5. Iterates through all batches in the stream to collect individual batch sample sizes as a list of integers (`batch_sizes`).\n"
+        "6. Determines whether any batch has fewer samples than the specified batch size, recording boolean `has_partial_batch`.\n"
         "7. Returns a dictionary:\n"
         "   `{\"dataloader\": dataloader, \"total_batches\": int(total_batches), \"dataset_size\": int(dataset_size), "
         "\"batch_size\": int(batch_size), \"first_batch_features_shape\": first_batch_features_shape, "

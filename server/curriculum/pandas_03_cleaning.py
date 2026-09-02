@@ -161,12 +161,12 @@ CHALLENGE_1 = {
         "1. Validates inputs:\n"
         "   - If `df` is not a `pd.DataFrame`, raise `ValueError(\"df must be a pandas DataFrame\")`.\n"
         "   - If any column in `critical_cols` or `numeric_impute_cols` is not present in `df.columns`, raise `KeyError(\"Specified column not found in DataFrame\")`.\n"
-        "2. Audits initial missing values: creates a dictionary `initial_null_counts` mapping each column name to its integer count of null values (`int(df[col].isna().sum())`).\n"
-        "3. Drops rows where ANY column in `critical_cols` is null using `df.dropna(subset=critical_cols)`.\n"
-        "4. For each column in `numeric_impute_cols`, computes the median of that column in the filtered dataset and fills missing values with that median using `.fillna()`.\n"
-        "5. Computes `rows_dropped` as an integer: `int(len(df) - len(df_clean))`.\n"
+        "2. Audits initial missing values: creates a dictionary `initial_null_counts` mapping each column name to its integer count of missing/null values.\n"
+        "3. Drops rows with unrecoverable missing values where any column in `critical_cols` contains null values.\n"
+        "4. For each column in `numeric_impute_cols`, computes the median of that column across the filtered dataset and imputes missing values using the calculated column median.\n"
+        "5. Computes `rows_dropped` as the integer difference in row count between the initial dataset and the filtered dataset.\n"
         "6. Computes `remaining_nulls` as an integer sum of nulls across the `numeric_impute_cols` in the cleaned DataFrame.\n"
-        "7. Resets the index of the cleaned DataFrame with `.reset_index(drop=True)`.\n"
+        "7. Resets the index of the cleaned DataFrame to a sequential 0-based index.\n"
         "8. Returns a dictionary with keys: `\"cleaned_df\"`, `\"initial_null_counts\"`, `\"rows_dropped\"`, `\"remaining_nulls\"`."
     ),
     "starter_code": r'''import pandas as pd
@@ -301,7 +301,7 @@ CHALLENGE_2 = {
     "difficulty": "Beginner",
     "category": "String Cleaning (.str)",
     "description": (
-        "Clean messy customer contact data using the vectorized .str accessor, "
+        "Clean messy customer contact data using vectorized string operations, "
         "standardizing casing, stripping whitespace, and extracting domain and name components."
     ),
     "instructions": (
@@ -310,11 +310,10 @@ CHALLENGE_2 = {
         "   - If `df` is not a `pd.DataFrame`, raise `ValueError(\"df must be a pandas DataFrame\")`.\n"
         "   - If `'full_name'` or `'email'` is missing from `df.columns`, raise `KeyError(\"Missing 'full_name' or 'email' column\")`.\n"
         "2. Creates a copy of the DataFrame.\n"
-        "3. Cleans `'email'`: strips leading/trailing whitespace and converts to lowercase: `df['email'].str.strip().str.lower()`.\n"
-        "4. Extracts `'email_domain'`: splits `'email'` by `'@'` and extracts the domain token (e.g. `df['email'].str.split('@').str[1]`).\n"
-        "5. Cleans `'full_name'`: strips whitespace and converts to Title Case: `df['full_name'].str.strip().str.title()`.\n"
-        "6. Extracts `'first_name'` and `'last_name'`: splits `'full_name'` on the first space (`str.split(pat=' ', n=1, expand=True)`). "
-        "The first column becomes `'first_name'`, and the second column becomes `'last_name'` (fill any nulls with `\"\"`).\n"
+        "3. Cleanses `'email'` text by trimming leading/trailing whitespace and converting all characters to lowercase.\n"
+        "4. Extracts the `'email_domain'` by isolating the domain token following the `'@'` delimiter in the email address.\n"
+        "5. Normalizes `'full_name'` by trimming whitespace and converting to Title Case.\n"
+        "6. Splits `'full_name'` into separate `'first_name'` and `'last_name'` columns at the first whitespace delimiter (for single-word names, `'first_name'` takes the word and `'last_name'` should be an empty string `\"\"`).\n"
         "7. Returns the updated DataFrame."
     ),
     "starter_code": r'''import pandas as pd
@@ -329,7 +328,7 @@ def normalize_customer_records(df: pd.DataFrame) -> pd.DataFrame:
     Returns:
         Cleaned pandas DataFrame with new 'email_domain', 'first_name', and 'last_name' columns.
     """
-    # TODO: Validate inputs, normalize strings with .str, and return cleaned DataFrame
+    # TODO: Validate inputs, normalize strings, and return cleaned DataFrame
     pass
 ''',
     "reference_solution": r'''import pandas as pd

@@ -144,7 +144,7 @@ CHALLENGE_1 = {
     "difficulty": "Intermediate",
     "category": "Loss Functions & Optimizers",
     "description": (
-        "Compute Mean Squared Error (MSE) for regression targets and Cross-Entropy loss on raw logits "
+        "Compute mean squared error loss for continuous targets and cross-entropy loss on raw logits "
         "for multi-class classification, extracting probabilities and discrete predictions."
     ),
     "instructions": (
@@ -154,10 +154,10 @@ CHALLENGE_1 = {
         "If mismatched, raise `ValueError(\"Regression predictions and targets must have matching shapes\")`.\n"
         "2. Validates classification batch dimensions: `logits_cls.shape[0] == target_cls.shape[0]`. "
         "If mismatched, raise `ValueError(\"Classification batch dimensions must match\")`.\n"
-        "3. Computes regression loss using `nn.MSELoss()(pred_reg, target_reg)`.\n"
-        "4. Computes classification loss using `nn.CrossEntropyLoss()(logits_cls, target_cls)`.\n"
-        "5. Computes predicted class probabilities using softmax: `probs = torch.softmax(logits_cls, dim=-1)`.\n"
-        "6. Computes predicted discrete classes using argmax: `preds = torch.argmax(logits_cls, dim=-1)`.\n"
+        "3. Computes mean squared error loss (`mse_loss`) between continuous predictions `pred_reg` and targets `target_reg`.\n"
+        "4. Computes cross-entropy loss (`ce_loss`) between unnormalized classification logits `logits_cls` and target class labels `target_cls`.\n"
+        "5. Computes predicted class probabilities along the class dimension as `probs`.\n"
+        "6. Computes predicted discrete class indices along the class dimension as `preds`.\n"
         "7. Returns a dictionary containing:\n"
         "   `{\"mse_loss\": float(mse_loss.item()), \"ce_loss\": float(ce_loss.item()), \"probabilities\": probs, \"predicted_classes\": preds}`"
     ),
@@ -182,7 +182,7 @@ def evaluate_losses(
     Returns:
         Dictionary with 'mse_loss', 'ce_loss', 'probabilities', 'predicted_classes'
     """
-    # TODO: Validate shapes, compute MSE and CrossEntropy, extract probs and preds
+    # TODO: Validate shapes, compute regression and classification losses, extract probabilities and predictions
     pass
 ''',
     "reference_solution": r'''import torch
@@ -291,24 +291,22 @@ CHALLENGE_2 = {
     "difficulty": "Advanced",
     "category": "Loss Functions & Optimizers",
     "description": (
-        "Execute the canonical 5-step PyTorch training update (zero_grad, forward, loss, backward, step) "
-        "using the Adam optimizer, and verify weight parameter mutations."
+        "Execute the canonical optimization update cycle (clear previous gradients, compute forward pass, "
+        "evaluate loss, backpropagate error, and update parameters) using the Adam optimizer, and verify weight parameter mutations."
     ),
     "instructions": (
         "Write a function `single_step_adam_update(model: nn.Module, x: torch.Tensor, target: torch.Tensor, lr: float = 0.01) -> dict` that:\n"
         "1. Validates that `lr > 0`. If not, raise `ValueError(\"Learning rate must be positive\")`.\n"
-        "2. Instantiates an Adam optimizer: `optimizer = torch.optim.Adam(model.parameters(), lr=lr)`.\n"
-        "3. Captures a detached clone of all initial model parameters:\n"
-        "   `initial_params = [p.clone().detach() for p in model.parameters()]`\n"
-        "4. Executes the canonical 5-step training update:\n"
-        "   a. `optimizer.zero_grad()`\n"
-        "   b. `output = model(x)`\n"
-        "   c. `loss = nn.MSELoss()(output, target)`\n"
-        "   d. `loss.backward()`\n"
-        "   e. Captures gradient norms: `grad_norms = [float(p.grad.norm().item()) for p in model.parameters() if p.grad is not None]`\n"
-        "   f. `optimizer.step()`\n"
-        "5. Checks whether parameters were modified by testing if any parameter differs from its initial clone:\n"
-        "   `params_updated = any(not torch.equal(p, init_p) for p, init_p in zip(model.parameters(), initial_params))`\n"
+        "2. Instantiates an Adam optimizer configured for the model's parameters with learning rate `lr`.\n"
+        "3. Captures a detached clone of all initial model parameters for later comparison.\n"
+        "4. Executes the canonical optimization update cycle:\n"
+        "   - Clears previous parameter gradients\n"
+        "   - Computes model predictions on `x` as `output`\n"
+        "   - Evaluates mean squared error loss against `target` as `loss`\n"
+        "   - Backpropagates error to compute gradients\n"
+        "   - Records the Euclidean norm of each parameter gradient as Python floats in `grad_norms`\n"
+        "   - Updates model parameters via the optimizer\n"
+        "5. Checks whether model parameters were successfully updated compared to their initial snapshot, recording boolean `params_updated`.\n"
         "6. Returns a dictionary containing:\n"
         "   `{\"initial_loss\": float(loss.item()), \"optimizer\": optimizer, \"params_updated\": bool(params_updated), \"grad_norms\": grad_norms}`"
     ),
@@ -334,7 +332,7 @@ def single_step_adam_update(
     Returns:
         Dictionary with 'initial_loss', 'optimizer', 'params_updated', 'grad_norms'
     """
-    # TODO: Validate lr, configure Adam, execute 5-step loop, verify weight updates
+    # TODO: Validate lr, configure Adam, execute canonical update cycle, and verify parameter updates
     pass
 ''',
     "reference_solution": r'''import torch

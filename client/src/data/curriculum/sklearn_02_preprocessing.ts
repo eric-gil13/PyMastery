@@ -188,9 +188,9 @@ X_test_proc = preprocessor.transform(test_df)
    - If \`method\` is not \`"standard"\` and not \`"minmax"\`, raise \`ValueError("method must be 'standard' or 'minmax'")\`.
    - If \`X_train.ndim != 2\` or \`X_test.ndim != 2\` or \`X_train.shape[1] != X_test.shape[1]\`, raise \`ValueError("X_train and X_test must be 2D arrays with identical feature counts")\`.
    - If \`len(X_train) == 0\` or \`len(X_test) == 0\`, raise \`ValueError("Arrays must have at least 1 sample")\`.
-2. Instantiates \`StandardScaler()\` if \`method == "standard"\` else \`MinMaxScaler()\`.
-3. Fits exclusively on \`X_train\` (\`scaler.fit_transform(X_train)\`).
-4. Transforms \`X_test\` using the fitted scaler (\`scaler.transform(X_test)\`).
+2. Selects the feature scaling transformer based on \`method\`: standard score z-normalization when \`"standard"\`, or bounded range normalization when \`"minmax"\`.
+3. Fits feature scaling statistics strictly on the training set (\`X_train\`) to prevent data leakage and transforms \`X_train\` into \`X_train_scaled\`.
+4. Transforms the testing split (\`X_test\`) into \`X_test_scaled\` using the parameters learned from the training split without refitting.
 5. Returns a dictionary:
    \`{"scaler": scaler, "X_train_scaled": X_train_scaled, "X_test_scaled": X_test_scaled}\`.`,
       hints: [
@@ -315,7 +315,7 @@ X_te_s = scaler.transform(X_te)`,
       slug: 'mixed-column-preprocessor',
       difficulty: 'Beginner',
       category: 'Preprocessing',
-      summary: 'Build a ColumnTransformer that scales continuous features with StandardScaler and encodes categorical strings with OneHotEncoder.',
+      summary: 'Build a composite column transformer that normalizes continuous features and encodes categorical strings into one-hot binary matrices.',
       mentalModel5s: 'ColumnTransformer is an air traffic controller that directs each column to its specialized transformer.',
       visualAnalogy: 'A conveyor belt that splits mail: packages go to the scale, letters go to the barcode stamper, and both exit in a combined shipment.',
       pitfalls: [
@@ -337,11 +337,11 @@ X_te_s = scaler.transform(X_te)`,
 1. Validates inputs:
    - Check that all columns in \`numeric_cols\` and \`categorical_cols\` exist in both \`train_df\` and \`test_df\`. If any are missing, raise \`ValueError("Missing specified column in dataframe")\`.
    - If \`len(numeric_cols) == 0 and len(categorical_cols) == 0\`, raise \`ValueError("At least one numeric or categorical column required")\`.
-2. Builds a \`ColumnTransformer\` with:
-   - \`("num", StandardScaler(), numeric_cols)\` if numeric_cols is not empty.
-   - \`("cat", OneHotEncoder(sparse_output=False, handle_unknown="ignore"), categorical_cols)\` if categorical_cols is not empty.
-3. Fits the preprocessor exclusively on \`train_df\` and transforms both \`train_df\` and \`test_df\`.
-4. Extracts output feature names using \`list(preprocessor.get_feature_names_out())\`.
+2. Constructs a composite column transformer with two sub-transformers:
+   - Continuous feature standardizer named \`"num"\` targeting \`numeric_cols\` (when \`numeric_cols\` is non-empty).
+   - Categorical encoder named \`"cat"\` targeting \`categorical_cols\` (when \`categorical_cols\` is non-empty) that produces dense binary indicator matrices and safely ignores unknown categories during inference.
+3. Fits the preprocessor strictly on the training split (\`train_df\`) and transforms both \`train_df\` and \`test_df\` into processed feature matrices \`X_train_proc\` and \`X_test_proc\`.
+4. Extracts output feature names from the fitted preprocessor as a list of strings.
 5. Returns a dictionary:
    \`{"preprocessor": preprocessor, "X_train_proc": X_train_proc, "X_test_proc": X_test_proc, "feature_names": feature_names}\`.`,
       hints: [
@@ -355,18 +355,18 @@ from sklearn.compose import ColumnTransformer
 
 def preprocess_mixed_features(train_df: pd.DataFrame, test_df: pd.DataFrame, numeric_cols: list[str], categorical_cols: list[str]) -> dict:
     """
-    Build a ColumnTransformer for mixed numeric and categorical tabular features.
+    Build a composite column transformation workflow for mixed numeric and categorical tabular features.
 
     Args:
         train_df: Training DataFrame
         test_df: Testing DataFrame
-        numeric_cols: Column names to scale with StandardScaler
-        categorical_cols: Column names to encode with OneHotEncoder
+        numeric_cols: Column names to scale with standard normalization
+        categorical_cols: Column names to encode into one-hot binary indicator matrices
 
     Returns:
         dict with preprocessor, X_train_proc, X_test_proc, feature_names
     """
-    # TODO: Validate inputs, build ColumnTransformer, fit on train, transform test, return dict
+    # TODO: Validate inputs, build column transformers, fit on train, transform test, return dict
     pass
 `,
       solutionCode: `import pandas as pd

@@ -62,7 +62,7 @@ export const CHALLENGE_1: Challenge = {
   slug: 'canonical-5-step-training-loop',
   difficulty: 'Beginner',
   category: 'Training Loop',
-  summary: 'Implement the fundamental 5-step PyTorch optimization loop: zero_grad, forward, compute loss, backward, and optimizer.step.',
+  summary: 'Implement the canonical PyTorch optimization loop across multiple epochs: execute the complete update cycle, track sample-weighted running loss, and return the loss history.',
   mentalModel5s: 'Zero gradients -> forward pass -> measure error -> backpropagate gradients -> nudge weights.',
   visualAnalogy: 'Like an archer firing an arrow (forward), measuring the distance from bullseye (loss), analyzing wind/angles (backward), and adjusting stance before the next shot (optimizer step). Always clear the whiteboard before measuring new forces (zero_grad)!',
   pitfalls: [
@@ -82,7 +82,7 @@ export const CHALLENGE_1: Challenge = {
     content: 'Unlike static graph frameworks, PyTorch does not automatically zero gradients on backward(). Instead, param.grad += grad. This deliberate design enables gradient accumulation across multiple micro-batches (simulating huge batch sizes on memory-constrained GPUs) and recurrent graph unrolling.',
     keyRule: 'Always call optimizer.zero_grad() at the beginning of each training step.'
   },
-  instructions: `Implement the standard 5-step optimization loop that powers virtually every deep neural network in PyTorch.
+  instructions: `Implement the canonical optimization update loop that powers deep neural network training in PyTorch.
 
 Write a function:
 \`train_model(model: torch.nn.Module, dataloader: torch.utils.data.DataLoader, criterion: torch.nn.Module, optimizer: torch.optim.Optimizer, num_epochs: int = 5) -> list[float]\`
@@ -91,14 +91,14 @@ Requirements:
 1. Loop over \`num_epochs\` (from 0 to \`num_epochs - 1\`).
 2. Set the model into training mode (\`model.train()\`) at the start of each epoch.
 3. Track running sample-weighted loss: initialize \`running_loss = 0.0\` and \`total_samples = 0\`.
-4. Iterate over \`(inputs, targets)\` from \`dataloader\`:
-   - Step 1: Clear stale gradients using \`optimizer.zero_grad()\`.
-   - Step 2: Compute model predictions using \`outputs = model(inputs)\`.
-   - Step 3: Compute scalar loss using \`loss = criterion(outputs, targets)\`.
-   - Step 4: Compute gradients with \`loss.backward()\`.
-   - Step 5: Update weights using \`optimizer.step()\`.
-   - Accumulate weighted loss: \`running_loss += loss.item() * inputs.size(0)\`.
-   - Increment sample count: \`total_samples += inputs.size(0)\`.
+4. Iterate over \`(inputs, targets)\` from \`dataloader\`, executing the canonical optimization update cycle:
+   - Clear previous parameter gradients
+   - Compute model predictions from \`inputs\` as \`outputs\`
+   - Compute scalar loss against \`targets\` using \`criterion\`
+   - Backpropagate error to compute gradients
+   - Update model parameters via \`optimizer\`
+   - Accumulate sample-weighted loss using batch size \`inputs.size(0)\`
+   - Increment total sample count by batch size
 5. Compute average epoch loss: \`epoch_loss = running_loss / total_samples\` (or 0.0 if empty).
 6. Return \`loss_history\` containing the float loss value for each epoch.`,
   hints: [
@@ -120,7 +120,7 @@ def train_model(
     num_epochs: int = 5
 ) -> List[float]:
     """
-    Execute standard 5-step PyTorch training loop across epochs.
+    Execute standard PyTorch training loop across epochs using the canonical optimization update cycle.
     
     Args:
         model: PyTorch nn.Module to train
@@ -132,7 +132,7 @@ def train_model(
     Returns:
         List of average loss values per epoch
     """
-    # TODO: Implement the 5 canonical training steps per batch across epochs
+    # TODO: Implement canonical training update cycle per batch across epochs
     pass
 `,
   solutionCode: `import torch
@@ -272,7 +272,7 @@ export const CHALLENGE_2: Challenge = {
   slug: 'early-stopping-model-checkpointer',
   difficulty: 'Intermediate',
   category: 'Training & Regularization',
-  summary: 'Track validation loss, prevent overfitting with early stopping patience, and checkpoint optimal weights using copy.deepcopy(model.state_dict()).',
+  summary: 'Track validation loss across training epochs, prevent overfitting with early stopping patience, and checkpoint optimal weights.',
   mentalModel5s: 'Train on train_loader, validate with no_grad on val_loader, and stop when validation loss stops improving.',
   visualAnalogy: 'Like baking cookies: checking the oven every 2 minutes. When they reach golden-brown perfection, take them out immediately before they burn! Save a polaroid snapshot (state_dict) of the exact moment they peaked.',
   pitfalls: [
@@ -292,7 +292,7 @@ export const CHALLENGE_2: Challenge = {
     content: 'model.state_dict() returns a dictionary of tensor references, not copies. If you execute optimizer.step() after assigning best_weights = model.state_dict(), the tensor values inside best_weights will change in-place. You must use copy.deepcopy(model.state_dict()) to decouple your checkpoint from live parameters.',
     keyRule: 'Always use copy.deepcopy(model.state_dict()) to store historical weight checkpoints.'
   },
-  instructions: `Build a production-grade training pipeline equipped with validation monitoring, early stopping, and state_dict weight checkpointing.
+  instructions: `Build a production-grade training pipeline equipped with validation monitoring, early stopping, and state checkpointing.
 
 Write a function:
 \`train_with_early_stopping(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, val_loader: torch.utils.data.DataLoader, criterion: torch.nn.Module, optimizer: torch.optim.Optimizer, max_epochs: int = 10, patience: int = 3, delta: float = 0.0) -> dict\`
@@ -302,22 +302,22 @@ Specifications:
 2. Iterate \`epoch\` from \`1\` to \`max_epochs\` (inclusive):
    a. **Training Phase:**
       - Set \`model.train()\`.
-      - Loop over \`train_loader\`, execute the 5 canonical steps, and compute weighted average \`epoch_train_loss\`.
+      - Loop over \`train_loader\`, execute the canonical optimization update cycle, and compute weighted average \`epoch_train_loss\`.
       - Append to \`train_losses\`.
    b. **Validation Phase:**
       - Set \`model.eval()\`.
-      - Inside \`with torch.no_grad():\`, loop over \`val_loader\` and compute weighted average \`epoch_val_loss\`.
+      - Disable gradient tracking during evaluation to prevent computation graph accumulation, loop over \`val_loader\`, and compute weighted average \`epoch_val_loss\`.
       - Append to \`val_losses\`.
    c. **Early Stopping Check:**
       - If \`epoch_val_loss < best_loss - delta\`:
         - Update \`best_loss = epoch_val_loss\`.
-        - Save \`best_state_dict = copy.deepcopy(model.state_dict())\`.
+        - Save an isolated deep copy snapshot of the model parameter state as \`best_state_dict\`.
         - Reset \`patience_counter = 0\`.
       - Else:
         - Increment \`patience_counter += 1\`.
         - If \`patience_counter >= patience\`: trigger early stopping! Set \`early_stopped = True\`, record \`stopped_epoch = epoch\`, and break out of the epoch loop.
 3. If max_epochs is reached without early stopping, set \`early_stopped = False\` and \`stopped_epoch = max_epochs\`.
-4. Restore the best model weights: \`model.load_state_dict(best_state_dict)\`.
+4. Restore the best model weights from the saved checkpoint before returning.
 5. Return a dictionary:
    \`{"best_loss": float(best_loss), "stopped_epoch": int(stopped_epoch), "best_state_dict": best_state_dict, "train_losses": train_losses, "val_losses": val_losses, "early_stopped": bool(early_stopped)}\``,
   hints: [
@@ -359,7 +359,7 @@ def train_with_early_stopping(
     Returns:
         Dictionary with best_loss, stopped_epoch, best_state_dict, train_losses, val_losses, early_stopped
     """
-    # TODO: Implement complete training loop with early stopping checkpointer
+    # TODO: Implement complete training loop with early stopping checkpointer and state restoration
     pass
 `,
   solutionCode: `import copy

@@ -199,9 +199,9 @@ CHALLENGE_1 = {
     "difficulty": "Beginner",
     "category": "Training Loop",
     "description": (
-        "Implement the fundamental 5-step PyTorch optimization loop across multiple epochs. "
-        "Iterate over a DataLoader, execute optimizer.zero_grad(), forward propagation, loss calculation, "
-        "backward pass, and optimizer.step(). Track sample-weighted running loss and return the loss history."
+        "Implement the canonical PyTorch optimization loop across multiple epochs. "
+        "Iterate over a DataLoader, execute the complete optimization update cycle, "
+        "track sample-weighted running loss, and return the loss history."
     ),
     "instructions": (
         "Write a function `train_model(model: torch.nn.Module, dataloader: torch.utils.data.DataLoader, "
@@ -209,12 +209,12 @@ CHALLENGE_1 = {
         "1. Executes an outer loop for `num_epochs` (from 0 to `num_epochs - 1`).\n"
         "2. Sets the model to training mode (`model.train()`) at the start of each epoch.\n"
         "3. Initializes running loss accumulation: `running_loss = 0.0` and `total_samples = 0`.\n"
-        "4. Iterates through batches `(inputs, targets)` in `dataloader`:\n"
-        "   - Step 1: Clear prior gradients with `optimizer.zero_grad()`.\n"
-        "   - Step 2: Compute model predictions `outputs = model(inputs)`.\n"
-        "   - Step 3: Compute scalar loss with `loss = criterion(outputs, targets)`.\n"
-        "   - Step 4: Compute gradients via backpropagation with `loss.backward()`.\n"
-        "   - Step 5: Update model parameters with `optimizer.step()`.\n"
+        "4. Iterates through batches `(inputs, targets)` in `dataloader`, executing the canonical optimization update cycle:\n"
+        "   - Clear previous parameter gradients\n"
+        "   - Compute model predictions from `inputs` as `outputs`\n"
+        "   - Compute scalar loss against `targets` using `criterion`\n"
+        "   - Backpropagate error to compute gradients\n"
+        "   - Update model parameters via `optimizer`\n"
         "   - Accumulate sample-weighted loss: `running_loss += loss.item() * inputs.size(0)`.\n"
         "   - Increment sample count: `total_samples += inputs.size(0)`.\n"
         "5. Computes average epoch loss: `epoch_loss = running_loss / total_samples` (or 0.0 if empty).\n"
@@ -234,7 +234,7 @@ def train_model(
     num_epochs: int = 5
 ) -> List[float]:
     """
-    Execute standard 5-step PyTorch training loop across epochs.
+    Execute standard PyTorch training loop across epochs using the canonical optimization update cycle.
     
     Args:
         model: PyTorch nn.Module to train
@@ -246,7 +246,7 @@ def train_model(
     Returns:
         List of average loss values per epoch
     """
-    # TODO: Implement the 5 canonical training steps per batch across epochs
+    # TODO: Implement canonical training update cycle per batch across epochs
     pass
 ''',
     "reference_solution": r'''import torch
@@ -369,7 +369,7 @@ CHALLENGE_2 = {
     "difficulty": "Intermediate",
     "category": "Training & Regularization",
     "description": (
-        "Implement a complete train-and-evaluate pipeline equipped with early stopping and state_dict checkpointing. "
+        "Implement a complete train-and-evaluate pipeline equipped with early stopping and model checkpointing. "
         "Track validation loss across epochs, stop training when patience is exhausted, and restore the best weights."
     ),
     "instructions": (
@@ -381,22 +381,22 @@ CHALLENGE_2 = {
         "2. Iterates epoch from `1` to `max_epochs` (inclusive):\n"
         "   a. Training Phase:\n"
         "      - Set `model.train()`.\n"
-        "      - For `inputs, targets` in `train_loader`: run 5 canonical optimization steps and accumulate weighted train loss.\n"
+        "      - For `inputs, targets` in `train_loader`: run the canonical optimization update cycle and accumulate weighted train loss.\n"
         "      - Record `train_loss = running_train_loss / total_train_samples` in `train_losses`.\n"
         "   b. Validation Phase:\n"
         "      - Set `model.eval()`.\n"
-        "      - Under `with torch.no_grad():`, iterate `val_loader` and accumulate weighted val loss without gradient computation.\n"
+        "      - Disable gradient tracking during evaluation to prevent computation graph accumulation, iterate `val_loader` and accumulate weighted val loss.\n"
         "      - Record `val_loss = running_val_loss / total_val_samples` in `val_losses`.\n"
         "   c. Early Stopping Logic:\n"
         "      - If `val_loss < best_loss - delta`:\n"
         "        - Update `best_loss = val_loss`.\n"
-        "        - Save `best_state_dict = copy.deepcopy(model.state_dict())`.\n"
+        "        - Save an isolated deep copy snapshot of the model parameter state as `best_state_dict`.\n"
         "        - Reset `patience_counter = 0`.\n"
         "      - Else:\n"
         "        - Increment `patience_counter += 1`.\n"
         "        - If `patience_counter >= patience`: early stopping triggered! Record `stopped_epoch = epoch`, `early_stopped = True`, and break.\n"
         "3. If loop finishes without early stopping: record `stopped_epoch = max_epochs` and `early_stopped = False`.\n"
-        "4. Restore best weights: `model.load_state_dict(best_state_dict)`.\n"
+        "4. Restore best weights from the saved checkpoint before returning: `model.load_state_dict(best_state_dict)`.\n"
         "5. Returns dictionary:\n"
         "   `{\"best_loss\": float(best_loss), \"stopped_epoch\": int(stopped_epoch), \"best_state_dict\": best_state_dict, "
         "\"train_losses\": train_losses, \"val_losses\": val_losses, \"early_stopped\": bool(early_stopped)}`"
@@ -434,7 +434,7 @@ def train_with_early_stopping(
     Returns:
         Dictionary with best_loss, stopped_epoch, best_state_dict, train_losses, val_losses, early_stopped
     """
-    # TODO: Implement complete training loop with early stopping checkpointer
+    # TODO: Implement complete training loop with early stopping checkpointer and state restoration
     pass
 ''',
     "reference_solution": r'''import copy

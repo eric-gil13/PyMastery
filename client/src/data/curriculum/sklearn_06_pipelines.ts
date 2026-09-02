@@ -180,7 +180,7 @@ predictions = full_pipeline.predict(X_test)
       slug: 'production-preprocessing-classifier-pipeline',
       difficulty: 'Intermediate',
       category: 'Pipelines',
-      summary: 'Combine ColumnTransformer (StandardScaler + OneHotEncoder) and LogisticRegression into a single executable Scikit-Learn Pipeline.',
+      summary: 'Assemble preprocessing transformers and a linear classifier into a single unified production pipeline.',
       mentalModel5s: 'One master pipeline that standardizes numbers, encodes categories, and classifies in a unified pass.',
       visualAnalogy: 'An automated car assembly line: raw chassis enters, body panels and engine are installed at specialized stations, and a finished car drives off the line.',
       pitfalls: [
@@ -201,12 +201,13 @@ predictions = full_pipeline.predict(X_test)
       instructions: `Write a function \`build_preprocessing_classifier_pipeline(numeric_cols: list[str], categorical_cols: list[str], random_state: int = 42) -> Pipeline\` that:
 1. Validates inputs:
    - If \`len(numeric_cols) == 0 and len(categorical_cols) == 0\`, raise \`ValueError("At least one numeric or categorical column required")\`.
-2. Constructs a \`ColumnTransformer\` named \`"preprocessor"\`:
-   - If \`numeric_cols\` is not empty, includes \`("num", StandardScaler(), numeric_cols)\`.
-   - If \`categorical_cols\` is not empty, includes \`("cat", OneHotEncoder(sparse_output=False, handle_unknown="ignore"), categorical_cols)\`.
-3. Constructs and returns a \`Pipeline\` with steps:
-   - \`("preprocessor", preprocessor)\`
-   - \`("classifier", LogisticRegression(random_state=random_state, max_iter=1000))\`.`,
+2. Constructs a composite column preprocessor named \`"preprocessor"\`:
+   - Continuous feature standardizer named \`"num"\` targeting \`numeric_cols\` (when \`numeric_cols\` is non-empty).
+   - Dense one-hot categorical encoder named \`"cat"\` targeting \`categorical_cols\` configured to ignore unseen categories during inference (when \`categorical_cols\` is non-empty).
+3. Assembles preprocessing transformers and the final estimator into a single unified pipeline containing:
+   - Step \`"preprocessor"\`: the constructed column preprocessor
+   - Step \`"classifier"\`: a logistic regression classifier configured with \`random_state=random_state\` and \`max_iter=1000\`.
+4. Returns the configured, unfitted pipeline instance.`,
       hints: [
         'Import Pipeline from sklearn.pipeline and ColumnTransformer from sklearn.compose.',
         'Use OneHotEncoder(sparse_output=False, handle_unknown="ignore").',
@@ -219,7 +220,7 @@ from sklearn.linear_model import LogisticRegression
 
 def build_preprocessing_classifier_pipeline(numeric_cols: list[str], categorical_cols: list[str], random_state: int = 42) -> Pipeline:
     """
-    Build a Pipeline chaining ColumnTransformer preprocessing and LogisticRegression.
+    Assemble preprocessing transformers and a classifier into a unified pipeline.
 
     Args:
         numeric_cols: List of numerical column names
@@ -229,7 +230,7 @@ def build_preprocessing_classifier_pipeline(numeric_cols: list[str], categorical
     Returns:
         Configured, unfitted Pipeline instance
     """
-    # TODO: Validate inputs, build ColumnTransformer, assemble Pipeline, return pipeline
+    # TODO: Validate inputs, construct column preprocessor, assemble pipeline, return pipeline
     pass
 `,
       solutionCode: `from sklearn.pipeline import Pipeline
@@ -325,7 +326,7 @@ y_pred = pipe.predict(X_te)`,
       slug: 'full-ml-capstone-pipeline',
       difficulty: 'Intermediate',
       category: 'Pipelines',
-      summary: 'Build and evaluate an end-to-end production ML pipeline that handles missing values, scales numbers, encodes categories, and fits a RandomForestClassifier.',
+      summary: 'Build and evaluate an end-to-end machine learning pipeline that imputes missing values, scales continuous features, encodes categories, and trains an ensemble forest classifier.',
       mentalModel5s: 'The complete enterprise ML stack: Impute -> Scale/Encode -> Random Forest -> Evaluate.',
       visualAnalogy: 'A comprehensive medical triage system: missing chart values are estimated, vital signs are normalized, symptoms are categorized, and a panel of specialist doctors makes a diagnosis.',
       pitfalls: [
@@ -348,20 +349,18 @@ y_pred = pipe.predict(X_te)`,
    - If \`target_col not in train_df.columns or target_col not in test_df.columns\`, raise \`ValueError("target_col must be present in both train_df and test_df")\`.
    - If \`len(numeric_cols) == 0 and len(categorical_cols) == 0\`, raise \`ValueError("At least one feature column required")\`.
    - Check that all columns in \`numeric_cols\` and \`categorical_cols\` exist in both DataFrames; if not, raise \`ValueError("Specified feature column missing in DataFrame")\`.
-2. Builds sub-pipelines:
-   - Numeric pipeline: \`Pipeline([("imputer", SimpleImputer(strategy="median")), ("scaler", StandardScaler())])\`
-   - Categorical pipeline: \`Pipeline([("imputer", SimpleImputer(strategy="most_frequent")), ("encoder", OneHotEncoder(sparse_output=False, handle_unknown="ignore"))])\`
-3. Combines sub-pipelines into a \`ColumnTransformer\` named \`"preprocessor"\` for the specified columns.
-4. Constructs a full \`Pipeline\`:
-   - \`("preprocessor", preprocessor)\`
-   - \`("classifier", RandomForestClassifier(n_estimators=50, random_state=random_state))\`
-5. Separates features and target:
-   - \`X_train = train_df.drop(columns=[target_col])\`, \`y_train = train_df[target_col]\`
-   - \`X_test = test_df.drop(columns=[target_col])\`, \`y_test = test_df[target_col]\`
-6. Fits the full pipeline on \`(X_train, y_train)\` and predicts on \`X_test\`.
-7. Computes:
-   - \`test_accuracy\`: float from \`accuracy_score(y_test, y_pred)\`
-   - \`test_f1\`: float from \`f1_score(y_test, y_pred, average="weighted", zero_division=0)\`
+2. Builds specialized transformation sub-pipelines:
+   - Numeric sub-pipeline: imputes missing numeric values using median statistics, then applies standard feature scaling.
+   - Categorical sub-pipeline: imputes missing categorical values using the most frequent value, then applies dense one-hot encoding ignoring unseen test categories.
+3. Combines the sub-pipelines into a column preprocessor named \`"preprocessor"\` targeting the respective numeric and categorical column subsets (when non-empty).
+4. Assembles preprocessing transformers and the final estimator into a single unified pipeline with steps:
+   - \`"preprocessor"\`: the composite column transformer
+   - \`"classifier"\`: a random forest classifier configured with 50 estimators and \`random_state=random_state\`
+5. Separates features and target columns across both training and testing datasets (target column specified by \`target_col\`).
+6. Fits the complete unified pipeline on the training split and generates discrete predictions (\`y_pred\`) on the testing split.
+7. Evaluates test set generalization performance:
+   - \`test_accuracy\`: float overall accuracy score
+   - \`test_f1\`: float weighted-average F1 score (handling zero-division gracefully by setting to 0)
 8. Returns a dictionary:
    \`{"pipeline": pipeline, "y_pred": y_pred, "test_accuracy": test_accuracy, "test_f1": test_f1}\`.`,
       hints: [
@@ -379,7 +378,7 @@ from sklearn.metrics import accuracy_score, f1_score
 
 def build_and_evaluate_capstone_pipeline(train_df: pd.DataFrame, test_df: pd.DataFrame, numeric_cols: list[str], categorical_cols: list[str], target_col: str, random_state: int = 42) -> dict:
     """
-    Build and evaluate an end-to-end imputation, scaling, encoding, and RF classifier pipeline.
+    Build and evaluate an end-to-end imputation, scaling, categorical encoding, and random forest classifier pipeline.
 
     Args:
         train_df: Training DataFrame including target column
@@ -392,7 +391,7 @@ def build_and_evaluate_capstone_pipeline(train_df: pd.DataFrame, test_df: pd.Dat
     Returns:
         dict with pipeline, y_pred, test_accuracy, test_f1
     """
-    # TODO: Validate inputs, build sub-pipelines and ColumnTransformer, train full pipeline, evaluate, return dict
+    # TODO: Validate inputs, build sub-pipelines and preprocessor, train unified pipeline, evaluate, return dict
     pass
 `,
       solutionCode: `import pandas as pd

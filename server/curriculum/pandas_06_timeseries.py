@@ -186,14 +186,14 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Write a function `calculate_stock_metrics(stock_df: pd.DataFrame, short_window: int = 7, long_window: int = 30) -> pd.DataFrame` that:\n"
-        "1. Makes a copy of `stock_df` and converts the `'date'` column to datetime using `pd.to_datetime()`.\n"
-        "2. Sorts the DataFrame chronologically by `'date'` ascending and resets the index (`drop=True`).\n"
+        "1. Makes a copy of `stock_df` and parses the `'date'` column into proper datetime timestamps.\n"
+        "2. Sorts the records chronologically by `'date'` in ascending order and resets the row index.\n"
         "3. Computes and adds the following 5 columns:\n"
-        "   - `'daily_return'`: Percentage change of `'close'` compared to the prior day (`pct_change()`, first value will be NaN).\n"
+        "   - `'daily_return'`: Percentage return of `'close'` compared to the previous trading day (the initial entry will be missing/NaN).\n"
         "   - `'ma_short'`: Rolling moving average of `'close'` using window size `short_window`.\n"
         "   - `'ma_long'`: Rolling moving average of `'close'` using window size `long_window`.\n"
-        "   - `'rolling_volatility'`: Rolling standard deviation (`.std()`) of `'daily_return'` using window size `short_window`.\n"
-        "   - `'day_of_week'`: Name of the day of the week as a string (e.g., `'Monday'`, `'Friday'`) via `date.dt.day_name()`.\n"
+        "   - `'rolling_volatility'`: Rolling standard deviation of `'daily_return'` using window size `short_window`.\n"
+        "   - `'day_of_week'`: Name of the day of the week as a string (e.g., `'Monday'`, `'Friday'`) extracted from the date.\n"
         "4. Returns the enriched DataFrame containing all original columns plus the 5 new columns."
     ),
     "starter_code": r'''import pandas as pd
@@ -334,16 +334,15 @@ CHALLENGE_2 = {
     ),
     "instructions": (
         "Write a function `resample_sales_and_detect_peaks(transactions_df: pd.DataFrame) -> dict` that:\n"
-        "1. Makes a copy of `transactions_df`, converts `'timestamp'` to datetime, and sets `'timestamp'` as the DataFrame index.\n"
-        "2. Resamples the data to monthly frequency (`'ME'` for Month End, or `'M'`) and aggregates:\n"
-        "   - `'total_sales'`: sum of `'sales_amount'` (float, rounded to 2 decimal places).\n"
-        "   - `'total_transactions'`: sum of `'transaction_count'` (int).\n"
-        "3. Adds a column `'avg_transaction_value'` to the resampled DataFrame: `'total_sales' / 'total_transactions'` "
-        "(float, rounded to 2 decimal places).\n"
+        "1. Makes a copy of `transactions_df`, parses `'timestamp'` into datetime objects, and promotes `'timestamp'` to be the DataFrame index.\n"
+        "2. Resamples transactions into monthly intervals (month-end) and aggregates metrics:\n"
+        "   - `'total_sales'`: total sum of sales amount across the month (float, rounded to 2 decimal places).\n"
+        "   - `'total_transactions'`: total sum of transaction counts across the month (int).\n"
+        "3. Adds a column `'avg_transaction_value'` to the resampled DataFrame, calculated as `'total_sales'` divided by `'total_transactions'`, rounded to 2 decimal places.\n"
         "4. Identifies peak and lowest sales periods:\n"
-        "   - `'peak_month'`: The year-month string (`'%Y-%m'`, e.g., `'2024-03'`) corresponding to the month with the highest `'total_sales'`.\n"
+        "   - `'peak_month'`: The year-month string in `YYYY-MM` format (e.g., `'2024-03'`) corresponding to the month with the highest `'total_sales'`.\n"
         "   - `'peak_sales'`: The maximum `'total_sales'` value (float, rounded to 2 decimal places).\n"
-        "   - `'lowest_month'`: The year-month string (`'%Y-%m'`, e.g., `'2024-01'`) corresponding to the month with the lowest `'total_sales'`.\n"
+        "   - `'lowest_month'`: The year-month string in `YYYY-MM` format (e.g., `'2024-01'`) corresponding to the month with the lowest `'total_sales'`.\n"
         "5. Returns a dictionary:\n"
         "   `{\"monthly_sales\": monthly_sales, \"peak_month\": peak_month, \"peak_sales\": peak_sales, \"lowest_month\": lowest_month}`"
     ),

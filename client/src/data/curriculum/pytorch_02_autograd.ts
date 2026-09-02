@@ -35,8 +35,8 @@ Consider the multivariable polynomial function:
 Write a function \`compute_polynomial_gradients(x_val: float, y_val: float, z_val: float, a: float = 2.0, b: float = 3.0, c: float = 4.0, d: float = 5.0) -> dict\` that:
 1. Creates scalar float32 PyTorch tensors for \`x\`, \`y\`, and \`z\` initialized with \`x_val\`, \`y_val\`, and \`z_val\`, all with \`requires_grad=True\`.
 2. Computes the scalar value \`loss\` representing f(x, y, z).
-3. Executes backpropagation by calling \`loss.backward()\`.
-4. Extracts the analytical gradients from \`x.grad\`, \`y.grad\`, and \`z.grad\` as Python floats using \`.item()\`.
+3. Differentiates the output scalar with respect to leaf tensors using reverse-mode automatic differentiation.
+4. Extracts the analytical gradients from \`x\`, \`y\`, and \`z\` as Python floats.
 5. Returns a dictionary containing:
    \`{"loss": float(loss.item()), "grad_x": float(x.grad.item()), "grad_y": float(y.grad.item()), "grad_z": float(z.grad.item()), "has_grad": True}\``,
   hints: [
@@ -66,7 +66,7 @@ def compute_polynomial_gradients(
     Returns:
         Dictionary with 'loss', 'grad_x', 'grad_y', 'grad_z', 'has_grad'
     """
-    # TODO: Create leaf tensors with requires_grad=True, compute polynomial, run .backward()
+    # TODO: Create leaf tensors with gradient tracking, compute polynomial, and backpropagate
     pass
 `,
   solutionCode: `import torch
@@ -177,7 +177,7 @@ export const CHALLENGE_2: Challenge = {
   slug: 'no-grad-inference-guard',
   difficulty: 'Intermediate',
   category: 'Autograd & Graphs',
-  summary: 'Evaluate linear forward passes in training mode vs torch.no_grad() inference mode, and verify computational graph detachment with .detach().',
+  summary: 'Evaluate linear forward passes in training mode versus gradient-disabled inference mode, and verify computational graph detachment.',
   mentalModel5s: 'torch.no_grad() turns off the recording tape to save memory during inference; .detach() cuts a tensor loose from the graph.',
   visualAnalogy: 'Running a dashcam while driving (training mode records tape) vs turning off the dashcam to save battery and storage when parked (torch.no_grad()).',
   pitfalls: [
@@ -199,16 +199,15 @@ export const CHALLENGE_2: Challenge = {
 
 Write a function \`evaluate_inference_no_grad(weights: torch.Tensor, bias: torch.Tensor, x: torch.Tensor) -> dict\` that:
 1. Ensures that \`weights\` and \`bias\` have gradient tracking enabled (\`requires_grad=True\`).
-2. Executes a standard linear forward pass: \`y_train = torch.matmul(x, weights) + bias\`.
-3. Executes the exact same linear forward pass inside a \`with torch.no_grad():\` context manager:
-   \`y_infer = torch.matmul(x, weights) + bias\`.
-4. Creates a detached tensor \`y_detached = y_train.detach()\`.
+2. Executes a standard linear forward pass, computing the linear combination of inputs, weights, and bias as \`y_train\`.
+3. Executes the identical linear forward pass while disabling gradient tracking during evaluation to prevent computation graph accumulation, storing the result as \`y_infer\`.
+4. Creates a detached tensor \`y_detached\` severed from the computation graph.
 5. Gathers graph metadata:
-   - \`train_requires_grad\`: boolean flag of \`y_train.requires_grad\`
-   - \`infer_requires_grad\`: boolean flag of \`y_infer.requires_grad\`
-   - \`train_grad_fn\`: boolean flag indicating whether \`y_train.grad_fn is not None\`
-   - \`infer_grad_fn\`: boolean flag indicating whether \`y_infer.grad_fn is not None\`
-   - \`detached_requires_grad\`: boolean flag of \`y_detached.requires_grad\`
+   - \`train_requires_grad\`: boolean flag indicating whether \`y_train\` tracks gradients
+   - \`infer_requires_grad\`: boolean flag indicating whether \`y_infer\` tracks gradients
+   - \`train_grad_fn\`: boolean flag indicating whether \`y_train\` has an active backward graph function
+   - \`infer_grad_fn\`: boolean flag indicating whether \`y_infer\` has an active backward graph function
+   - \`detached_requires_grad\`: boolean flag indicating whether \`y_detached\` tracks gradients
 6. Returns a dictionary containing:
    \`{"y_train": y_train, "y_infer": y_infer, "y_detached": y_detached, "train_requires_grad": train_requires_grad, "infer_requires_grad": infer_requires_grad, "train_grad_fn": train_grad_fn, "infer_grad_fn": infer_grad_fn, "detached_requires_grad": detached_requires_grad}\``,
   hints: [
@@ -221,7 +220,7 @@ Write a function \`evaluate_inference_no_grad(weights: torch.Tensor, bias: torch
 
 def evaluate_inference_no_grad(weights: torch.Tensor, bias: torch.Tensor, x: torch.Tensor) -> dict:
     """
-    Compare training forward pass vs torch.no_grad() inference and .detach().
+    Compare training forward pass versus inference mode with gradient tracking disabled and graph detachment.
     
     Args:
         weights: Weight matrix tensor
@@ -231,7 +230,7 @@ def evaluate_inference_no_grad(weights: torch.Tensor, bias: torch.Tensor, x: tor
     Returns:
         Dictionary with outputs and autograd tracking metadata
     """
-    # TODO: Implement training pass, torch.no_grad() pass, detach, and inspect graph flags
+    # TODO: Implement training pass, gradient-disabled inference pass, detachment, and inspect graph flags
     pass
 `,
   solutionCode: `import torch

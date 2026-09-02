@@ -8,7 +8,7 @@ export const CHALLENGE_1: Challenge = {
   slug: 'multi-layer-perceptron-mlp-builder',
   difficulty: 'Intermediate',
   category: 'Neural Modules',
-  summary: 'Construct a 2-layer Multi-Layer Perceptron (MLP) neural network by subclassing torch.nn.Module, incorporating linear projections and ReLU activation, and calculating trainable parameter counts.',
+  summary: 'Construct a 2-layer Multi-Layer Perceptron (MLP) neural network module with linear projections and activations, and calculate trainable parameter counts.',
   mentalModel5s: 'Subclass nn.Module, call super().__init__(), assign layers in __init__, and execute dataflow in forward(). Never call model.forward(x) directly—always call model(x).',
   visualAnalogy: 'Think of nn.Module as a blueprint for a specialized machine shop: __init__ installs the conveyor belts and cutting tools (layers), while forward() feeds the raw steel ingots (input tensors) through the stations to produce engine blocks (predictions).',
   pitfalls: [
@@ -29,21 +29,18 @@ export const CHALLENGE_1: Challenge = {
   },
   instructions: `Neural networks are constructed modularly by subclassing \`torch.nn.Module\`.
 
-1. Create a class \`SimpleMLP(nn.Module)\` with:
-   - \`__init__(self, in_features: int, hidden_features: int, out_features: int)\`:
-     Calls \`super().__init__()\` and initializes:
-       - \`self.fc1 = nn.Linear(in_features, hidden_features)\`
-       - \`self.relu = nn.ReLU()\`
-       - \`self.fc2 = nn.Linear(hidden_features, out_features)\`
-   - \`forward(self, x: torch.Tensor) -> torch.Tensor\`:
-     Computes \`self.fc2(self.relu(self.fc1(x)))\` and returns the output tensor.
+1. Create a class \`SimpleMLP(nn.Module)\` that:
+   - In \`__init__(self, in_features: int, hidden_features: int, out_features: int)\`:
+     Initializes the base module and configures a two-stage feedforward architecture: a first linear projection from \`in_features\` to \`hidden_features\` (\`self.fc1\`), a rectified linear activation function (\`self.relu\`), and a second linear projection from \`hidden_features\` to \`out_features\` (\`self.fc2\`).
+   - In \`forward(self, x: torch.Tensor) -> torch.Tensor\`:
+     Transforms input \`x\` sequentially through the first linear layer, activation function, and output linear layer, returning the resulting tensor.
 
 2. Write a function \`build_and_run_mlp(in_features: int, hidden_features: int, out_features: int, x: torch.Tensor) -> dict\` that:
-   - Validates that \`x.shape[-1] == in_features\`. If not, raise \`ValueError("Input feature dimension mismatch")\`.
-   - Instantiates \`model = SimpleMLP(in_features, hidden_features, out_features)\`.
-   - Executes forward pass: \`output = model(x)\`.
-   - Calculates total trainable parameter count: \`param_count = sum(p.numel() for p in model.parameters() if p.requires_grad)\`.
-   - Returns dictionary: \`{"model": model, "output": output, "param_count": int(param_count), "out_shape": tuple(output.shape)}\`.`,
+   - Validates that the trailing feature dimension of \`x\` matches \`in_features\`. If not, raise \`ValueError("Input feature dimension mismatch")\`.
+   - Instantiates \`SimpleMLP\` with the specified layer dimensions as \`model\`.
+   - Executes the forward pass on \`x\` to produce \`output\`.
+   - Calculates the total count of trainable parameters in the model as \`param_count\`.
+   - Returns a dictionary: \`{"model": model, "output": output, "param_count": int(param_count), "out_shape": tuple(output.shape)}\`.`,
   hints: [
     'Always call super().__init__() first.',
     'Linear layers take (in_features, out_features).',
@@ -59,11 +56,11 @@ class SimpleMLP(nn.Module):
     """
     def __init__(self, in_features: int, hidden_features: int, out_features: int):
         super().__init__()
-        # TODO: Define fc1, relu, and fc2
+        # TODO: Initialize fc1, relu, and fc2 layers
         pass
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Pass x through fc1 -> relu -> fc2
+        # TODO: Pass x sequentially through linear projections and activation
         pass
 
 def build_and_run_mlp(in_features: int, hidden_features: int, out_features: int, x: torch.Tensor) -> dict:
@@ -79,7 +76,7 @@ def build_and_run_mlp(in_features: int, hidden_features: int, out_features: int,
     Returns:
         Dictionary with 'model', 'output', 'param_count', 'out_shape'
     """
-    # TODO: Validate input, create model, run forward pass, count parameters
+    # TODO: Validate input, create model, run forward pass, and count trainable parameters
     pass
 `,
   solutionCode: `import torch
@@ -222,28 +219,26 @@ export const CHALLENGE_2: Challenge = {
   },
   instructions: `Deep convolutional and transformer networks rely on residual skip connections to train effectively across deep architectures without vanishing gradients.
 
-1. Create a class \`ResidualBlock(nn.Module)\` with:
-   - \`__init__(self, in_features: int, out_features: Optional[int] = None)\`:
-     Calls \`super().__init__()\`.
-     If \`out_features is None\`, sets \`out_features = in_features\`.
-     Defines the transformation branch F(x):
-       - \`self.linear1 = nn.Linear(in_features, out_features)\`
-       - \`self.relu = nn.ReLU()\`
-       - \`self.linear2 = nn.Linear(out_features, out_features)\`
-     Defines the shortcut connection:
-       - If \`in_features == out_features\`: \`self.shortcut = nn.Identity()\`
-       - If \`in_features != out_features\`: \`self.shortcut = nn.Linear(in_features, out_features, bias=False)\`
-   - \`forward(self, x: torch.Tensor) -> torch.Tensor\`:
-     Computes \`fx = self.linear2(self.relu(self.linear1(x)))\`
-     Returns \`fx + self.shortcut(x)\`.
+1. Create a class \`ResidualBlock(nn.Module)\` that:
+   - In \`__init__(self, in_features: int, out_features: Optional[int] = None)\`:
+     Calls the superclass initializer. Defaults \`out_features\` to \`in_features\` if not specified.
+     Constructs the main transformation branch F(x) consisting of:
+       - a first linear projection (\`self.linear1\`) from \`in_features\` to \`out_features\`
+       - a rectified linear activation (\`self.relu\`)
+       - a second linear projection (\`self.linear2\`) from \`out_features\` to \`out_features\`
+     Constructs the residual shortcut path (\`self.shortcut\`):
+       - If \`in_features == out_features\`, configure an identity mapping.
+       - If \`in_features != out_features\`, configure a linear projection without bias to align feature dimensions.
+   - In \`forward(self, x: torch.Tensor) -> torch.Tensor\`:
+     Transforms \`x\` through the two linear projections and activation function, then adds the shortcut connection output and returns the combined sum.
 
 2. Write a function \`build_residual_block(in_features: int, out_features: Optional[int] = None, x: Optional[torch.Tensor] = None) -> dict\` that:
-   - Instantiates \`block = ResidualBlock(in_features, out_features)\`.
+   - Instantiates \`ResidualBlock\` with \`in_features\` and \`out_features\` as \`block\`.
    - If \`x\` is provided:
-     - Validates that \`x.shape[-1] == in_features\`, raising \`ValueError("Dimension mismatch")\` otherwise.
+     - Validates that the trailing feature dimension matches \`in_features\`. If not, raise \`ValueError("Dimension mismatch")\`.
      - Evaluates \`output = block(x)\`.
-     - Verifies that \`output\` equals \`block.linear2(block.relu(block.linear1(x))) + block.shortcut(x)\`.
-   - Returns dictionary: \`{"block": block, "output": output, "residual_verified": bool, "out_shape": tuple(output.shape) if output is not None else None}\`.`,
+     - Verifies that \`output\` numerically matches the sum of the transformation branch and shortcut branch, setting boolean \`residual_verified\`.
+   - Returns a dictionary: \`{"block": block, "output": output, "residual_verified": bool(residual_verified), "out_shape": tuple(output.shape) if output is not None else None}\`.`,
   hints: [
     'Use nn.Identity() when in_features == out_features.',
     'Use nn.Linear(in_features, out_features, bias=False) when dimensions differ.',
@@ -260,11 +255,11 @@ class ResidualBlock(nn.Module):
     """
     def __init__(self, in_features: int, out_features: Optional[int] = None):
         super().__init__()
-        # TODO: Configure linear1, relu, linear2, and shortcut (Identity vs Linear)
+        # TODO: Configure transformation layers and shortcut path (identity vs linear)
         pass
         
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        # TODO: Compute F(x) + shortcut(x)
+        # TODO: Compute transformation and combine with shortcut connection
         pass
 
 def build_residual_block(in_features: int, out_features: Optional[int] = None, x: Optional[torch.Tensor] = None) -> dict:

@@ -212,13 +212,6 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     }
   };
 
-  const difficultyColor = {
-    Beginner: 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30',
-    Intermediate: 'text-sky-400 bg-sky-500/10 border-sky-500/30',
-    Advanced: 'text-amber-400 bg-amber-500/10 border-amber-500/30',
-    Expert: 'text-rose-400 bg-rose-500/10 border-rose-500/30',
-  }[challenge.difficulty] || 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30';
-
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl';
 
@@ -230,24 +223,14 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     >
       {/* 1. TOP ACTION BAR */}
       <div className="h-10 bg-surface-panel border-b border-surface-border px-3 flex items-center justify-between flex-shrink-0 select-none">
-        {/* Left: Challenge Filename & Metadata */}
-        <div className="flex items-center gap-2.5 min-w-0">
-          <div className="flex items-center gap-1.5 px-2 py-0.5 rounded bg-surface-elevated border border-surface-border text-zinc-300">
+        {/* Left: Challenge Filename */}
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-surface-elevated border border-surface-border text-zinc-300">
             <FileCode className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
-            <span className="text-xs font-mono font-semibold text-white truncate">
+            <span className="text-xs font-mono font-medium text-white truncate">
               {challenge.slug}.py
             </span>
           </div>
-
-          <span className="hidden sm:inline-flex items-center text-[10px] font-medium text-zinc-400 bg-surface-elevated px-2 py-0.5 rounded border border-surface-border truncate">
-            {challenge.category}
-          </span>
-
-          <span
-            className={`hidden md:inline-flex items-center text-[10px] font-semibold px-2 py-0.5 rounded border ${difficultyColor}`}
-          >
-            {challenge.difficulty}
-          </span>
         </div>
 
         {/* Right: Workspace Toolbar Controls */}

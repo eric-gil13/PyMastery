@@ -205,15 +205,15 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Write a function `join_customer_orders(customers: pd.DataFrame, orders: pd.DataFrame) -> dict` that:\n"
-        "1. `inner_merged`: Performs an **inner join** between `orders` and `customers` on `'customer_id'`. "
+        "1. `inner_merged`: Performs an inner join between `orders` and `customers` matching on the customer identifier (`'customer_id'`). "
         "Only orders linked to registered customers should be included.\n"
-        "2. `customer_orders_all`: Performs a **left join** starting with `customers` on the left and `orders` on the right "
-        "on `'customer_id'`, ensuring every customer is kept. Fill missing values in the `'amount'` column with `0.0`.\n"
-        "3. `customer_summary`: Aggregates `customer_orders_all` grouped by `['customer_id', 'name']` to compute:\n"
+        "2. `customer_orders_all`: Performs a left join starting with `customers` on the left and `orders` on the right matching on the customer identifier (`'customer_id'`), "
+        "ensuring every customer is kept. Imputes missing values in the `'amount'` column with `0.0`.\n"
+        "3. `customer_summary`: Aggregates `customer_orders_all` grouped by customer identifier and name (`['customer_id', 'name']`) to compute:\n"
         "   - `'total_spend'`: sum of `'amount'` (float, rounded to 2 decimal places).\n"
         "   - `'order_count'`: count of valid `'order_id'` entries (customers with no orders must have count `0`).\n"
         "   - `'completed_spend'`: sum of `'amount'` where `'status' == 'completed'` (if no completed orders, `0.0`).\n"
-        "   Reset the index so `customer_id` and `name` are columns, and sort ascending by `'customer_id'`.\n"
+        "   Resets the index so `customer_id` and `name` are columns, and sorts ascending by `'customer_id'`.\n"
         "4. Returns a dictionary:\n"
         "   `{\"inner_merged\": inner_merged, \"customer_orders_all\": customer_orders_all, \"customer_summary\": customer_summary}`"
     ),
@@ -231,7 +231,7 @@ def join_customer_orders(customers: pd.DataFrame, orders: pd.DataFrame) -> dict:
     Returns:
         dict with 'inner_merged', 'customer_orders_all', and 'customer_summary'
     """
-    # TODO: Implement inner join, left join with fillna, and customer summary aggregation
+    # TODO: Perform inner join, left join with missing value handling, and customer summary aggregation
     pass
 ''',
     "reference_solution": r'''import pandas as pd
@@ -356,21 +356,20 @@ CHALLENGE_2 = {
     "difficulty": "Intermediate",
     "category": "Merging & Joining",
     "description": (
-        "Combine distributed quarterly sales tables using pd.concat and enrich them with store location metadata via pd.merge. "
+        "Combine distributed quarterly sales tables vertically and enrich them with store location metadata via relational joins. "
         "Calculate regional performance KPIs including total revenue, unit volume, and store counts."
     ),
     "instructions": (
         "Write a function `combine_retail_data(quarterly_dfs: list, store_locations: pd.DataFrame) -> dict` that:\n"
-        "1. `annual_sales`: Vertically concatenates the list of quarterly DataFrames (`quarterly_dfs`) using "
-        "`pd.concat(..., ignore_index=True)`.\n"
-        "2. `enriched_sales`: Performs a **left join** of `annual_sales` with `store_locations` on `'store_id'` "
+        "1. `annual_sales`: Vertically stacks and concatenates the list of quarterly DataFrames (`quarterly_dfs`) into a unified table with a fresh, sequential row index.\n"
+        "2. `enriched_sales`: Performs a left join between `annual_sales` and `store_locations` matching on the store identifier (`'store_id'`) "
         "to append each store's `'city'`, `'region'`, and `'manager'`.\n"
         "3. `region_summary`: Groups `enriched_sales` by `'region'` and calculates:\n"
         "   - `'total_revenue'`: sum of `'revenue'` (float, rounded to 2 decimal places).\n"
         "   - `'total_units'`: sum of `'units_sold'` (int).\n"
         "   - `'avg_quarterly_revenue'`: mean of `'revenue'` (float, rounded to 2 decimal places).\n"
-        "   - `'store_count'`: number of distinct stores in the region (`nunique()` on `'store_id'`).\n"
-        "   Reset index, and sort descending by `'total_revenue'`.\n"
+        "   - `'store_count'`: number of distinct stores in the region (int).\n"
+        "   Resets the row index, and sorts descending by `'total_revenue'`.\n"
         "4. Returns a dictionary:\n"
         "   `{\"annual_sales\": annual_sales, \"enriched_sales\": enriched_sales, \"region_summary\": region_summary}`"
     ),
