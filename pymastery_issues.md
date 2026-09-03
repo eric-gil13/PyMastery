@@ -9,3 +9,4 @@
    - **NumPy Part 3**: *Alternating Pattern & Decimation* (still gives hints/explicit code instructions in the problem description).
 7. **Text Formatting Issues in NumPy Part 5**: Unparsed formatting tokens appear as raw text (such as `*` instead of rendering as bolded/italic text), and some punctuation is missing throughout the problem text.
 8. **Test Failure Error Messages Truncated/Hidden**: When a test fails, the full error details and traceback are hidden or cut off in the UI, preventing the user from viewing the complete failure output.
+9. **'Received Output' Always Shows 'None' on Failed Tests**: When a test fails, the UI always displays `None` for "Received output", even when the user's code executes successfully and returns non-None values that simply did not match expected values.
