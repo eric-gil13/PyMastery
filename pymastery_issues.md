@@ -7,3 +7,4 @@
 5. **Visible Test Cases in 'Run Tests' (LeetCode-style)**: In 'Run Tests', test cases (inputs, expected outputs, and actual results) should be explicitly visible to the user (similar to LeetCode) so they can see the exact comparisons being made and verify tests are actually executing.
 6. **Problem Descriptions Give Away Solutions (Move to Hints)**: Specific sections still give explicit code/solution hints in the problem description rather than putting them in the Hints section.
    - **NumPy Part 3**: *Alternating Pattern & Decimation* (still gives hints/explicit code instructions in the problem description).
+7. **Text Formatting Issues in NumPy Part 5**: Unparsed formatting tokens appear as raw text (such as `*` instead of rendering as bolded/italic text), and some punctuation is missing throughout the problem text.
