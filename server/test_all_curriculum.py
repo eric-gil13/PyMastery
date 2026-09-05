@@ -16,6 +16,7 @@ from server.curriculum import (
     get_challenge,
     get_day,
     DAYS,
+    PYTHON_DAYS,
     NUMPY_DAYS,
     PANDAS_DAYS,
     MATPLOTLIB_DAYS,
@@ -26,8 +27,8 @@ from server.curriculum import (
 def test_curriculum_structure():
     print("=== Testing Curriculum Structure ===")
     days = get_all_curriculum()
-    assert len(days) == 7, f"Expected 7 days in active NumPy track, got {len(days)}"
-    print(f"Verified {len(days)} parts in active NumPy track.")
+    assert len(days) == 7, f"Expected 7 days in active Python track, got {len(days)}"
+    print(f"Verified {len(days)} parts in active Python track.")
 
     for i, day in enumerate(days, 1):
         assert day["day_number"] == i, f"Day number mismatch: {day['day_number']} != {i}"
@@ -43,6 +44,8 @@ def test_curriculum_structure():
     assert d1 is not None and d1["day_number"] == 1
     d7 = get_day(7)
     assert d7 is not None and d7["day_number"] == 7
+    ch_py = get_challenge("python-p1-c1")
+    assert ch_py is not None
     ch1 = get_challenge("d1-c1")
     assert ch1 is not None
     ch_pandas = get_challenge("pandas-p1-c1")
@@ -53,8 +56,9 @@ def test_curriculum_structure():
 
 
 def test_challenge_execution():
-    print("=== Executing All 5 Library Reference Solutions Against Test Suites ===")
+    print("=== Executing All 6 Library Reference Solutions Against Test Suites ===")
     library_collections = [
+        ("Pure Python Zero-to-Hero", PYTHON_DAYS),
         ("NumPy Zero-to-Hero", NUMPY_DAYS),
         ("Pandas Zero-to-Hero", PANDAS_DAYS),
         ("Matplotlib Zero-to-Hero", MATPLOTLIB_DAYS),
@@ -125,6 +129,21 @@ def test_challenge_execution():
                             target = exec_scope.get("build_and_run_mlp")
                         elif ch_id == "torch-p3-c2":
                             target = exec_scope.get("build_residual_block")
+                        elif ch_id == "python-p4-c1":
+                            target = exec_scope.get("Vector2D")
+                        elif ch_id == "python-p4-c2":
+                            target = {
+                                "BankAccount": exec_scope.get("BankAccount"),
+                                "CheckingAccount": exec_scope.get("CheckingAccount"),
+                                "SavingsAccount": exec_scope.get("SavingsAccount"),
+                            }
+                        elif ch_id == "python-p7-c1":
+                            target = exec_scope.get("EventDispatcher")
+                        elif ch_id == "python-p7-c2":
+                            target = {
+                                "async_task_batcher": exec_scope.get("async_task_batcher"),
+                                "run_batcher_sync": exec_scope.get("run_batcher_sync"),
+                            }
                         else:
                             # Find candidate callable/class defined in user solution
                             user_callables = [

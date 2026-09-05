@@ -90,6 +90,7 @@ const getEstimatedTime = (challenge: Challenge): string => {
 };
 
 const LIBRARIES: Array<{ id: LibraryId; name: string; icon: string; badge: string; color: string }> = [
+  { id: 'python', name: 'Python', icon: '🐍', badge: '7 Parts', color: 'from-blue-500/20 to-yellow-500/10 border-blue-500/30 text-blue-300' },
   { id: 'numpy', name: 'NumPy', icon: '⚡', badge: '7 Parts', color: 'from-amber-500/20 to-orange-500/10 border-amber-500/30 text-amber-300' },
   { id: 'pandas', name: 'Pandas', icon: '📊', badge: '7 Parts', color: 'from-cyan-500/20 to-blue-500/10 border-cyan-500/30 text-cyan-300' },
   { id: 'matplotlib', name: 'Matplotlib', icon: '📈', badge: '4 Parts', color: 'from-emerald-500/20 to-teal-500/10 border-emerald-500/30 text-emerald-300' },
@@ -102,7 +103,7 @@ export const CurriculumNav: React.FC<CurriculumNavProps> = ({
   currentDay,
   activeChallenge,
   userProgress,
-  selectedLibrary = 'numpy',
+  selectedLibrary = 'python',
   onSelectLibrary,
   onSelectChallenge,
   onOpenPrimer,
@@ -157,7 +158,7 @@ export const CurriculumNav: React.FC<CurriculumNavProps> = ({
               Zero-to-Hero
             </span>
           </div>
-          <div className="grid grid-cols-5 gap-1">
+          <div className="grid grid-cols-6 gap-1">
             {LIBRARIES.map((lib) => {
               const isActive = selectedLibrary === lib.id;
               return (

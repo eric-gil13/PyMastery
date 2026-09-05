@@ -1,5 +1,14 @@
 import type { DayTrack, LibraryId } from '../types';
 
+// 0. Pure Python (Parts 1-7)
+import { PYTHON_PART01_TRACK } from './curriculum/python_01_core_foundations';
+import { PYTHON_PART02_TRACK } from './curriculum/python_02_data_structures';
+import { PYTHON_PART03_TRACK } from './curriculum/python_03_functions';
+import { PYTHON_PART04_TRACK } from './curriculum/python_04_oop_dunders';
+import { PYTHON_PART05_TRACK } from './curriculum/python_05_iterators_generators';
+import { PYTHON_PART06_TRACK } from './curriculum/python_06_decorators_context';
+import { PYTHON_PART07_TRACK } from './curriculum/python_07_modern_capstone';
+
 // 1. NumPy (Parts 1-7)
 import { DAY01_ARRAY_BASICS_TRACK as NUMPY_PART01 } from './curriculum/day01_array_basics';
 import { DAY02_SHAPES_DIMENSIONS_TRACK as NUMPY_PART02 } from './curriculum/day02_shapes_dimensions';
@@ -40,6 +49,16 @@ import { PYTORCH_PART04_TRACK } from './curriculum/pytorch_04_loss_optim';
 import { PYTORCH_PART05_TRACK } from './curriculum/pytorch_05_training_loop';
 import { PYTORCH_PART06_TRACK } from './curriculum/pytorch_06_datasets';
 import { PYTORCH_PART07_TRACK } from './curriculum/pytorch_07_architectures';
+
+export const PYTHON_ZERO_TO_HERO_TRACKS: DayTrack[] = [
+  PYTHON_PART01_TRACK,
+  PYTHON_PART02_TRACK,
+  PYTHON_PART03_TRACK,
+  PYTHON_PART04_TRACK,
+  PYTHON_PART05_TRACK,
+  PYTHON_PART06_TRACK,
+  PYTHON_PART07_TRACK,
+];
 
 export const NUMPY_ZERO_TO_HERO_TRACKS: DayTrack[] = [
   NUMPY_PART01,
@@ -88,6 +107,7 @@ export const PYTORCH_ZERO_TO_HERO_TRACKS: DayTrack[] = [
 ];
 
 export const LIBRARY_CURRICULA: Record<LibraryId, DayTrack[]> = {
+  python: PYTHON_ZERO_TO_HERO_TRACKS,
   numpy: NUMPY_ZERO_TO_HERO_TRACKS,
   pandas: PANDAS_ZERO_TO_HERO_TRACKS,
   matplotlib: MATPLOTLIB_ZERO_TO_HERO_TRACKS,
@@ -96,6 +116,7 @@ export const LIBRARY_CURRICULA: Record<LibraryId, DayTrack[]> = {
 };
 
 export const LIBRARY_METADATA: Record<LibraryId, { name: string; icon: string; tagline: string }> = {
+  python: { name: 'Python', icon: '🐍', tagline: 'Core foundations, data structures, OOP, iterators, and advanced mechanics' },
   numpy: { name: 'NumPy', icon: '⚡', tagline: 'Arrays, vectors, multi-dimensional math, and broadcasting' },
   pandas: { name: 'Pandas', icon: '📊', tagline: 'Series, DataFrames, indexing, cleaning, and aggregations' },
   matplotlib: { name: 'Matplotlib', icon: '📈', tagline: 'Figures, axes, multi-panel subplots, and styling' },
@@ -104,16 +125,15 @@ export const LIBRARY_METADATA: Record<LibraryId, { name: string; icon: string; t
 };
 
 // Aliases for compatibility with existing imports
-export const PART01_TRACK = NUMPY_PART01;
-export const PART02_TRACK = NUMPY_PART02;
-export const PART03_TRACK = NUMPY_PART03;
-export const PART04_TRACK = NUMPY_PART04;
-export const PART05_TRACK = NUMPY_PART05;
-export const PART06_TRACK = NUMPY_PART06;
-export const PART07_TRACK = NUMPY_PART07;
+export const PART01_TRACK = PYTHON_PART01_TRACK;
+export const PART02_TRACK = PYTHON_PART02_TRACK;
+export const PART03_TRACK = PYTHON_PART03_TRACK;
+export const PART04_TRACK = PYTHON_PART04_TRACK;
+export const PART05_TRACK = PYTHON_PART05_TRACK;
+export const PART06_TRACK = PYTHON_PART06_TRACK;
+export const PART07_TRACK = PYTHON_PART07_TRACK;
 
-export const PART_TRACKS: DayTrack[] = NUMPY_ZERO_TO_HERO_TRACKS;
-export const CURRICULUM_DATA: DayTrack[] = NUMPY_ZERO_TO_HERO_TRACKS;
+export const PART_TRACKS: DayTrack[] = PYTHON_ZERO_TO_HERO_TRACKS;
+export const CURRICULUM_DATA: DayTrack[] = PYTHON_ZERO_TO_HERO_TRACKS;
 
 export default CURRICULUM_DATA;
-

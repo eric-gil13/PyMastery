@@ -33,7 +33,7 @@ import ChallengeIntuitionPanel from './components/ChallengeIntuitionPanel';
 
 export function App() {
   // Curriculum & Active Challenge State
-  const [selectedLibrary, setSelectedLibrary] = useState<LibraryId>('numpy');
+  const [selectedLibrary, setSelectedLibrary] = useState<LibraryId>('python');
   const curriculum = LIBRARY_CURRICULA[selectedLibrary] || CURRICULUM_DATA;
   const [currentDay, setCurrentDay] = useState<DayTrack>(CURRICULUM_DATA[0]);
   const [activeChallenge, setActiveChallenge] = useState<Challenge>(

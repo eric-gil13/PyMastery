@@ -17,6 +17,7 @@ import MathRenderer from './MathRenderer';
 import InteractiveArrayVisualizer from './InteractiveArrayVisualizer';
 import InteractiveDataframeVisualizer from './InteractiveDataframeVisualizer';
 import InteractiveAutogradVisualizer from './InteractiveAutogradVisualizer';
+import InteractivePythonMemoryVisualizer from './InteractivePythonMemoryVisualizer';
 import MarkdownGuideRenderer from './MarkdownGuideRenderer';
 import ApiCheatCard from './ApiCheatCard';
 
@@ -63,7 +64,10 @@ export const ChallengeIntuitionPanel: React.FC<ChallengeIntuitionPanelProps> = (
     const widgetType = currentDay?.libraryMechanics?.interactiveWidgetType;
     const dayNum = currentDay?.dayNumber || 1;
 
-    if (widgetType === 'numpy-strides' || dayNum === 1) {
+    if (widgetType === 'python-memory' || challenge.id.startsWith('python-')) {
+      return <InteractivePythonMemoryVisualizer />;
+    }
+    if (widgetType === 'numpy-strides' || (dayNum === 1 && !challenge.id.startsWith('python-') && !challenge.id.startsWith('pandas-'))) {
       return <InteractiveArrayVisualizer />;
     }
     if (widgetType === 'pandas-blockmanager' || dayNum === 2) {

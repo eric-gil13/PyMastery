@@ -17,6 +17,7 @@ import ApiCheatCard from './ApiCheatCard';
 import InteractiveArrayVisualizer from './InteractiveArrayVisualizer';
 import InteractiveDataframeVisualizer from './InteractiveDataframeVisualizer';
 import InteractiveAutogradVisualizer from './InteractiveAutogradVisualizer';
+import InteractivePythonMemoryVisualizer from './InteractivePythonMemoryVisualizer';
 import MarkdownGuideRenderer from './MarkdownGuideRenderer';
 
 interface StudyMasterclassCanvasProps {
@@ -38,8 +39,12 @@ export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
   const renderInteractiveWidget = () => {
     if (!mechanics) return null;
     const widgetType = mechanics.interactiveWidgetType;
+    const isPython = activeChallenge.id.startsWith('python-') || mechanics.libraryName.toLowerCase().includes('python');
 
-    if (widgetType === 'numpy-strides' || currentDay.dayNumber === 1) {
+    if (widgetType === 'python-memory' || isPython) {
+      return <InteractivePythonMemoryVisualizer />;
+    }
+    if (widgetType === 'numpy-strides' || (currentDay.dayNumber === 1 && !activeChallenge.id.startsWith('pandas-'))) {
       return <InteractiveArrayVisualizer />;
     }
     if (widgetType === 'pandas-blockmanager' || currentDay.dayNumber === 2) {

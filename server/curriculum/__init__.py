@@ -5,8 +5,16 @@ PyMastery Progressive Zero-to-Hero Curriculum Registry
 from typing import Dict, Any, List, Optional, Union
 from server.models import Challenge, CurriculumOverview, TestCase, Track
 
-# Import Progressive Zero-to-Hero NumPy Curriculum Modules
+# Import Progressive Pure Python Curriculum Modules
 from server.curriculum import (
+    python_01_core,
+    python_02_structures,
+    python_03_functions,
+    python_04_oop,
+    python_05_iterators,
+    python_06_decorators,
+    python_07_advanced,
+    # Import Progressive Zero-to-Hero NumPy Curriculum Modules
     day01_numpy_basics,
     day02_numpy_shapes,
     day03_numpy_slicing,
@@ -51,6 +59,16 @@ from server.curriculum import (
     day06_pytorch_nn,
     day07_full_pipeline,
 )
+
+PYTHON_DAYS = [
+    python_01_core.get_curriculum(),
+    python_02_structures.get_curriculum(),
+    python_03_functions.get_curriculum(),
+    python_04_oop.get_curriculum(),
+    python_05_iterators.get_curriculum(),
+    python_06_decorators.get_curriculum(),
+    python_07_advanced.get_curriculum(),
+]
 
 NUMPY_DAYS = [
     day01_numpy_basics.get_curriculum(),
@@ -108,13 +126,13 @@ LEGACY_DAYS = [
     day07_full_pipeline.get_curriculum(),
 ]
 
-# Default active track is NumPy Zero-to-Hero
-DAYS = NUMPY_DAYS
+# Default active track is Pure Python Zero-to-Hero
+DAYS = PYTHON_DAYS
 
 DAYS_BY_ID = {day["day_id"]: day for day in DAYS}
 DAYS_BY_NUM = {day["day_number"]: day for day in DAYS}
 
-ALL_TRACK_COLLECTIONS = [NUMPY_DAYS, PANDAS_DAYS, MATPLOTLIB_DAYS, SKLEARN_DAYS, PYTORCH_DAYS, LEGACY_DAYS]
+ALL_TRACK_COLLECTIONS = [PYTHON_DAYS, NUMPY_DAYS, PANDAS_DAYS, MATPLOTLIB_DAYS, SKLEARN_DAYS, PYTORCH_DAYS, LEGACY_DAYS]
 
 # Build index of all challenges across progressive and legacy curricula for fast lookup
 ALL_CHALLENGES_MAP: Dict[str, Dict[str, Any]] = {}
@@ -251,6 +269,26 @@ def _convert_to_challenge_models() -> List[Challenge]:
 # Global tracks and challenges for FastAPI API routes
 CURRICULUM_CHALLENGES = _convert_to_challenge_models()
 
+PYTHON_ICONS = ["Cpu", "Boxes", "Sparkles", "Code2", "Repeat", "Flame", "Rocket"]
+PYTHON_BADGES = [
+    "Part 1 • Python Foundations",
+    "Part 2 • Data Structures",
+    "Part 3 • Functions & Scopes",
+    "Part 4 • OOP & Protocols",
+    "Part 5 • Iterators & Generators",
+    "Part 6 • Decorators & Context",
+    "Part 7 • Modern Capstone",
+]
+PYTHON_DIFFICULTIES = [
+    "Beginner",
+    "Intermediate",
+    "Intermediate",
+    "Intermediate",
+    "Intermediate",
+    "Intermediate",
+    "Advanced",
+]
+
 NUMPY_ICONS = ["Layers", "Grid", "Scissors", "Zap", "BarChart3", "Filter", "Network"]
 NUMPY_BADGES = [
     "Part 1 • NumPy Basics",
@@ -276,10 +314,10 @@ TRACKS: List[Track] = [
         id=f"track-day{day['day_number']:02d}",
         title=day["title"],
         description=day["tagline"],
-        icon=NUMPY_ICONS[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_ICONS) else "Cpu",
-        badge=NUMPY_BADGES[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_BADGES) else f"Part {day['day_number']}",
+        icon=PYTHON_ICONS[day["day_number"] - 1] if day["day_number"] <= len(PYTHON_ICONS) else "Cpu",
+        badge=PYTHON_BADGES[day["day_number"] - 1] if day["day_number"] <= len(PYTHON_BADGES) else f"Part {day['day_number']}",
         order=day["day_number"],
-        difficulty=NUMPY_DIFFICULTIES[day["day_number"] - 1] if day["day_number"] <= len(NUMPY_DIFFICULTIES) else "Intermediate",
+        difficulty=PYTHON_DIFFICULTIES[day["day_number"] - 1] if day["day_number"] <= len(PYTHON_DIFFICULTIES) else "Intermediate",
         challenge_count=len(day["challenges"]),
         challenges=[c for c in CURRICULUM_CHALLENGES if c.track_id == f"track-day{day['day_number']:02d}"]
     )

@@ -1,7 +1,7 @@
 export type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced' | 'Expert';
 export type Medal = 'gold' | 'silver' | 'bronze' | 'none';
 export type LayoutMode = 'guided' | 'code' | 'study' | 'focus' | 'masterclass';
-export type LibraryId = 'numpy' | 'pandas' | 'matplotlib' | 'sklearn' | 'pytorch';
+export type LibraryId = 'python' | 'numpy' | 'pandas' | 'matplotlib' | 'sklearn' | 'pytorch';
 
 export interface TestCase {
   id: string;
@@ -206,7 +206,7 @@ export interface LibraryMechanicsData {
   chapters: LibraryMechanicsChapter[];
   commonTraps: CommonTrap[];
   apiCheatSheet: ApiCheatItem[];
-  interactiveWidgetType?: 'numpy-strides' | 'pandas-blockmanager' | 'matplotlib-artists' | 'sklearn-pipeline' | 'pytorch-autograd' | 'pytorch-nn' | 'production-pipeline';
+  interactiveWidgetType?: 'numpy-strides' | 'pandas-blockmanager' | 'matplotlib-artists' | 'sklearn-pipeline' | 'pytorch-autograd' | 'pytorch-nn' | 'production-pipeline' | 'python-memory';
 }
 
 export interface DayTrack {

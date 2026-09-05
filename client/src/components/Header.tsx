@@ -45,7 +45,7 @@ const getDifficultyBadge = (difficulty: string) => {
 export const Header: React.FC<HeaderProps> = ({
   currentDay,
   activeChallenge,
-  selectedLibrary = 'numpy',
+  selectedLibrary = 'python',
   layoutMode = 'guided',
   onChangeLayout,
   mentorOpen,
@@ -86,8 +86,8 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="hidden md:flex items-center gap-2 text-xs min-w-0">
           <span className="text-zinc-200 font-semibold whitespace-nowrap flex items-center gap-1 bg-surface-elevated px-2 py-0.5 rounded border border-surface-border">
-            <span>{LIBRARY_METADATA[selectedLibrary]?.icon || '⚡'}</span>
-            <span>{LIBRARY_METADATA[selectedLibrary]?.name || 'NumPy'}</span>
+            <span>{LIBRARY_METADATA[selectedLibrary]?.icon || '🐍'}</span>
+            <span>{LIBRARY_METADATA[selectedLibrary]?.name || 'Python'}</span>
           </span>
           <span className="text-zinc-600">›</span>
           <span className="text-zinc-400 font-medium whitespace-nowrap">

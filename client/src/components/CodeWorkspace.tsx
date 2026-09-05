@@ -122,6 +122,28 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       }
     }
 
+    // 4. Pure Python: Mutable default argument trap (def foo(x=[]))
+    if (/def\s+\w+\s*\([^)]*=\s*(\[\]|\{\})/i.test(code)) {
+      return {
+        id: 'py-mutable-default',
+        type: 'Python Mutable Default Parameter Alert',
+        message: 'Mutable default argument (`[]` or `{}`) detected in function definition. Default arguments are evaluated once at function definition time, not call time.',
+        suggestion: 'Use `None` as the default value (e.g. `arg=None`) and initialize inside the function: `if arg is None: arg = []`.',
+        severity: 'warning',
+      };
+    }
+
+    // 5. Pure Python: type(x) == y anti-pattern
+    if (/type\s*\([^)]+\)\s*==\s*(list|dict|int|str|float|tuple|set)\b/.test(code)) {
+      return {
+        id: 'py-type-equality',
+        type: 'Python Idiom Warning',
+        message: '`type(x) == Type` detected. This prevents subclass polymorphism.',
+        suggestion: 'Use idiomatic `isinstance(x, Type)` to correctly support subclasses and Python type hierarchies.',
+        severity: 'info',
+      };
+    }
+
     return null;
   }, [code, challenge]);
 
