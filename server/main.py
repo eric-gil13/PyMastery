@@ -1,11 +1,13 @@
 """PyMastery FastAPI Application with Runners, Sync, User Authentication, Curriculum, and AI Endpoints."""
 
 from __future__ import annotations
+import os
 import sys
 from typing import Any, Dict, List, Optional
 from fastapi import FastAPI, HTTPException, Header, Query, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from server.ai_tutor import ai_tutor
@@ -372,6 +374,35 @@ async def test_connection_endpoint(
     return await ai_tutor.test_connection(req)
 
 
+# --- Static Frontend Serving for Production / Docker ---
+CLIENT_DIST_DIR = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+    "client",
+    "dist",
+)
+
+if os.path.isdir(CLIENT_DIST_DIR):
+    assets_dir = os.path.join(CLIENT_DIST_DIR, "assets")
+    if os.path.isdir(assets_dir):
+        app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_spa(full_path: str):
+        if full_path.startswith("api") or full_path in ("docs", "openapi.json", "redoc"):
+            raise HTTPException(status_code=404, detail="Not Found")
+        target_file = os.path.join(CLIENT_DIST_DIR, full_path)
+        if full_path and os.path.isfile(target_file):
+            return FileResponse(target_file)
+        index_file = os.path.join(CLIENT_DIST_DIR, "index.html")
+        if os.path.isfile(index_file):
+            return FileResponse(index_file)
+        raise HTTPException(status_code=404, detail="Index not found")
+
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="127.0.0.1", port=8000)
+
+    port = int(os.environ.get("PORT", 8000))
+    host = os.environ.get("HOST", "0.0.0.0")
+    uvicorn.run(app, host=host, port=port)
+

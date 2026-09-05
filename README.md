@@ -1,3 +1,13 @@
+---
+title: PyMastery Studio
+emoji: 🐍
+colorFrom: indigo
+colorTo: purple
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # PyMastery Studio: High-Density Python & ML Architecture Platform
 
 PyMastery is an interactive, browser-based notebook studio engineered for experienced senior developers to rapidly master the Python scientific and machine learning stack (`NumPy`, `Pandas`, `Matplotlib`, `Scikit-Learn`, `PyTorch`) within a **1-week accelerated timeline**.

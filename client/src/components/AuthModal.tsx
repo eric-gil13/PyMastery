@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import type { UserProgress } from '../types';
 import { generateSyncKey, importProgressFromJson } from '../utils/storage';
+import { API_BASE_URL } from '../services/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -69,7 +70,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setErrorMsg(null);
     setSuccessMsg(null);
 
-    const endpoint = isLogin ? 'http://localhost:8000/api/auth/login' : 'http://localhost:8000/api/auth/register';
+    const endpoint = isLogin ? `${API_BASE_URL}/auth/login` : `${API_BASE_URL}/auth/register`;
 
     try {
       const resp = await fetch(endpoint, {

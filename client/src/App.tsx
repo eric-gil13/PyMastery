@@ -16,6 +16,7 @@ import {
 } from './utils/storage';
 import {
   executeCodeApi,
+  API_BASE_URL,
 } from './services/api';
 
 import Header from './components/Header';
@@ -89,7 +90,7 @@ export function App() {
       try {
         const parsed = JSON.parse(storedAuth);
         setCurrentUser(parsed);
-        fetch(`http://localhost:8000/api/user/state?user_id=${parsed.userId}`, {
+        fetch(`${API_BASE_URL}/user/state?user_id=${parsed.userId}`, {
           headers: { Authorization: `Bearer ${parsed.token}` },
         })
           .then((r) => r.json())
@@ -205,7 +206,7 @@ export function App() {
         };
         saveUserProgress(updated);
 
-        fetch('http://localhost:8000/api/user/save', {
+        fetch(`${API_BASE_URL}/user/save`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -422,7 +423,7 @@ export function App() {
     setCurrentUser(authData);
     localStorage.setItem('pymastery_auth', JSON.stringify(authData));
 
-    fetch(`http://localhost:8000/api/user/state?user_id=${userId}`, {
+    fetch(`${API_BASE_URL}/user/state?user_id=${userId}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
       .then((r) => r.json())
