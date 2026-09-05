@@ -271,12 +271,12 @@ async def get_challenge(challenge_id: str) -> Challenge:
 async def execute_code(req: RunRequest, authorization: Optional[str] = Header(None)) -> RunResponse:
     effective_user_id = get_current_user(authorization)
 
-    if req.challenge_id:
+    if req.mode == "run":
+        req.test_cases = None
+    elif req.challenge_id:
         ch = curriculum.get_challenge(req.challenge_id)
         if ch:
-            if req.mode == "run":
-                req.test_cases = None
-            elif req.mode == "test":
+            if req.mode == "test":
                 if not req.test_cases:
                     req.test_cases = ch.test_cases
             elif req.mode == "benchmark":
@@ -290,7 +290,7 @@ async def execute_code(req: RunRequest, authorization: Optional[str] = Header(No
     resp = await runner.execute(req)
 
     # If run has challenge_id, mode is test/benchmark, and tests were evaluated, update user progress automatically
-    if req.challenge_id and req.mode in ("test", "benchmark") and resp.test_results:
+    if req.mode != "run" and req.challenge_id and req.mode in ("test", "benchmark") and resp.test_results:
         all_passed = all(getattr(t, "status", "") == "passed" or getattr(t, "passed", False) for t in resp.test_results)
         passed_count = sum(1 for t in resp.test_results if getattr(t, "status", "") == "passed" or getattr(t, "passed", False))
         total_count = len(resp.test_results)

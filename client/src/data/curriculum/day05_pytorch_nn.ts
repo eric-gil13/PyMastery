@@ -131,8 +131,8 @@ class MyLayer(nn.Module):
 ### 2. Parameters vs. Persistent Buffers
 Not all tensors inside a model are trainable weights that require gradients:
 1. **\`nn.Parameter\`**: Trainable tensor with \`requires_grad=True\` by default. Included in \`model.parameters()\` and updated by optimizers.
-2. **Persistent Buffers (\`register_buffer\`)\**: State tensors that do **not** require gradients (e.g., BatchNorm \`running_mean\`, rotary positional embeddings, attention masks). They automatically move to GPU when calling \`model.to('cuda')\` and are saved inside \`model.state_dict()\`.
-3. **Non-Persistent Buffers (\`persistent=False\`)\**: Ephemeral buffers that move to GPU with \`model.to('cuda')\` but are excluded from serialized checkpoint files.
+2. **Persistent Buffers (\`register_buffer\`)**: State tensors that do **not** require gradients (e.g., BatchNorm \`running_mean\`, rotary positional embeddings, attention masks). They automatically move to GPU when calling \`model.to('cuda')\` and are saved inside \`model.state_dict()\`.
+3. **Non-Persistent Buffers (\`persistent=False\`)**: Ephemeral buffers that move to GPU with \`model.to('cuda')\` but are excluded from serialized checkpoint files.
 
 ---
 
@@ -397,9 +397,9 @@ Input gradient norm: 1.2341`,
         markdownContent: `### 1. PyTorch Caching Allocator Mechanics
 PyTorch does not call \`cudaMalloc\` for every tensor allocation, as kernel-level memory allocation is prohibitively slow. Instead, it maintains a **Caching Memory Allocator** that reserves large memory pools from the GPU driver and carves out blocks for individual tensors.
 
-- **Allocated Memory (\`memory_allocated\`)\**: VRAM currently occupied by active \`torch.Tensor\` buffers.
-- **Reserved Memory (\`memory_reserved\`)\**: Total VRAM claimed by the caching allocator from the GPU OS driver.
-- **Peak Memory (\`max_memory_allocated\`)\**: High-water mark indicating maximum VRAM consumed since the last reset.
+- **Allocated Memory (\`memory_allocated\`)**: VRAM currently occupied by active \`torch.Tensor\` buffers.
+- **Reserved Memory (\`memory_reserved\`)**: Total VRAM claimed by the caching allocator from the GPU OS driver.
+- **Peak Memory (\`max_memory_allocated\`)**: High-water mark indicating maximum VRAM consumed since the last reset.
 
 ---
 

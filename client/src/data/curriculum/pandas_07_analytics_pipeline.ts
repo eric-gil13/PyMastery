@@ -261,9 +261,9 @@ Write a function \`build_rfm_pipeline(orders_df: pd.DataFrame, snapshot_date: st
    - \`'recency_days'\`: integer elapsed days between the snapshot reference date and the customer's \`'last_order'\`.
    - \`'is_churned'\`: boolean flag \`True\` if \`recency_days > churn_threshold_days\`, else \`False\`.
    - \`'segment'\`: Categorize each user as:
-     * \`'At-Risk'\` if \`is_churned\` is \`True\`
-     * \`'VIP'\` if \`is_churned\` is \`False\` and \`frequency >= 3\`
-     * \`'Regular'\` otherwise
+     - \`'At-Risk'\` if \`is_churned\` is \`True\`
+     - \`'VIP'\` if \`is_churned\` is \`False\` and \`frequency >= 3\`
+     - \`'Regular'\` otherwise
    Sort \`rfm_table\` ascending by \`'customer_id'\` and reset the row index.
 4. **Executive Summary Metrics** (dict):
    - \`'total_customers'\`: Total number of unique customers (int).
@@ -477,9 +477,9 @@ Write a function \`build_production_kpi_pipeline(transactions: pd.DataFrame, pro
 
 5. **Category KPI Summary**:
    - Group the merged table by \`'category'\` and aggregate:
-     * \`'total_net_revenue'\`: sum of \`'net_revenue'\` (round 2)
-     * \`'total_profit'\`: sum of \`'profit'\` (round 2)
-     * \`'order_volume'\`: count of \`'transaction_id'\` (int)
+     - \`'total_net_revenue'\`: sum of \`'net_revenue'\` (round 2)
+     - \`'total_profit'\`: sum of \`'profit'\` (round 2)
+     - \`'order_volume'\`: count of \`'transaction_id'\` (int)
    - Add \`'overall_profit_margin'\`: \`'total_profit'\` divided by \`'total_net_revenue'\`, rounded to 4 decimal places.
    - Sort by \`'total_net_revenue'\` descending and reset the row index.
 

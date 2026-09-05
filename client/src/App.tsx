@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
 import { CURRICULUM_DATA, LIBRARY_CURRICULA } from './data/curriculumData';
 import type {
@@ -149,6 +149,40 @@ export function App() {
       }
     },
     [handleSelectChallenge]
+  );
+
+  // 3c. Next Problem Navigation (Issue 1)
+  const allChallengesWithTrack = useMemo(() => {
+    const list: { challenge: Challenge; track: DayTrack }[] = [];
+    for (const track of curriculum) {
+      for (const ch of track.challenges) {
+        list.push({ challenge: ch, track });
+      }
+    }
+    return list;
+  }, [curriculum]);
+
+  const currentChallengeIndex = allChallengesWithTrack.findIndex(
+    (item) => item.challenge.id === activeChallenge.id
+  );
+  const hasNextProblem =
+    currentChallengeIndex >= 0 &&
+    currentChallengeIndex < allChallengesWithTrack.length - 1;
+
+  const handleNextProblem = useCallback(() => {
+    if (
+      currentChallengeIndex >= 0 &&
+      currentChallengeIndex < allChallengesWithTrack.length - 1
+    ) {
+      const next = allChallengesWithTrack[currentChallengeIndex + 1];
+      handleSelectChallenge(next.challenge, next.track);
+    }
+  }, [currentChallengeIndex, allChallengesWithTrack, handleSelectChallenge]);
+
+  const testsPassed = Boolean(
+    executionResult?.testResults &&
+    executionResult.testResults.length > 0 &&
+    executionResult.testResults.every((t) => t.passed)
   );
 
   // 4. Auto-save code edits to backend & localStorage
@@ -498,6 +532,9 @@ export function App() {
                     isRunning={isRunning}
                     isSubmitting={isSubmitting}
                     onOpenPrimer={() => setPrimerOpen(true)}
+                    onNextProblem={handleNextProblem}
+                    hasNextProblem={hasNextProblem}
+                    testsPassed={testsPassed}
                   />
                 </div>
 
@@ -508,6 +545,8 @@ export function App() {
                     executionResult={executionResult}
                     isRunning={isRunningCode || isRunning || isSubmitting}
                     onOpenMentor={() => setMentorOpen(true)}
+                    onNextProblem={handleNextProblem}
+                    hasNextProblem={hasNextProblem}
                   />
                 </div>
               </div>
@@ -528,6 +567,9 @@ export function App() {
                   isRunning={isRunning}
                   isSubmitting={isSubmitting}
                   onOpenPrimer={() => setPrimerOpen(true)}
+                  onNextProblem={handleNextProblem}
+                  hasNextProblem={hasNextProblem}
+                  testsPassed={testsPassed}
                 />
               </div>
 
@@ -538,6 +580,8 @@ export function App() {
                   executionResult={executionResult}
                   isRunning={isRunningCode || isRunning || isSubmitting}
                   onOpenMentor={() => setMentorOpen(true)}
+                  onNextProblem={handleNextProblem}
+                  hasNextProblem={hasNextProblem}
                 />
               </div>
             </div>

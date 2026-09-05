@@ -14,7 +14,8 @@ export const DAY05_TRACK: DayTrack = {
     libraryName: 'NumPy Aggregations, Statistics & Multi-Dimensional Axes',
     tagline: 'Squash dimensions with confidence: intuitive visual mental models for multi-dimensional reductions, statistics, and running totals.',
     overview: `### 📊 The Spreadsheet Intuition
-Think of a 2D NumPy array as an Excel spreadsheet or a teacher's gradebook.
+
+Think of a 2D NumPy array as an Excel spreadsheet or a teacher's gradebook:
 - Rows represent individual students.
 - Columns represent exams taken throughout the semester.
 
@@ -23,6 +24,7 @@ When you want summary statistics, there are two distinct questions:
 2. *"How difficult was each exam for the whole class?"* (You average vertically down rows $\\rightarrow$ **axis=0**).
 
 ### ⚡ The "Collapsing Dimension" Mental Model
+
 The most common point of confusion for beginners is remembering whether \`axis=0\` affects rows or columns.
 Here is the universal rule:
 > **The axis you specify is the dimension that gets collapsed (squashed away).**
@@ -33,12 +35,13 @@ Here is the universal rule:
   - \`np.mean(arr, axis=None)\` collapses everything into a single overall scalar.
 
 ### 📐 Broadcasting with keepdims=True
+
 When you calculate row averages with \`arr.mean(axis=1)\`, NumPy produces a 1D vector of shape \`(N,)\`.
 If you try to subtract this from \`arr\` (to center each row around its personal mean), NumPy tries to broadcast along the trailing dimension and throws an error!
 
 By setting \`keepdims=True\`, NumPy keeps the collapsed axis as size 1: shape \`(N, 1)\`.
 Now \`(N, M) - (N, 1)\` broadcasts cleanly across every column without any extra reshaping or copying!`,
-    whyItExists: `Aggregations are the engine of all statistical analysis, machine learning metrics, and data processing.
+    whyItExists: `Aggregations are the engine of all statistical analysis, machine learning metrics, and data processing:
 - Vectorized C Loops: NumPy compiles reductions into tight C loops that run 50x to 200x faster than pure Python loops.
 - SIMD Parallelism: Vector registers compute sums and averages across multiple numbers per clock cycle.
 - Memory Efficiency: Aggregating in-place or along axes avoids creating huge intermediate lists and objects.`,
@@ -91,12 +94,14 @@ axis = 0 =====>    82.33    81.00    84.33    88.33     [shape (4,)]
         icon: 'Layers',
         summary: 'Understand how axis=0 collapses rows down columns while axis=1 collapses columns across rows.',
         markdownContent: `### Understanding the Axis Parameter
+
 When working with 2D tables:
 * **\`axis=0\` (Down columns):** You move vertically through rows. The row dimension is eliminated, producing one summary statistic per column.
 * **\`axis=1\` (Across rows):** You move horizontally through columns. The column dimension is eliminated, producing one summary statistic per row.
 * **\`axis=None\` (Global reduction):** Every number in the entire array is aggregated into a single scalar value.
 
 ### Higher Dimensions: 3D and Beyond
+
 In a 3D array of shape \`(Batch, Height, Width)\`:
 * \`mean(axis=0)\` computes the average image across the batch: shape \`(Height, Width)\`.
 * \`mean(axis=(1, 2))\` computes the mean pixel value for each image in the batch: shape \`(Batch,)\`.`,
@@ -129,14 +134,16 @@ Each Student's GPA (axis=1): [86.25 93.25 72.5 ]`,
         icon: 'BarChart2',
         summary: 'Master mean, std, var, min, and max along any axis.',
         markdownContent: `### The Standard Statistical Toolkit
+
 NumPy provides blazing-fast statistical aggregators:
-* \`np.sum(arr, axis)\`: Total sum
-* \`np.mean(arr, axis)\`: Arithmetic average $\\mu = \\frac{1}{N} \\sum x_i$
-* \`np.std(arr, axis, ddof=0)\`: Standard deviation $\\sigma = \\sqrt{\\frac{1}{N} \\sum (x_i - \\mu)^2}$
-* \`np.var(arr, axis)\`: Variance $\\sigma^2$
-* \`np.min(arr, axis)\` / \`np.max(arr, axis)\`: Extremes
+* \`np.sum(arr, axis)\`: Total sum across elements.
+* \`np.mean(arr, axis)\`: Arithmetic average $\\mu = \\frac{1}{N} \\sum_{i=1}^N x_i$.
+* \`np.std(arr, axis, ddof=0)\`: Standard deviation $\\sigma = \\sqrt{\\frac{1}{N} \\sum_{i=1}^N (x_i - \\mu)^2}$.
+* \`np.var(arr, axis)\`: Variance $\\sigma^2$.
+* \`np.min(arr, axis)\` / \`np.max(arr, axis)\`: Extremes (minimum and maximum values).
 
 ### Degrees of Freedom (\`ddof\`)
+
 By default, NumPy's \`np.std\` uses population standard deviation (\`ddof=0\`, dividing by $N$).
 If you need sample standard deviation (dividing by $N - 1$), pass \`ddof=1\`.`,
         codeSnippets: [
@@ -165,6 +172,7 @@ Max per row: [30. 60.]`,
         icon: 'Target',
         summary: 'Find the exact index locations of minimum and maximum values without sorting.',
         markdownContent: `### Finding the "Winner" with argmax
+
 Often you do not just want to know *what* the maximum number is—you want to know *who* scored it or *when* it happened:
 * \`np.max(scores)\` returns the highest score (e.g. \`98\`).
 * \`np.argmax(scores, axis=0)\` returns the student index with the highest grade for each exam.
@@ -202,6 +210,7 @@ Best exam index for each student (axis=1): [1 2 2]`,
         icon: 'TrendingUp',
         summary: 'Calculate cumulative running totals with cumsum and zero-center data with keepdims=True.',
         markdownContent: `### Cumulative Aggregations: \`np.cumsum\`
+
 Unlike \`np.sum\` which collapses the array to a smaller shape, \`np.cumsum\` keeps the original shape and computes running cumulative totals:
 \`\`\`python
 transactions = np.array([100, -30, 50, -20])
@@ -210,6 +219,7 @@ balance = np.cumsum(transactions)
 \`\`\`
 
 ### The \`keepdims=True\` Superpower
+
 To normalize or zero-center each row of a 2D matrix (subtracting each row's mean):
 \`\`\`python
 # Without keepdims: shape is (N,) -> shape mismatch during broadcasting!
@@ -492,10 +502,10 @@ def aggregate_scorecard(scores: np.ndarray) -> dict:
           'Omitting keepdims=True when performing broadcast subtractions.'
         ],
         progressiveHints: [
-          'Tier 1: np.mean(scores, axis=1)',
-          'Tier 2: np.mean(scores, axis=0)',
-          'Tier 3: np.argmax and np.argmin',
-          'Tier 4: scores - np.mean(scores, axis=1, keepdims=True)'
+          'Tier 1: Compute student averages along rows with np.mean(scores, axis=1).',
+          'Tier 2: Compute exam means down columns with np.mean(scores, axis=0).',
+          'Tier 3: Locate extreme index positions using np.argmax and np.argmin.',
+          'Tier 4: Center scores cleanly with keepdims: scores - np.mean(scores, axis=1, keepdims=True).'
         ],
         deepInternals: {
           title: 'Contiguous Memory Reductions',
@@ -732,10 +742,10 @@ def analyze_cashflow(transactions: np.ndarray, threshold_std: float = 2.0) -> di
           'Missing negative outliers by forgetting the absolute value.'
         ],
         progressiveHints: [
-          'Tier 1: np.cumsum(transactions)',
-          'Tier 2: net_cashflow = np.sum(transactions)',
-          'Tier 3: np.argmin and np.argmax on running_balance',
-          'Tier 4: np.abs(tx - mean) > threshold * std'
+          'Tier 1: Compute running balance via np.cumsum(transactions).',
+          'Tier 2: Compute net cashflow with net_cashflow = np.sum(transactions).',
+          'Tier 3: Identify trough and peak indices via np.argmin and np.argmax on running_balance.',
+          'Tier 4: Flag anomalies exceeding deviation threshold: np.abs(tx - mean) > threshold * std.'
         ],
         deepInternals: {
           title: 'Z-Score Distance Calculation',
@@ -781,7 +791,7 @@ Cumsum Buffer: [  100 ] [  50 ] [  250 ] [  -50 ]`,
         keyTakeaways: [
           'np.cumsum computes running cumulative totals at hardware speed.',
           'np.argmin and np.argmax identify where balance extremes occurred.',
-          'Standard deviation boundaries mean ± k*std identify anomalies without training complex models.'
+          'Standard deviation boundaries mean ± k * std identify anomalies without training complex models.'
         ]
       },
       sampleDataFrame: {

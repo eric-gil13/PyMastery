@@ -306,21 +306,22 @@ Write a function \`annotate_peak_anomaly(timestamps: np.ndarray, signal: np.ndar
 1. Validates inputs:
    - If \`len(timestamps) == 0\` or \`len(signal) == 0\`, raise \`ValueError("Inputs cannot be empty")\`.
    - If \`len(timestamps) != len(signal)\`, raise \`ValueError("Timestamps and signal must have identical length")\`.
-2. Identifies the peak anomaly index as the point with maximum absolute deviation from the mean (\`int(np.argmax(np.abs(signal - np.mean(signal))))\`).
+2. Identifies the peak anomaly index as the point with maximum absolute deviation from the signal mean.
 3. Initializes a Figure and single Axes with a figure size of 10 by 5 inches (\`figsize=(10, 5)\`).
 4. Plots the telemetry signal curve across timestamps (\`color="#2563eb"\`, \`linewidth=1.8\`, and \`label="Signal"\`).
 5. Highlights the peak anomaly coordinate \`(peak_x, peak_y)\` with a prominent scatter point (\`color="#dc2626"\`, \`s=80\`, \`zorder=5\`, and \`label="Anomaly"\`).
 6. Annotates the peak anomaly coordinate with an arrow callout featuring:
    - Formatted text: \`f"{label_text}: {peak_y:.2f}"\`
    - Target arrow coordinate: \`xy=(peak_x, peak_y)\`
-   - Callout text position: \`xytext=(peak_x + (timestamps.max() - timestamps.min()) * 0.08, peak_y + (signal.max() - signal.min()) * 0.15)\`
+   - Callout text position: offset by 8% of the timestamp range along the x-axis and 15% of the signal amplitude range along the y-axis relative to the peak point (\`xytext\`)
    - Arrow properties: \`arrowprops=dict(arrowstyle="->", color="#dc2626", lw=1.8)\`
    - Bold typography: \`fontweight="bold"\`
 7. Sets the title to \`"Signal Anomaly Detection"\`, the x-axis label to \`"Time (s)"\`, and the y-axis label to \`"Amplitude"\`.
 8. Enables grid lines, displays the legend, and returns the \`(fig, ax)\` tuple.`,
       hints: [
-        'Use np.argmax(np.abs(signal - np.mean(signal))) to locate the peak.',
+        'Locate peak anomaly index using int(np.argmax(np.abs(signal - np.mean(signal)))).',
         'Use ax.scatter(peak_x, peak_y, color="#dc2626", s=80, zorder=5).',
+        'Calculate callout offset position: xytext=(peak_x + (timestamps.max() - timestamps.min()) * 0.08, peak_y + (signal.max() - signal.min()) * 0.15).',
         'Pass arrowprops=dict(arrowstyle="->", color="#dc2626", lw=1.8) into ax.annotate().'
       ],
       starterCode: `import matplotlib.pyplot as plt

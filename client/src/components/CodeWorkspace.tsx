@@ -32,6 +32,9 @@ interface CodeWorkspaceProps {
   isRunning: boolean;
   isSubmitting: boolean;
   onOpenPrimer: () => void;
+  onNextProblem?: () => void;
+  hasNextProblem?: boolean;
+  testsPassed?: boolean;
 }
 
 export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
@@ -45,6 +48,9 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   isRunning,
   isSubmitting,
   onOpenPrimer,
+  onNextProblem,
+  hasNextProblem,
+  testsPassed,
 }) => {
   const [showSolution, setShowSolution] = useState(false);
   const [fontSize, setFontSize] = useState(13);
@@ -435,32 +441,32 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           <div className="hidden md:flex items-center gap-3 text-zinc-400 text-xs">
             <span>
               <kbd className="px-1.5 py-0.5 rounded bg-surface-base border border-surface-border text-zinc-300 text-[10px]">
-                {modKey}↵
+                {modKey}+Enter
               </kbd>{' '}
               Run Code
             </span>
             <span>
               <kbd className="px-1.5 py-0.5 rounded bg-surface-base border border-surface-border text-zinc-300 text-[10px]">
-                {modKey}⇧↵
+                {modKey}+Shift+Enter
               </kbd>{' '}
-              Tests
+              Run Tests
             </span>
             <span>
               <kbd className="px-1.5 py-0.5 rounded bg-surface-base border border-surface-border text-zinc-300 text-[10px]">
-                {modKey}⌥↵
+                {modKey}+Alt+Enter
               </kbd>{' '}
-              Bench
+              Benchmark
             </span>
           </div>
         </div>
 
-        {/* Right: Run Code, Run Tests, and Submit Action Buttons */}
+        {/* Right: Run Code, Run Tests, Benchmark, and Next Problem Buttons */}
         <div className="flex items-center gap-2">
           {/* Run Code (Sandbox) Button */}
           <button
-            onClick={onRunCode || onRun}
+            onClick={onRunCode}
             disabled={isRunningCode || isRunning || isSubmitting}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-surface-border text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all disabled:opacity-50 shadow-xs active:scale-[0.99]"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-surface-border text-xs font-semibold text-emerald-400 hover:text-emerald-300 transition-all disabled:opacity-50 shadow-xs active:scale-[0.99] cursor-pointer"
             title={`Run Code in Sandbox (${modKey}+Enter)`}
           >
             <Play className={`w-3.5 h-3.5 fill-current ${isRunningCode ? 'animate-spin' : ''}`} />
@@ -471,7 +477,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           <button
             onClick={onRun}
             disabled={isRunningCode || isRunning || isSubmitting}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-emerald hover:bg-emerald-600 text-xs font-bold text-white transition-all disabled:opacity-50 shadow-xs active:scale-[0.99]"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-accent-emerald hover:bg-emerald-600 text-xs font-bold text-white transition-all disabled:opacity-50 shadow-xs active:scale-[0.99] cursor-pointer"
             title={`Run Test Suite (${modKey}+Shift+Enter)`}
           >
             <CheckCircle2 className={`w-3.5 h-3.5 ${isRunning ? 'animate-spin' : ''}`} />
@@ -482,12 +488,25 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
           <button
             onClick={onSubmit}
             disabled={isRunningCode || isRunning || isSubmitting}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-surface-border text-xs font-semibold text-zinc-200 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-surface-elevated hover:bg-surface-hover border border-surface-border text-xs font-semibold text-zinc-200 transition-all disabled:opacity-50 cursor-pointer"
             title={`Submit & Run SIMD Benchmark (${modKey}+Alt+Enter)`}
           >
             <Zap className={`w-3.5 h-3.5 text-amber-400 ${isSubmitting ? 'animate-bounce' : ''}`} />
             <span>{isSubmitting ? 'Benchmarking...' : 'Benchmark'}</span>
           </button>
+
+          {/* Next Problem Button (when tests passed or hasNextProblem is true) */}
+          {onNextProblem && (hasNextProblem || testsPassed) && (
+            <button
+              onClick={onNextProblem}
+              disabled={hasNextProblem === false}
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#00E599] hover:bg-[#00c985] text-zinc-950 text-xs font-bold transition-all shadow-sm shadow-[#00E599]/30 active:scale-[0.99] cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Proceed to Next Problem"
+            >
+              <span>Next Problem</span>
+              <span className="text-sm font-bold">→</span>
+            </button>
+          )}
         </div>
       </div>
     </div>

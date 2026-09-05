@@ -24,12 +24,15 @@ class TestCaseResult(BaseModel):
     status: Literal["passed", "failed", "error", "skipped"]
     duration_ms: float = 0.0
     memory_kb: float = 0.0
+    input_repr: Optional[str] = None
     expected: Optional[Any] = None
     actual: Optional[Any] = None
     error_message: Optional[str] = None
     diff: Optional[str] = None
+    traceback: Optional[str] = None
     stdout: Optional[str] = None
     hidden: bool = False
+    call: Optional[str] = None
 
 
     @property

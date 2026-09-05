@@ -76,15 +76,39 @@ export async function executeCodeApi(
 
     if (res.ok) {
       const data = await res.json();
-      const testResults = (data.test_results || []).map((t: any) => ({
-        id: t.id || t.name,
-        name: t.name,
-        passed: t.status === 'passed',
-        message: t.error_message || (t.status === 'passed' ? 'Passed' : 'Failed'),
-        expected: typeof t.expected === 'object' ? JSON.stringify(t.expected) : String(t.expected ?? ''),
-        actual: typeof t.actual === 'object' ? JSON.stringify(t.actual) : String(t.actual ?? ''),
-        durationMs: t.duration_ms,
-      }));
+      const testResults = (data.test_results || []).map((t: any, idx: number) => {
+        const matchingChallengeTc = challenge.testCases?.[idx] || challenge.testCases?.find((c: any) => c.id === t.id || c.name === t.name);
+        const inputVal = t.input_repr ?? t.input ?? t.call ?? matchingChallengeTc?.inputDescription ?? matchingChallengeTc?.description ?? '';
+
+        // Preserve actual: if actual is present, format and preserve it; never default to 'None'
+        let actualVal: string | undefined = undefined;
+        if (t.actual !== undefined && t.actual !== null) {
+          actualVal = typeof t.actual === 'object' ? JSON.stringify(t.actual) : String(t.actual);
+        }
+
+        // Full traceback and diagnostics: preserve full tracebacks from diff, traceback, or error_message
+        const fullTraceback = t.diff || t.traceback || t.error_message || undefined;
+        const messageVal = t.error_message || (t.status === 'passed' ? 'Passed' : 'Failed');
+
+        return {
+          id: t.id || t.name || String(idx + 1),
+          name: t.name || `Test Case #${idx + 1}`,
+          passed: t.status === 'passed' || t.passed === true,
+          message: messageVal,
+          expected: typeof t.expected === 'object' && t.expected !== null
+            ? JSON.stringify(t.expected)
+            : (t.expected !== undefined && t.expected !== null ? String(t.expected) : (matchingChallengeTc?.expectedOutput ?? '')),
+          actual: actualVal,
+          durationMs: t.duration_ms,
+          input: inputVal,
+          input_repr: inputVal,
+          diff: t.diff || undefined,
+          error_message: t.error_message || undefined,
+          traceback: fullTraceback,
+          call: t.call || undefined,
+          stdout: t.stdout || undefined,
+        };
+      });
 
       return {
         success: data.success ?? (data.status === 'completed'),

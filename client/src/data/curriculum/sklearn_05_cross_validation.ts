@@ -338,14 +338,14 @@ scores = cross_val_score(clf, X, y, cv=cv)`,
 3. Configures an exhaustive hyperparameter grid search optimizer across cross-validation splits using \`param_grid\`, \`cv\` folds, the requested \`scoring\` metric, and \`n_jobs=1\`.
 4. Executes the hyperparameter grid search optimization across the dataset \`(X, y)\`.
 5. Returns a dictionary:
-   - \`"grid_search"\`: the fitted grid search instance
-   - \`"best_params"\`: dict of best parameters (\`grid.best_params_\`)
-   - \`"best_score"\`: float average validation score (\`float(grid.best_score_)\`)
-   - \`"best_estimator"\`: the refitted best estimator (\`grid.best_estimator_\`).`,
+   - \`"grid_search"\`: the fitted grid search optimizer instance
+   - \`"best_params"\`: dictionary containing the optimal parameter setting found
+   - \`"best_score"\`: float mean cross-validated score achieved by the optimal model
+   - \`"best_estimator"\`: the top-performing estimator refitted on the full training data.`,
       hints: [
         'Import GridSearchCV from sklearn.model_selection.',
         'Pass n_jobs=1 into GridSearchCV.',
-        'Access grid.best_params_, grid.best_score_, and grid.best_estimator_.'
+        'Access the optimal hyperparameters, validation score, and refitted model via grid.best_params_, float(grid.best_score_), and grid.best_estimator_.'
       ],
       starterCode: `import numpy as np
 from sklearn.tree import DecisionTreeClassifier

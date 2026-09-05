@@ -82,13 +82,26 @@ export const MarkdownGuideRenderer: React.FC<MarkdownGuideRendererProps> = ({
         }
 
         // 3. Regular Markdown Content
-        const paragraphs = part.split(/\n\s*\n/);
+        // Normalize headings, lists, blockquotes, and hr blocks so they don't merge into single paragraphs
+        let normalizedPart = part.replace(/\r\n/g, '\n');
+        normalizedPart = normalizedPart.replace(/(^|\n)(#{1,6}\s[^\n]+)\n(?!\n)/g, '$1$2\n\n');
+        normalizedPart = normalizedPart.replace(/([^\n])\n(#{1,6}\s)/g, '$1\n\n$2');
+        normalizedPart = normalizedPart.replace(/(^[^*\-\s\d>].*)\n([*-]\s)/gm, '$1\n\n$2');
+        normalizedPart = normalizedPart.replace(/(^[*-]\s.*)\n([^*\-\s\d>])/gm, '$1\n\n$2');
+        normalizedPart = normalizedPart.replace(/([^\n>][^\n]*)\n(>\s)/g, '$1\n\n$2');
+
+        const paragraphs = normalizedPart.split(/\n\s*\n/);
 
         return (
           <React.Fragment key={idx}>
             {paragraphs.map((para, pIdx) => {
               const trimmed = para.trim();
               if (!trimmed) return null;
+
+              // Horizontal Rule: --- or ***
+              if (/^[-*_]{3,}$/.test(trimmed)) {
+                return <hr key={pIdx} className="border-t border-zinc-800 my-3" />;
+              }
 
               // H3 Heading: ### Title
               if (trimmed.startsWith('### ')) {
@@ -116,6 +129,19 @@ export const MarkdownGuideRenderer: React.FC<MarkdownGuideRendererProps> = ({
                 );
               }
 
+              // H1 Heading: # Title
+              if (trimmed.startsWith('# ')) {
+                return (
+                  <h1
+                    key={pIdx}
+                    className="text-lg font-bold text-zinc-100 pt-4 pb-2 flex items-center gap-2 border-b border-zinc-700"
+                  >
+                    <Sparkles className="w-4 h-4 text-indigo-400" />
+                    <span>{renderInline(trimmed.replace(/^#\s+/, ''))}</span>
+                  </h1>
+                );
+              }
+
               // Blockquote / Alert: > Text
               if (trimmed.startsWith('>')) {
                 const quoteText = trimmed.replace(/^>\s*/gm, '');
@@ -135,11 +161,11 @@ export const MarkdownGuideRenderer: React.FC<MarkdownGuideRendererProps> = ({
 
               // Bullet List: - item or * item
               if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-                const items = trimmed.split(/\n(?=[-*\s])/);
+                const items = trimmed.split(/\n(?=\s*[-*]\s+)/);
                 return (
                   <ul key={pIdx} className="space-y-2 my-2.5 pl-1">
                     {items.map((item, iIdx) => {
-                      const cleanItem = item.replace(/^[-*]\s+/, '').trim();
+                      const cleanItem = item.replace(/^\s*[-*]\s+/, '').trim();
                       return (
                         <li key={iIdx} className="flex items-start gap-2 text-zinc-300">
                           <ChevronRight className="w-3.5 h-3.5 text-indigo-400 shrink-0 mt-0.5" />
@@ -165,7 +191,7 @@ export const MarkdownGuideRenderer: React.FC<MarkdownGuideRendererProps> = ({
                           <span className="w-5 h-5 rounded-md bg-zinc-800 border border-zinc-700 text-[10px] font-mono font-bold text-indigo-300 flex items-center justify-center shrink-0 mt-0.5">
                             {num}
                           </span>
-                          <div className="flex-1">{renderInline(text)}</div>
+                          <div className="flex-1 whitespace-pre-line">{renderInline(text)}</div>
                         </li>
                       );
                     })}
@@ -188,18 +214,26 @@ export const MarkdownGuideRenderer: React.FC<MarkdownGuideRendererProps> = ({
 };
 
 /**
- * Format inline tokens: math ($...$), bold (**...**), inline code (`...`)
+ * Format inline tokens:
+ * - Math: $latex$ and \(latex\)
+ * - Inline Code: `code`
+ * - Bold: **text** and __text__
+ * - Italic: *text* and _text_
  */
 function renderInline(text: string): React.ReactNode[] {
-  // Regex to split by math $...$, bold **...**, or inline code `...`
-  const tokens = text.split(/(\$[^$\n]+\$|\*\*.*?\*\*|`.*?`)/g);
+  if (!text) return [];
+
+  // Match inline math, code, bold-italic, bold, and italic tokens
+  const regex = /(\$(?:[^\s$][^$\n]*?[^\s$]|[^\s$])\$|\\\(.*?\\\)|\`[^\`\n]+?\`|\*\*\*(?:[^\s*].*?[^\s*]|[^\s*])\*\*\*|\*\*(?:[^\s*].*?[^\s*]|[^\s*])\*\*|(?<=^|[^\w])__(?:[^\s_].*?[^\s_]|[^\s_])__(?=[^\w]|$)|(?<!\*)\*(?:[^\s*][^*\n]*?[^\s*]|[^\s*])\*(?!\*)|(?<=^|[^\w])_(?:[^\s_][^_\n]*?[^\s_]|[^\s_])_(?=[^\w]|$))/g;
+
+  const tokens = text.split(regex);
 
   return tokens.map((token, i) => {
     if (!token) return null;
 
-    // Inline Math: $latex$
+    // 1. Inline Math: $latex$
     if (token.startsWith('$') && token.endsWith('$') && token.length > 2) {
-      const latex = token.slice(1, -1);
+      const latex = token.slice(1, -1).trim();
       return (
         <span key={i} className="inline-block px-1 text-indigo-300">
           <MathRenderer latex={latex} displayMode={false} />
@@ -207,17 +241,18 @@ function renderInline(text: string): React.ReactNode[] {
       );
     }
 
-    // Bold: **text**
-    if (token.startsWith('**') && token.endsWith('**')) {
+    // Inline Math: \(latex\)
+    if (token.startsWith('\\(') && token.endsWith('\\)') && token.length >= 5) {
+      const latex = token.slice(2, -2).trim();
       return (
-        <strong key={i} className="font-bold text-white tracking-tight">
-          {token.slice(2, -2)}
-        </strong>
+        <span key={i} className="inline-block px-1 text-indigo-300">
+          <MathRenderer latex={latex} displayMode={false} />
+        </span>
       );
     }
 
-    // Inline Code: `code`
-    if (token.startsWith('`') && token.endsWith('`')) {
+    // 2. Inline Code: `code`
+    if (token.startsWith('`') && token.endsWith('`') && token.length >= 2) {
       return (
         <code
           key={i}
@@ -225,6 +260,41 @@ function renderInline(text: string): React.ReactNode[] {
         >
           {token.slice(1, -1)}
         </code>
+      );
+    }
+
+    // 3. Bold-Italic: ***text***
+    if (token.startsWith('***') && token.endsWith('***') && token.length >= 6) {
+      return (
+        <strong key={i} className="font-bold text-white tracking-tight">
+          <em className="italic text-zinc-200">
+            {renderInline(token.slice(3, -3))}
+          </em>
+        </strong>
+      );
+    }
+
+    // 4. Bold: **text** or __text__
+    if (
+      (token.startsWith('**') && token.endsWith('**') && token.length >= 4) ||
+      (token.startsWith('__') && token.endsWith('__') && token.length >= 4)
+    ) {
+      return (
+        <strong key={i} className="font-bold text-white tracking-tight">
+          {renderInline(token.slice(2, -2))}
+        </strong>
+      );
+    }
+
+    // 5. Italic: *text* or _text_
+    if (
+      (token.startsWith('*') && token.endsWith('*') && token.length >= 2 && !token.startsWith('**')) ||
+      (token.startsWith('_') && token.endsWith('_') && token.length >= 2 && !token.startsWith('__'))
+    ) {
+      return (
+        <em key={i} className="italic text-zinc-200">
+          {renderInline(token.slice(1, -1))}
+        </em>
       );
     }
 

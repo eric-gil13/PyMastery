@@ -365,7 +365,7 @@ X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=0.2, stratify=y, rando
    - If \`len(X) != len(y)\`, raise \`ValueError("X and y must have the same length")\`.
    - If \`train_ratio <= 0.0\` or \`train_ratio >= 1.0\`, raise \`ValueError("train_ratio must be between 0.0 and 1.0")\`.
    - If \`len(X) < 2\`, raise \`ValueError("At least 2 samples required")\`.
-2. Computes the chronological split index: \`split_index = int(len(X) * train_ratio)\`.
+2. Computes the chronological split index by taking the integer truncation of the total sample count multiplied by the training ratio.
 3. Validates that \`split_index > 0\` and \`split_index < len(X)\`; if not, raise \`ValueError("Split ratio results in an empty split")\`.
 4. Slices feature matrix and target arrays sequentially at the split index without shuffling to isolate earlier training history from later validation records.
 5. Returns a dictionary:

@@ -9,8 +9,6 @@ import {
   ZoomIn,
   ZoomOut,
   Sparkles,
-  ChevronDown,
-  ChevronRight,
   Terminal,
   Cpu,
   Clock,
@@ -35,6 +33,8 @@ interface InspectionDeckProps {
   onOpenMentor: () => void;
   activeTab?: 'tests' | 'plots' | 'data' | 'perf' | 'console';
   onTabChange?: (tab: 'tests' | 'plots' | 'data' | 'perf' | 'console') => void;
+  onNextProblem?: () => void;
+  hasNextProblem?: boolean;
 }
 
 export const InspectionDeck: React.FC<InspectionDeckProps> = ({
@@ -44,6 +44,8 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
   onOpenMentor,
   activeTab: propActiveTab,
   onTabChange,
+  onNextProblem,
+  hasNextProblem,
 }) => {
   const [internalTab, setInternalTab] = useState<'tests' | 'plots' | 'data' | 'perf' | 'console'>('tests');
   const activeTab = propActiveTab ?? internalTab;
@@ -53,21 +55,37 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
   };
 
   const [zoomLevel, setZoomLevel] = useState(1);
-  const [showTraceback, setShowTraceback] = useState(false);
   const [copiedConsole, setCopiedConsole] = useState(false);
+  const [copiedTraceback, setCopiedTraceback] = useState(false);
   const [dfSearch, setDfSearch] = useState('');
-  const [selectedTestCase, setSelectedTestCase] = useState<number | null>(null);
+  const [selectedCaseIndex, setSelectedCaseIndex] = useState<number>(0);
 
   // Auto-switch tab based on execution response
   React.useEffect(() => {
     if (executionResult) {
       if (executionResult.testResults && executionResult.testResults.length > 0) {
         setActiveTab('tests');
-      } else if (executionResult.stdout || executionResult.stderr || executionResult.errorTraceback) {
+      } else {
         setActiveTab('console');
       }
     }
   }, [executionResult]);
+
+  // Default selectedCaseIndex to first failing case, or 0 if all pass
+  React.useEffect(() => {
+    if (executionResult?.testResults && executionResult.testResults.length > 0) {
+      const firstFailing = executionResult.testResults.findIndex((t) => !t.passed);
+      setSelectedCaseIndex(firstFailing !== -1 ? firstFailing : 0);
+    } else {
+      setSelectedCaseIndex(0);
+    }
+  }, [executionResult]);
+
+  const handleCopyTraceback = (text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedTraceback(true);
+    setTimeout(() => setCopiedTraceback(false), 2000);
+  };
 
   const handleDownloadSvg = () => {
     const svgData = executionResult?.visualization?.svgContent || challenge.samplePlot?.svgContent;
@@ -248,13 +266,13 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                   <p className="text-[11px] text-zinc-500 mt-0.5">Validating tensor shapes, outputs, and SIMD execution latency</p>
                 </div>
               </div>
-            ) : executionResult ? (
-              <div>
-                {/* A. TESTS PASSED -> BENCHMARK SPEED GAUGE & MEDAL */}
+            ) : executionResult && hasTests ? (
+              <div className="space-y-3.5">
+                {/* A. TESTS PASSED -> CELEBRATION BANNER & BENCHMARK SPEED */}
                 {allPassed ? (
-                  <div className="p-4 rounded-xl bg-accent-emerald/10 border border-accent-emerald/30 space-y-3 mb-3.5">
-                    {/* Medal Banner */}
-                    <div className="flex items-center justify-between">
+                  <div className="p-4 rounded-xl bg-accent-emerald/10 border border-accent-emerald/30 space-y-3">
+                    {/* Medal & Celebration Banner */}
+                    <div className="flex items-center justify-between gap-3 flex-wrap">
                       <div className="flex items-center gap-2.5">
                         <div className="w-8 h-8 rounded-lg bg-accent-emerald/20 border border-accent-emerald/40 flex items-center justify-center text-lg">
                           {medalAward === 'gold' ? '🥇' : medalAward === 'silver' ? '🥈' : '🥉'}
@@ -273,6 +291,19 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                           </p>
                         </div>
                       </div>
+
+                      {/* Prominent Glowing Next Problem Button */}
+                      {onNextProblem && (
+                        <button
+                          onClick={onNextProblem}
+                          disabled={hasNextProblem === false}
+                          className="px-4 py-2 bg-[#00E599] hover:bg-[#00c985] text-zinc-950 text-xs font-bold rounded-xl transition-all shadow-lg shadow-[#00E599]/30 hover:shadow-[#00E599]/50 flex items-center gap-1.5 cursor-pointer shrink-0 animate-pulse hover:animate-none disabled:opacity-50 disabled:cursor-not-allowed"
+                          title="Proceed to Next Problem"
+                        >
+                          <span>Next Problem</span>
+                          <span className="text-sm font-bold">→</span>
+                        </button>
+                      )}
                     </div>
 
                     {/* Benchmark Speed Gauge vs Naive Python Loop */}
@@ -289,7 +320,6 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
 
                       {/* Speed Comparison Visual Bars */}
                       <div className="space-y-1.5 pt-1">
-                        {/* Your Solution */}
                         <div>
                           <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-0.5">
                             <span className="text-accent-emerald font-semibold">Your Vectorized Code</span>
@@ -303,7 +333,6 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                           </div>
                         </div>
 
-                        {/* Naive Loop */}
                         <div>
                           <div className="flex justify-between text-[10px] font-mono text-zinc-400 mb-0.5">
                             <span className="text-rose-400">Naive Python Loop Baseline</span>
@@ -320,24 +349,35 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                     </div>
                   </div>
                 ) : (
-                  /* B. TESTS FAILED -> HUMAN-FRIENDLY VISUAL DIFFS */
-                  <div className="p-4 rounded-xl bg-accent-rose/10 border border-accent-rose/30 space-y-3 mb-3.5">
+                  /* B. TESTS FAILED -> FAILURE SUMMARY */
+                  <div className="p-4 rounded-xl bg-accent-rose/10 border border-accent-rose/30 space-y-3">
                     <div className="flex items-start gap-3">
                       <div className="w-8 h-8 rounded-lg bg-accent-rose/20 border border-accent-rose/40 flex items-center justify-center text-accent-rose shrink-0 mt-0.5">
                         <XCircle className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <h4 className="text-xs font-bold text-rose-200">
-                          Assertion or Shape Mismatch Detected
+                          Assertion or Test Failure Detected
                         </h4>
                         <p className="text-[11px] text-rose-300/80 mt-0.5">
-                          {executionResult.testResults.filter((t) => !t.passed).length} of {executionResult.testResults.length} test assertions failed. Compare Expected vs Received below:
+                          {executionResult.testResults.filter((t) => !t.passed).length} of {executionResult.testResults.length} test assertions failed. Inspect the failing test case details below:
                         </p>
                       </div>
                     </div>
 
-                    {/* Side-by-Side Visual Expected vs Received Comparison */}
-                    {executionResult.tensorDiffs && executionResult.tensorDiffs.length > 0 ? (
+                    {/* Actionable Diagnostic Tip */}
+                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2 text-xs text-amber-200">
+                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <div>
+                        <span className="font-bold text-amber-300">Actionable Diagnostic Tip: </span>
+                        <span>
+                          {challenge.hints?.[0] || 'Verify your dimension expansion and check that you are performing reduction along the correct axis (e.g. `axis=-1`).'}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Side-by-Side Tensor Shape Diffs if present */}
+                    {executionResult.tensorDiffs && executionResult.tensorDiffs.length > 0 && (
                       <div className="space-y-2">
                         {executionResult.tensorDiffs.map((diff, idx) => (
                           <div key={idx} className="p-3 bg-surface-base border border-surface-border rounded-lg space-y-2">
@@ -373,130 +413,175 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                           </div>
                         ))}
                       </div>
-                    ) : (
-                      /* Value Level Side-by-Side Comparison */
-                      <div className="p-3 bg-surface-base border border-surface-border rounded-lg space-y-2">
-                        <span className="font-semibold text-xs text-zinc-300 font-mono">Output Value Verification</span>
-                        <div className="grid grid-cols-2 gap-2 text-xs font-mono">
-                          <div className="p-2.5 bg-accent-emerald/10 border border-accent-emerald/30 rounded-lg">
-                            <p className="text-[10px] text-accent-emerald font-bold uppercase tracking-wider mb-1">Expected Output</p>
-                            <p className="text-emerald-200 text-[11px] leading-relaxed break-words">
-                              {challenge.testCases[0]?.expectedOutput || 'Correct numerical matrix matching reference.'}
-                            </p>
-                          </div>
-                          <div className="p-2.5 bg-accent-rose/10 border border-accent-rose/30 rounded-lg">
-                            <p className="text-[10px] text-accent-rose font-bold uppercase tracking-wider mb-1">Received Output</p>
-                            <p className="text-rose-200 text-[11px] leading-relaxed break-words">
-                              {executionResult.testResults.find((t) => !t.passed)?.actual || 'None / Calculation Mismatch'}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Actionable Diagnostic Tip */}
-                    <div className="p-2.5 bg-amber-500/10 border border-amber-500/30 rounded-lg flex items-start gap-2 text-xs text-amber-200">
-                      <Sparkles className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
-                      <div>
-                        <span className="font-bold text-amber-300">Actionable Diagnostic Tip: </span>
-                        <span>
-                          {challenge.hints?.[0] || 'Verify your dimension expansion and check that you are performing reduction along the correct axis (e.g. `axis=-1`).'}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Collapsible Python Raw Traceback Accordion */}
-                    {executionResult.errorTraceback && (
-                      <div className="border border-zinc-800/90 rounded-xl overflow-hidden bg-zinc-950">
-                        <button
-                          onClick={() => setShowTraceback(!showTraceback)}
-                          className="w-full px-3 py-2 bg-zinc-900/80 hover:bg-zinc-900 flex items-center justify-between text-xs text-zinc-400 hover:text-zinc-200 transition"
-                        >
-                          <span className="flex items-center gap-1.5 font-mono text-[11px]">
-                            <Terminal className="w-3.5 h-3.5 text-rose-400" />
-                            {showTraceback ? 'Hide Python Traceback' : 'Show Python Traceback'}
-                          </span>
-                          {showTraceback ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
-                        </button>
-
-                        {showTraceback && (
-                          <div className="p-3 bg-[#0A0C10] border-t border-zinc-800/90 text-rose-300 font-mono text-[11px] whitespace-pre-wrap overflow-x-auto leading-relaxed">
-                            {executionResult.errorTraceback}
-                          </div>
-                        )}
-                      </div>
                     )}
                   </div>
                 )}
 
-                {/* Test Cases Accordion List */}
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs text-zinc-400 px-1">
-                    <span className="font-semibold uppercase tracking-wider text-[10px]">Test Suite Execution Details</span>
-                    <span>{executionResult.testResults.length} test assertions</span>
+                {/* LEETCODE-STYLE TEST DECK */}
+                <div className="p-4 bg-surface-base border border-surface-border rounded-2xl space-y-4">
+                  {/* Pill Tabs Header Row */}
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1 border-b border-surface-border">
+                    {executionResult.testResults.map((tc: TestResultItem, idx: number) => {
+                      const isSelected = selectedCaseIndex === idx;
+                      return (
+                        <button
+                          key={tc.id || idx}
+                          onClick={() => setSelectedCaseIndex(idx)}
+                          className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-all shrink-0 border cursor-pointer ${
+                            isSelected
+                              ? tc.passed
+                                ? 'bg-emerald-500/15 text-emerald-300 border-emerald-500/50 shadow-xs font-bold'
+                                : 'bg-rose-500/15 text-rose-300 border-rose-500/50 shadow-xs font-bold'
+                              : tc.passed
+                                ? 'bg-surface-elevated/70 text-zinc-400 border-surface-border hover:text-zinc-200 hover:bg-surface-hover'
+                                : 'bg-rose-950/20 text-rose-400/80 border-rose-900/40 hover:text-rose-300 hover:bg-rose-950/40'
+                          }`}
+                        >
+                          {tc.passed ? (
+                            <CheckCircle2 className="w-3.5 h-3.5 text-[#00E599] shrink-0" />
+                          ) : (
+                            <XCircle className="w-3.5 h-3.5 text-rose-400 shrink-0" />
+                          )}
+                          <span>Case {idx + 1}</span>
+                          {tc.durationMs !== undefined && (
+                            <span className="text-[10px] text-zinc-500 font-mono">
+                              {tc.durationMs.toFixed(1)}ms
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
 
-                  {executionResult.testResults.map((tc: TestResultItem, idx: number) => {
-                    const isSelected = selectedTestCase === idx;
+                  {/* Selected Test Case Content Box */}
+                  {(() => {
+                    const safeIdx = Math.min(Math.max(0, selectedCaseIndex), executionResult.testResults.length - 1);
+                    const tc = executionResult.testResults[safeIdx];
+                    if (!tc) return null;
+
+                    const matchingChallengeTc = challenge.testCases?.[safeIdx];
+                    const inputContent = tc.input_repr || tc.input || matchingChallengeTc?.inputDescription || tc.call || matchingChallengeTc?.description || '(No explicit input arguments)';
+                    const expectedContent = tc.expected || matchingChallengeTc?.expectedOutput || '(Expected output verified by assertion)';
+
+                    // Never default to 'None' if actual value is present!
+                    let actualContent: string;
+                    if (tc.actual !== undefined && tc.actual !== null && tc.actual !== '') {
+                      actualContent = tc.actual;
+                    } else if (tc.actual === '') {
+                      actualContent = "'' (empty string)";
+                    } else if (tc.passed) {
+                      actualContent = tc.expected || 'Passed';
+                    } else if (tc.error_message) {
+                      actualContent = `No return value (Exception: ${tc.error_message})`;
+                    } else {
+                      actualContent = 'No return value / Execution failed';
+                    }
+
+                    const diagnostics = tc.diff || tc.traceback || tc.error_message || executionResult.errorTraceback || tc.message;
+
                     return (
-                      <div
-                        key={idx}
-                        className={`rounded-xl border transition-all ${
-                          tc.passed
-                            ? 'bg-zinc-900/50 border-zinc-800/80 hover:border-zinc-700'
-                            : 'bg-rose-950/20 border-rose-800/40 hover:border-rose-700'
-                        }`}
-                      >
-                        <div
-                          onClick={() => setSelectedTestCase(isSelected ? null : idx)}
-                          className="p-3 flex items-start justify-between cursor-pointer text-xs"
-                        >
-                          <div className="flex items-start gap-2.5 min-w-0">
-                            {tc.passed ? (
-                              <CheckCircle2 className="w-4 h-4 text-[#00E599] mt-0.5 shrink-0" />
-                            ) : (
-                              <XCircle className="w-4 h-4 text-rose-400 mt-0.5 shrink-0" />
-                            )}
-                            <div className="min-w-0">
-                              <p className="font-medium text-zinc-200 truncate">{tc.name}</p>
-                              {tc.message && (
-                                <p className="text-[11px] text-zinc-400 mt-0.5 font-mono truncate max-w-[320px]">
-                                  {tc.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0">
-                            <span className="text-[10px] font-mono text-zinc-500">
-                              {(tc.durationMs ?? 0.4).toFixed(2)}ms
+                      <div className="space-y-3.5">
+                        {/* 1. Input Box */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs text-zinc-400">
+                            <span className="font-semibold text-[11px] uppercase tracking-wider text-zinc-400 font-mono">
+                              Input
                             </span>
-                            {isSelected ? (
-                              <ChevronDown className="w-3.5 h-3.5 text-zinc-400" />
-                            ) : (
-                              <ChevronRight className="w-3.5 h-3.5 text-zinc-400" />
-                            )}
+                            <span className="text-zinc-500 text-[11px] font-mono truncate max-w-[280px]">
+                              {tc.name}
+                            </span>
+                          </div>
+                          <div className="p-3 bg-[#0A0C10] border border-surface-border rounded-xl font-mono text-xs text-zinc-200 whitespace-pre-wrap select-text leading-relaxed">
+                            {inputContent}
                           </div>
                         </div>
 
-                        {isSelected && (
-                          <div className="px-3 pb-3 pt-1 border-t border-zinc-800/60 bg-zinc-950/40 text-xs font-mono space-y-1.5 text-zinc-300">
-                            {tc.expected && (
-                              <div>
-                                <span className="text-zinc-500 text-[10px]">Expected:</span>
-                                <p className="text-emerald-300 text-[11px] break-words">{tc.expected}</p>
-                              </div>
-                            )}
-                            {tc.actual && (
-                              <div>
-                                <span className="text-zinc-500 text-[10px]">Received:</span>
-                                <p className="text-rose-300 text-[11px] break-words">{tc.actual}</p>
-                              </div>
-                            )}
+                        {/* 2. Expected Output Box */}
+                        <div className="space-y-1.5">
+                          <span className="font-semibold text-[11px] uppercase tracking-wider text-zinc-400 font-mono">
+                            Expected Output
+                          </span>
+                          <div className="p-3 bg-[#0A0C10] border border-surface-border rounded-xl font-mono text-xs text-emerald-300 whitespace-pre-wrap select-text leading-relaxed">
+                            {expectedContent}
+                          </div>
+                        </div>
+
+                        {/* 3. Received Output Box */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between text-xs text-zinc-400">
+                            <span className="font-semibold text-[11px] uppercase tracking-wider text-zinc-400 font-mono">
+                              Received Output
+                            </span>
+                            <span
+                              className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                                tc.passed
+                                  ? 'bg-emerald-500/20 text-[#00E599]'
+                                  : 'bg-rose-500/20 text-rose-300'
+                              }`}
+                            >
+                              {tc.passed ? 'Match' : 'Mismatch'}
+                            </span>
+                          </div>
+                          <div
+                            className={`p-3 border rounded-xl font-mono text-xs whitespace-pre-wrap select-text leading-relaxed ${
+                              tc.passed
+                                ? 'bg-[#0A0C10] border-emerald-500/30 text-emerald-300'
+                                : 'bg-[#0A0C10] border-rose-500/30 text-rose-300'
+                            }`}
+                          >
+                            {actualContent}
+                          </div>
+                        </div>
+
+                        {/* 4. Full Diagnostics / Traceback Container */}
+                        {!tc.passed && diagnostics && (
+                          <div className="space-y-1.5 pt-1">
+                            <div className="flex items-center justify-between text-xs">
+                              <span className="flex items-center gap-1.5 font-mono text-[11px] text-rose-300 font-bold uppercase tracking-wider">
+                                <Terminal className="w-3.5 h-3.5 text-rose-400" />
+                                Diagnostics & Python Stack Trace
+                              </span>
+                              <button
+                                onClick={() => handleCopyTraceback(diagnostics)}
+                                className="flex items-center gap-1 text-[11px] text-zinc-400 hover:text-zinc-200 px-2 py-1 bg-zinc-900 border border-zinc-800 rounded-lg transition cursor-pointer"
+                                title="Copy stack trace"
+                              >
+                                {copiedTraceback ? (
+                                  <Check className="w-3 h-3 text-[#00E599]" />
+                                ) : (
+                                  <Copy className="w-3 h-3" />
+                                )}
+                                <span>{copiedTraceback ? 'Copied' : 'Copy Traceback'}</span>
+                              </button>
+                            </div>
+                            <div className="p-3.5 bg-[#090A0E] border border-rose-500/30 rounded-xl font-mono text-xs text-rose-300 whitespace-pre-wrap overflow-x-auto max-h-[320px] custom-scrollbar select-text leading-relaxed shadow-inner">
+                              {diagnostics}
+                            </div>
                           </div>
                         )}
                       </div>
                     );
-                  })}
+                  })()}
+                </div>
+              </div>
+            ) : executionResult && !hasTests ? (
+              /* Execution Response arrived from "Run Code" in Sandbox Mode */
+              <div className="text-center py-12 px-4 space-y-3 bg-surface-base border border-surface-border rounded-2xl">
+                <div className="w-12 h-12 rounded-2xl bg-zinc-900 border border-zinc-800 flex items-center justify-center text-zinc-400 mx-auto">
+                  <Terminal className="w-6 h-6 text-emerald-400" />
+                </div>
+                <div>
+                  <h4 className="text-sm font-semibold text-zinc-200">Sandbox Code Executed</h4>
+                  <p className="text-xs text-zinc-400 mt-1 max-w-sm mx-auto">
+                    Expressions evaluated in the isolated kernel sandbox. Standard output and return values are displayed in the{' '}
+                    <button
+                      onClick={() => setActiveTab('console')}
+                      className="text-emerald-400 hover:text-emerald-300 underline font-medium cursor-pointer"
+                    >
+                      Console
+                    </button>{' '}
+                    tab. Click <strong>Run Tests</strong> (Ctrl+Shift+Enter) to evaluate the formal assertion test suite.
+                  </p>
                 </div>
               </div>
             ) : (
@@ -508,7 +593,7 @@ export const InspectionDeck: React.FC<InspectionDeckProps> = ({
                 <div>
                   <h4 className="text-sm font-semibold text-zinc-200">Execution Deck Ready</h4>
                   <p className="text-xs text-zinc-400 mt-1 max-w-xs mx-auto">
-                    Press <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-200 font-mono text-[10px]">Ctrl+Enter</kbd> or click <strong>▶ Run Tests</strong> to execute your code in the isolated kernel sandbox.
+                    Press <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-200 font-mono text-[10px]">Ctrl+Enter</kbd> to Run Code, or <kbd className="px-1.5 py-0.5 bg-zinc-800 border border-zinc-700 rounded text-zinc-200 font-mono text-[10px]">Ctrl+Shift+Enter</kbd> to execute the test suite.
                   </p>
                 </div>
               </div>

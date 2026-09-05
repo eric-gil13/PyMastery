@@ -298,7 +298,7 @@ Write a function:
 \`train_with_early_stopping(model: torch.nn.Module, train_loader: torch.utils.data.DataLoader, val_loader: torch.utils.data.DataLoader, criterion: torch.nn.Module, optimizer: torch.optim.Optimizer, max_epochs: int = 10, patience: int = 3, delta: float = 0.0) -> dict\`
 
 Specifications:
-1. Initialize \`best_loss = float('inf')\`, \`patience_counter = 0\`, \`best_state_dict = copy.deepcopy(model.state_dict())\`, \`train_losses = []\`, and \`val_losses = []\`.
+1. Initialize \`best_loss = float('inf')\`, \`patience_counter = 0\`, an isolated deep copy snapshot of the model initial state dictionary (\`best_state_dict\`), and empty loss tracking lists (\`train_losses\` and \`val_losses\`).
 2. Iterate \`epoch\` from \`1\` to \`max_epochs\` (inclusive):
    a. **Training Phase:**
       - Set \`model.train()\`.

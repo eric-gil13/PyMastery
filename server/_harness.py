@@ -222,7 +222,9 @@ def _values_equal(actual, expected, tolerance=1e-5):
     return False
 
 
-def _safe_repr(obj, max_len=300):
+def _safe_repr(obj, max_len=2000):
+    if obj is None:
+        return "None"
     try:
         r = repr(obj)
         if len(r) > max_len:
@@ -245,7 +247,7 @@ def main():
 
     code = payload.get("code", "")
     mode = payload.get("mode", "run")
-    test_cases = payload.get("test_cases", [])
+    test_cases = [] if mode == "run" else payload.get("test_cases", [])
     benchmark_iterations = payload.get("benchmark_iterations", 100)
     benchmark_setup = payload.get("benchmark_setup", "")
     benchmark_stmt = payload.get("benchmark_stmt", "")
@@ -262,7 +264,7 @@ def main():
         "status": "completed",
         "error": None,
         "traceback": None,
-        "test_results": None,
+        "test_results": [] if mode == "run" else None,
         "tests_summary": None,
         "benchmark": None,
         "plots": [],
@@ -296,6 +298,9 @@ def main():
         result["status"] = "syntax_error"
         result["error"] = f"SyntaxError: {syn_err.msg} (line {syn_err.lineno})"
         result["traceback"] = traceback.format_exc()
+        if mode == "run":
+            result["test_results"] = []
+            result["tests_summary"] = None
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(result, f)
             f.flush()
@@ -307,6 +312,9 @@ def main():
         result["traceback"] = traceback.format_exc()
         _capture_remaining_plots()
         result["plots"] = _plots
+        if mode == "run":
+            result["test_results"] = []
+            result["tests_summary"] = None
         with open(out_file, "w", encoding="utf-8") as f:
             json.dump(result, f)
             f.flush()
@@ -331,6 +339,7 @@ def main():
             test_code = tc.get("test_code")
             hidden = tc.get("hidden", False)
             tolerance = tc.get("tolerance") or 1e-5
+            input_desc = tc.get("input_repr") or tc.get("inputDescription") or tc.get("input")
 
             old_stdout = sys.stdout
             test_stdout_buf = io.StringIO()
@@ -344,23 +353,84 @@ def main():
             actual_val = None
             err_msg = None
             diff_msg = None
+            tb_str = None
+            captured_input = None
+
+            def _wrap_candidate(cand_obj):
+                if isinstance(cand_obj, type):
+                    class WrappedClass(cand_obj):
+                        def __init__(self, *args, **kwargs):
+                            nonlocal actual_val, captured_input
+                            try:
+                                arg_strs = [_safe_repr(a, 100) for a in args] + [f"{k}={_safe_repr(v, 100)}" for k, v in kwargs.items()]
+                                captured_input = f"{cand_obj.__name__}({', '.join(arg_strs)})"
+                            except Exception:
+                                pass
+                            super().__init__(*args, **kwargs)
+
+                        def __getattribute__(self, name):
+                            attr = super().__getattribute__(name)
+                            if callable(attr) and not name.startswith("__"):
+                                def method_wrapper(*m_args, **m_kwargs):
+                                    nonlocal actual_val, captured_input
+                                    try:
+                                        m_arg_strs = [_safe_repr(a, 100) for a in m_args] + [f"{k}={_safe_repr(v, 100)}" for k, v in m_kwargs.items()]
+                                        captured_input = f"{name}({', '.join(m_arg_strs)})"
+                                    except Exception:
+                                        pass
+                                    res = attr(*m_args, **m_kwargs)
+                                    actual_val = res
+                                    return res
+                                return method_wrapper
+                            return attr
+                    WrappedClass.__name__ = cand_obj.__name__
+                    return WrappedClass
+                elif callable(cand_obj):
+                    def func_wrapper(*args, **kwargs):
+                        nonlocal actual_val, captured_input
+                        try:
+                            arg_strs = [_safe_repr(a, 100) for a in args] + [f"{k}={_safe_repr(v, 100)}" for k, v in kwargs.items()]
+                            fn_name = getattr(cand_obj, "__name__", "candidate_func")
+                            captured_input = f"{fn_name}({', '.join(arg_strs)})"
+                        except Exception:
+                            pass
+                        res = cand_obj(*args, **kwargs)
+                        actual_val = res
+                        return res
+                    if hasattr(cand_obj, "__name__"):
+                        func_wrapper.__name__ = cand_obj.__name__
+                    return func_wrapper
+                return cand_obj
 
             try:
                 if call_expr:
-                    actual_val = eval(call_expr, exec_globals)
+                    captured_input = call_expr
+                    call_ns = dict(exec_globals)
+                    for k, v in list(exec_globals.items()):
+                        if not k.startswith("_") and (callable(v) or isinstance(v, type)) and getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>"):
+                            call_ns[k] = _wrap_candidate(v)
+
+                    eval_res = eval(call_expr, call_ns)
+                    if actual_val is None:
+                        actual_val = eval_res
+
                     if expected_val is not None:
                         is_eq = _values_equal(actual_val, expected_val, tolerance)
                         if not is_eq:
                             tc_status = "failed"
                             diff_msg = f"Expected: {_safe_repr(expected_val)}\nActual: {_safe_repr(actual_val)}"
-                            err_msg = f"Assertion failed: {call_expr} returned unexpected value."
+                            err_msg = f"Assertion failed: {call_expr} returned unexpected value.\nExpected: {_safe_repr(expected_val)}\nActual: {_safe_repr(actual_val)}"
                 elif test_code:
                     test_ns = dict(exec_globals)
+                    for k, v in list(exec_globals.items()):
+                        if not k.startswith("_") and (callable(v) or isinstance(v, type)) and getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>"):
+                            test_ns[k] = _wrap_candidate(v)
+
                     exec(test_code, test_ns)
                     run_tests_fn = test_ns.get("run_tests")
                     if run_tests_fn and callable(run_tests_fn):
                         user_callables = [
-                            v for k, v in exec_globals.items()
+                            v for k, v in test_ns.items()
                             if not k.startswith("_")
                             and (callable(v) or isinstance(v, type))
                             and getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>")
@@ -368,20 +438,45 @@ def main():
                         invoked = False
                         last_err = None
                         for cand in user_callables:
+                            cand_was_called = False
+                            def _make_invocation_tracker(c):
+                                if isinstance(c, type):
+                                    class TrackedClass(c):
+                                        def __init__(self, *args, **kwargs):
+                                            nonlocal cand_was_called
+                                            cand_was_called = True
+                                            super().__init__(*args, **kwargs)
+                                    TrackedClass.__name__ = c.__name__
+                                    return TrackedClass
+                                elif callable(c):
+                                    def tracked_fn(*args, **kwargs):
+                                        nonlocal cand_was_called
+                                        cand_was_called = True
+                                        return c(*args, **kwargs)
+                                    if hasattr(c, "__name__"):
+                                        tracked_fn.__name__ = c.__name__
+                                    return tracked_fn
+                                return c
+
+                            tracked_cand = _make_invocation_tracker(cand)
                             try:
-                                res_rep = run_tests_fn(cand)
-                                actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
+                                res_rep = run_tests_fn(tracked_cand)
+                                if actual_val is None:
+                                    actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
                                 invoked = True
                                 break
                             except (TypeError, ValueError, KeyError) as e:
+                                if cand_was_called:
+                                    raise
                                 last_err = e
                                 continue
 
                         if not invoked and user_callables:
                             try:
-                                cand_dict = {k: v for k, v in exec_globals.items() if not k.startswith("_") and (callable(v) or isinstance(v, type))}
+                                cand_dict = {k: v for k, v in test_ns.items() if not k.startswith("_") and (callable(v) or isinstance(v, type))}
                                 res_rep = run_tests_fn(cand_dict)
-                                actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
+                                if actual_val is None:
+                                    actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
                                 invoked = True
                             except (TypeError, ValueError, KeyError):
                                 pass
@@ -389,24 +484,28 @@ def main():
                         if not invoked:
                             try:
                                 res_rep = run_tests_fn()
-                                actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
+                                if actual_val is None:
+                                    actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
                                 invoked = True
                             except TypeError:
                                 if last_err:
                                     raise last_err
                                 raise ValueError("Could not find matching function/class to evaluate against test suite.")
                     else:
-                        actual_val = "Assertion Passed"
+                        if actual_val is None:
+                            actual_val = "Assertion Passed"
                 else:
                     tc_status = "skipped"
             except AssertionError as ass_err:
                 tc_status = "failed"
-                err_msg = f"AssertionError: {str(ass_err)}" if str(ass_err) else "Assertion failed"
-                diff_msg = traceback.format_exc()
+                tb_str = traceback.format_exc()
+                err_msg = tb_str
+                diff_msg = tb_str
             except Exception as ex:
                 tc_status = "error"
-                err_msg = f"{type(ex).__name__}: {str(ex)}"
-                diff_msg = traceback.format_exc()
+                tb_str = traceback.format_exc()
+                err_msg = tb_str
+                diff_msg = tb_str
 
             t_end = time.perf_counter()
             mem_current, mem_peak = tracemalloc.get_traced_memory()
@@ -425,18 +524,28 @@ def main():
             elif tc_status == "error":
                 error_count += 1
 
+            input_repr_str = (
+                input_desc
+                or (call_expr if call_expr else None)
+                or captured_input
+                or tc.get("description")
+            )
+
             test_results.append({
                 "id": tc_id,
                 "name": tc_name,
                 "status": tc_status,
                 "duration_ms": duration_ms,
                 "memory_kb": memory_kb,
+                "input_repr": input_repr_str,
                 "expected": expected_val if not hidden else "[HIDDEN]",
                 "actual": _safe_repr(actual_val) if not hidden else "[HIDDEN]",
                 "error_message": err_msg if not hidden or tc_status == "error" else "Test failed.",
                 "diff": diff_msg if not hidden else None,
+                "traceback": tb_str if not hidden or tc_status == "error" else None,
                 "stdout": test_out,
-                "hidden": hidden
+                "hidden": hidden,
+                "call": tc.get("call"),
             })
 
         total_tests = len(test_cases)
@@ -451,6 +560,10 @@ def main():
         }
         if failed_count > 0 or error_count > 0:
             result["success"] = False
+            first_fail = next((tr for tr in test_results if tr["status"] in ("failed", "error") and tr.get("diff")), None)
+            if first_fail and not result.get("traceback"):
+                result["traceback"] = first_fail.get("diff")
+                result["error"] = first_fail.get("error_message")
 
     # Mode: BENCHMARK Execution
     elif mode == "benchmark":

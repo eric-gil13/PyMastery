@@ -302,11 +302,9 @@ Specifications:
    - \`dataset_size\`: the total number of samples in the dataset
 4. Inspect the first mini-batch yielded by the data loader:
    - If the batch contains multiple items (features and labels):
-     - \`first_batch_features_shape = tuple(first_batch[0].shape)\`
-     - \`first_batch_labels_shape = tuple(first_batch[1].shape)\` if labels exist, else \`None\`
+     - Extract the features tensor shape and labels tensor shape as tuples (\`first_batch_features_shape\` and \`first_batch_labels_shape\`, or \`None\` if labels do not exist)
    - Else:
-     - \`first_batch_features_shape = tuple(first_batch.shape)\`
-     - \`first_batch_labels_shape = None\`
+     - Extract the single batch tensor shape as a tuple (\`first_batch_features_shape\`), setting \`first_batch_labels_shape = None\`
 5. Iterate through all batches in the stream to collect individual batch sample sizes as a list of integers (\`batch_sizes\`).
 6. Determine whether any batch has fewer samples than the specified batch size, recording boolean \`has_partial_batch\`.
 7. Return a dictionary:
@@ -314,6 +312,7 @@ Specifications:
   hints: [
     'Validate batch_size > 0 before creating DataLoader.',
     'Use next(iter(dataloader)) to inspect the first yielded batch.',
+    'Extract shapes as tuples: tuple(first_batch[0].shape) and tuple(first_batch[1].shape), or tuple(first_batch.shape).',
     'Examine batch[0].shape[0] for each mini-batch to identify trailing partial batches.'
   ],
   starterCode: `import torch

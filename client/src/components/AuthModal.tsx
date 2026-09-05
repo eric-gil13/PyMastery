@@ -1,9 +1,10 @@
-﻿import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   User,
   Lock,
   X,
   LogIn,
+  LogOut,
   UserPlus,
   CheckCircle2,
   AlertCircle,
@@ -46,6 +47,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [copiedKey, setCopiedKey] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setActiveTab('account');
+      setErrorMsg(null);
+      setSuccessMsg(null);
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
@@ -169,13 +178,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex border-b border-zinc-800 mb-5 gap-4">
           <button
             onClick={() => setActiveTab('account')}
-            className={`pb-2.5 text-xs font-semibold transition border-b-2 ${
+            className={`pb-2.5 text-xs font-semibold transition border-b-2 flex items-center gap-1.5 ${
               activeTab === 'account'
                 ? 'border-indigo-500 text-indigo-300'
                 : 'border-transparent text-zinc-400 hover:text-zinc-200'
             }`}
           >
-            {currentUser ? 'Student Account' : 'Account Login / Sign Up'}
+            <User className="w-3.5 h-3.5" />
+            <span>Account Login / Sign Up</span>
           </button>
           <button
             onClick={() => setActiveTab('synckey')}
@@ -192,34 +202,58 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {activeTab === 'account' ? (
           currentUser ? (
-            <div className="text-center py-3 space-y-4">
-              <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20 shadow-md">
-                <Cloud className="w-7 h-7" />
-              </div>
-              <div>
-                <h2 className="text-xl font-bold text-zinc-100">Account Synced</h2>
-                <p className="text-sm text-zinc-400 mt-1">
+            <div className="py-2 space-y-4">
+              <div className="text-center space-y-2">
+                <div className="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mx-auto border border-emerald-500/20 shadow-md">
+                  <Cloud className="w-7 h-7" />
+                </div>
+                <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-xs font-medium">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>Connected & Synced</span>
+                </div>
+                <h2 className="text-lg font-bold text-zinc-100">Account Details</h2>
+                <p className="text-sm text-zinc-400">
                   Logged in as <span className="font-semibold text-emerald-400">{currentUser.username}</span>
                 </p>
-                <p className="text-xs text-zinc-500 mt-1">
+                <p className="text-xs text-zinc-500">
                   Your study progress and code auto-sync to all your connected devices.
                 </p>
               </div>
 
-              {/* Sync Key Quick Card */}
-              <div className="p-3 bg-[#101014] border border-zinc-800 rounded-xl text-left space-y-1.5">
-                <div className="flex items-center justify-between text-xs text-zinc-400">
-                  <span className="font-semibold">Associated Device Sync Key</span>
-                  <button
-                    onClick={handleCopySyncKey}
-                    className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px]"
-                  >
-                    {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                    <span>{copiedKey ? 'Copied' : 'Copy'}</span>
-                  </button>
+              {/* Account Details & Device Sync Key Card */}
+              <div className="p-3.5 bg-[#101014] border border-zinc-800 rounded-xl text-left space-y-2.5">
+                <div className="flex items-center justify-between text-xs pb-2 border-b border-zinc-800">
+                  <span className="text-zinc-400">Username</span>
+                  <span className="font-semibold text-zinc-200">{currentUser.username}</span>
                 </div>
-                <div className="font-mono text-xs font-bold text-indigo-300">
-                  {currentSyncKey}
+                {currentUser.userId && (
+                  <div className="flex items-center justify-between text-xs pb-2 border-b border-zinc-800">
+                    <span className="text-zinc-400">User ID</span>
+                    <span className="font-mono text-zinc-300 text-[11px] truncate max-w-[200px]">{currentUser.userId}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between text-xs pb-2 border-b border-zinc-800">
+                  <span className="text-zinc-400">Connected Status</span>
+                  <span className="text-emerald-400 font-medium flex items-center gap-1 text-[11px]">
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Cloud Active & Synced
+                  </span>
+                </div>
+
+                <div className="pt-1">
+                  <div className="flex items-center justify-between text-xs text-zinc-400 mb-1.5">
+                    <span className="font-semibold text-zinc-300">Associated Sync Key</span>
+                    <button
+                      onClick={handleCopySyncKey}
+                      className="text-indigo-400 hover:text-indigo-300 flex items-center gap-1 text-[11px] cursor-pointer"
+                    >
+                      {copiedKey ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedKey ? 'Copied' : 'Copy'}</span>
+                    </button>
+                  </div>
+                  <div className="bg-[#0d0d10] border border-zinc-800 rounded-lg px-3 py-2 font-mono text-xs font-bold text-indigo-300 tracking-wider break-all">
+                    {currentSyncKey}
+                  </div>
                 </div>
               </div>
 
@@ -228,9 +262,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   onLogout();
                   onClose();
                 }}
-                className="w-full py-2.5 px-4 bg-zinc-800 hover:bg-rose-500/10 hover:text-rose-400 hover:border-rose-500/20 border border-zinc-700 rounded-xl text-sm font-medium transition text-zinc-300"
+                className="w-full py-2.5 px-4 bg-rose-600 hover:bg-rose-500 active:bg-rose-700 text-white rounded-xl text-sm font-semibold transition shadow-lg shadow-rose-600/20 flex items-center justify-center gap-2 cursor-pointer"
               >
-                Sign Out on this Device
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out on this Device</span>
               </button>
             </div>
           ) : (

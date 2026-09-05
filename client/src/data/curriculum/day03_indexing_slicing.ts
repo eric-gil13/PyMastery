@@ -396,7 +396,7 @@ def crop_bounding_box(
             'top_row': 1D top boundary row (first row of cropped region)
             'bottom_row': 1D bottom boundary row (last row of cropped region)
             'left_col': 1D left boundary column (first column of cropped region)
-            'right_col': 1D last column of cropped region)
+            'right_col': 1D last column of cropped region
     """
     # TODO: Extract cropped subgrid and its 4 perimeter edges using 2D slicing
     pass
@@ -597,19 +597,19 @@ def idiomatic_crop(grid, r1, r2, c1, c2):
       slug: 'alternating-pattern-decimation',
       difficulty: 'Intermediate',
       category: 'Striding & Views',
-      summary: 'Downsample a 2D matrix using stride stepping, extract alternating patterns, and isolate an independent copy with .copy().',
-      mentalModel5s: 'arr[::step, ::step] skips elements by stepping through memory. Slices share memory, so call .copy() whenever you need an independent array that won\'t mutate the original.',
+      summary: 'Downsample a 2D matrix using stride stepping, extract alternating patterns, and isolate an independent copy decoupled from original memory.',
+      mentalModel5s: 'Striding with steps skips elements through memory. Slices share memory buffers, so isolate an independent copy whenever memory decoupling is needed.',
       visualAnalogy: 'Walking along a tiled sidewalk taking two steps at a time (even tiles) or tracing only the black squares of a chessboard.',
       pitfalls: [
-        'Mutating isolated_copy and accidentally mutating the original array because .copy() was omitted.',
-        'Using negative step incorrectly (remember ::-1 reverses along an axis).',
+        'Mutating isolated_copy and accidentally mutating the original array because memory was not decoupled.',
+        'Using negative step incorrectly (remember a negative step reverses along an axis).',
         'Confusing step size with stop index (the 3rd slot in start:stop:step is the stride step).'
       ],
       progressiveHints: [
-        'Tier 1 (Even Subsampling): To sample every `step` element starting from 0, use grid[::step, ::step].',
-        'Tier 2 (Odd Subsampling): To sample every `step` element starting from index 1, use grid[1::step, 1::step].',
-        'Tier 3 (Reversal): To reverse both dimensions, use a negative step: grid[::-1, ::-1].',
-        'Tier 4 (Isolation): To create an independent copy that does not share memory, call even_sample.copy().'
+        'Tier 1 (Even Subsampling): To downsample with stride stepping starting at index 0 across both axes, use the slice step syntax: grid[::step, ::step].',
+        'Tier 2 (Odd Subsampling): To start stepping from offset index 1 along both axes, specify the start index before the step: grid[1::step, 1::step].',
+        'Tier 3 (Reversal): Negative slice steps reverse direction. Reverse both row and column axes simultaneously using grid[::-1, ::-1].',
+        'Tier 4 (Memory Isolation): Views share the underlying buffer. To create an independent copy that does not share memory, call .copy() on the view: even_sample.copy().'
       ],
       deepInternals: {
         title: 'Stride Stepping vs Memory Duplication',
@@ -619,17 +619,17 @@ def idiomatic_crop(grid, r1, r2, c1, c2):
       instructions: `Implement \`decimate_and_isolate(grid: np.ndarray, step: int = 2) -> dict\` to downsample a 2D matrix, extract alternating patterns, and create an independent copy.
 
 **Requirements:**
-1. \`'even_sample'\`: A 2D view taking every \`step\` elements starting from index 0 across both axes (\`grid[::step, ::step]\`).
-2. \`'odd_sample'\`: A 2D view taking every \`step\` elements starting from index 1 across both axes (\`grid[1::step, 1::step]\`).
-3. \`'reversed_grid'\`: A 2D view with all rows and columns reversed (\`grid[::-1, ::-1]\`).
-4. \`'isolated_copy'\`: An independent deep copy of \`even_sample\` using \`.copy()\`.
+1. \`'even_sample'\`: A 2D strided view downsampling the grid by taking every \`step\` elements starting from index 0 along both row and column axes.
+2. \`'odd_sample'\`: A 2D strided view downsampling the grid by taking every \`step\` elements starting from index 1 along both row and column axes.
+3. \`'reversed_grid'\`: A 2D strided view reversing the ordering along both row and column axes.
+4. \`'isolated_copy'\`: An independent memory copy of \`even_sample\` that is completely decoupled from the source grid memory buffer.
 5. Return a dictionary with keys: \`'even_sample'\`, \`'odd_sample'\`, \`'reversed_grid'\`, and \`'isolated_copy'\`.
-6. Ensure that modifying \`isolated_copy\` does NOT modify \`grid\`.`,
+6. Memory Safety: Ensure that modifying \`isolated_copy\` does NOT modify or affect the source \`grid\`.`,
       hints: [
-        'grid[::step, ::step] steps across rows and columns by step size.',
-        'grid[1::step, 1::step] starts at row 1 and column 1.',
-        'grid[::-1, ::-1] reverses both dimensions.',
-        'Call .copy() on even_sample to make an isolated copy.'
+        'Use stride slice syntax `grid[::step, ::step]` to sample every `step` element starting from index 0 across both axes.',
+        'Use `grid[1::step, 1::step]` to sample every `step` element starting at index 1 for both rows and columns.',
+        'Reverse both dimensions simultaneously using negative step slicing: `grid[::-1, ::-1]`.',
+        'To decouple memory so mutating the copy does not alter the source grid, call `.copy()`: `even_sample.copy()`.'
       ],
       starterCode: `import numpy as np
 
@@ -644,10 +644,10 @@ def decimate_and_isolate(grid: np.ndarray, step: int = 2) -> dict:
         
     Returns:
         dict containing:
-            'even_sample': 2D view taking every \`step\` element from index 0: grid[::step, ::step]
-            'odd_sample': 2D view taking every \`step\` element from index 1: grid[1::step, 1::step]
-            'reversed_grid': 2D view with all rows and columns reversed: grid[::-1, ::-1]
-            'isolated_copy': an independent deep copy of 'even_sample' using .copy()
+            'even_sample': 2D view taking every \`step\` element starting from index 0 along both axes
+            'odd_sample': 2D view taking every \`step\` element starting from index 1 along both axes
+            'reversed_grid': 2D view with all rows and columns reversed along both axes
+            'isolated_copy': an independent memory copy of 'even_sample' decoupled from the source buffer
     """
     # TODO: Implement stride stepping and independent copy isolation
     pass

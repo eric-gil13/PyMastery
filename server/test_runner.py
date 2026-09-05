@@ -145,6 +145,40 @@ df = pd.DataFrame({
         self.assertGreater(resp.benchmark.ops_per_sec, 0)
         self.assertGreater(resp.benchmark.mean_ms, 0)
 
+    async def test_09_run_mode_strict_isolation(self):
+        """Verify mode='run' produces no test_results even if test cases are provided."""
+        req = RunRequest(
+            code="print('Isolation Run')\nx = 10",
+            mode="run",
+            test_cases=[TestCase(name="Should Not Run", call="x", expected=10)]
+        )
+        resp = await runner.execute(req)
+        self.assertTrue(resp.success)
+        self.assertEqual(resp.test_results, [])
+        self.assertIsNone(resp.tests_summary)
+        self.assertIn("Isolation Run", resp.stdout)
+
+    async def test_10_test_code_failure_captures_actual_and_traceback(self):
+        """Verify mode='test' on failing code captures non-None actual returned value and full traceback."""
+        user_code = "def calc_stats(items):\n    return [sum(items), len(items)]\n"
+        test_code = "def run_tests(candidate_func):\n    res = candidate_func([10, 20, 30])\n    assert isinstance(res, dict), 'Result must be a dictionary'\n"
+        req = RunRequest(
+            code=user_code,
+            mode="test",
+            test_cases=[TestCase(name="Dict assertion", test_code=test_code)]
+        )
+        resp = await runner.execute(req)
+        self.assertFalse(resp.success)
+        self.assertIsNotNone(resp.test_results)
+        self.assertEqual(len(resp.test_results), 1)
+        tr = resp.test_results[0]
+        self.assertEqual(tr.status, "failed")
+        self.assertEqual(tr.actual, "[60, 3]")
+        self.assertIn("AssertionError: Result must be a dictionary", tr.error_message)
+        self.assertIn("Traceback (most recent call last):", tr.diff)
+        self.assertIn("Traceback (most recent call last):", tr.traceback)
+        self.assertIn("[10, 20, 30]", tr.input_repr)
+
 
 class TestSyncAndPersistence(unittest.TestCase):
     """Test suite for SQLite persistence, profiles, progress, drafts, and multi-device JSON sync."""

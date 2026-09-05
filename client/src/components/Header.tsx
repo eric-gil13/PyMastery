@@ -7,6 +7,7 @@ import {
   Cloud,
   Menu,
   Search,
+  LogIn,
 } from 'lucide-react';
 import type { DayTrack, Challenge, LayoutMode, LibraryId } from '../types';
 import { LIBRARY_METADATA } from '../data/curriculumData';
@@ -53,7 +54,6 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenSearch,
   currentUser,
   onOpenAuth,
-  onOpenSync,
 }) => {
   const isMac = typeof navigator !== 'undefined' && /Mac|iPod|iPhone|iPad/.test(navigator.platform);
   const modKey = isMac ? '⌘' : 'Ctrl';
@@ -185,27 +185,26 @@ export const Header: React.FC<HeaderProps> = ({
 
         <div className="h-4 w-px bg-surface-border hidden sm:block" />
 
-        {/* Cloud / Local Sync Status Button */}
+        {/* User Account / Auth Button */}
         {currentUser ? (
           <button
             onClick={onOpenAuth}
             className="flex items-center gap-1.5 sm:gap-2 px-2 sm:px-2.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-xs text-emerald-300 transition"
             title="Account Synced. Click to manage profile or log out."
           >
-            <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+            <Cloud className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
             <span className="font-medium max-w-[80px] sm:max-w-[110px] truncate">
               {currentUser.username}
             </span>
           </button>
         ) : (
           <button
-            onClick={onOpenSync || onOpenAuth}
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl text-xs font-medium text-zinc-300 hover:text-zinc-100 transition"
-            title="Cloud & Local Sync State"
+            onClick={onOpenAuth}
+            className="flex items-center gap-1.5 px-3 py-1.5 bg-zinc-900 hover:bg-zinc-800 border border-zinc-700 rounded-xl text-xs font-medium text-zinc-300 hover:text-zinc-100 transition shadow-xs"
+            title="Sign In to PyMastery"
           >
-            <Cloud className="w-3.5 h-3.5 text-zinc-400" />
-            <span className="hidden sm:inline">Sign In to Sync</span>
-            <span className="sm:hidden">Sync</span>
+            <LogIn className="w-3.5 h-3.5 text-zinc-400" />
+            <span>Sign In</span>
           </button>
         )}
       </div>

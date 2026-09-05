@@ -477,8 +477,7 @@ Write a function \`plot_distribution_with_density(data: np.ndarray, bins: int = 
 2. Calculates sample mean (\`mu = np.mean(data)\`) and standard deviation (\`sigma = np.std(data)\`).
 3. Initializes a Figure and single Axes with a figure size of 8 by 5 inches (\`figsize=(8, 5)\`).
 4. Generates a normalized histogram of the distribution (\`density=True\`, \`bins=bins\`, \`color="#60a5fa"\`, \`alpha=0.6\`, \`edgecolor="white"\`, and \`label="Empirical Density"\`).
-5. Computes the theoretical Gaussian PDF over 200 evenly spaced points from \`min(data)\` to \`max(data)\` using:
-   \`pdf = (1.0 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x_eval - mu) / sigma) ** 2)\`.
+5. Computes the theoretical Gaussian Probability Density Function (PDF) evaluated over 200 evenly spaced points spanning from the minimum to the maximum of \`data\` using the normal distribution formula parameterized by \`mu\` and \`sigma\`.
 6. Overlays the fitted Gaussian density curve (\`color="#dc2626"\`, \`linewidth=2.2\`, and \`label=f"Normal Fit (μ={mu:.2f}, σ={sigma:.2f})"\`).
 7. Draws a vertical dashed reference line indicating the sample mean (\`color="#1e3a8a"\`, \`linestyle="--"\`, \`linewidth=1.8\`, \`label=f"Mean = {mu:.2f}"\`).
 8. Sets the title to \`"Distribution with Fitted Normal Density"\`, the x-axis label to \`"Value"\`, and the y-axis label to \`"Probability Density"\`.
@@ -486,6 +485,7 @@ Write a function \`plot_distribution_with_density(data: np.ndarray, bins: int = 
       hints: [
         'Set density=True in ax.hist().',
         'Use np.linspace(arr.min(), arr.max(), 200) for smooth PDF evaluation.',
+        'Compute Gaussian PDF: pdf = (1.0 / (sigma * np.sqrt(2 * np.pi))) * np.exp(-0.5 * ((x_eval - mu) / sigma) ** 2).',
         'Use ax.axvline(mu, linestyle="--") for the mean indicator line.'
       ],
       starterCode: `import matplotlib.pyplot as plt

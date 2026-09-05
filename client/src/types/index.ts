@@ -20,6 +20,13 @@ export interface TestResultItem {
   expected?: string;
   actual?: string;
   durationMs?: number;
+  input?: string;
+  input_repr?: string;
+  diff?: string;
+  error_message?: string;
+  traceback?: string;
+  call?: string;
+  stdout?: string;
 }
 
 export interface TensorShapeDiff {
