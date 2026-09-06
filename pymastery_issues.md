@@ -1,12 +1,4 @@
 # PyMastery Issues
 
-1. **Missing 'Next Problem' Button in Curriculum**: When completing a part in the curriculum, there is no next problem button available other than within the curriculum list itself. There should be an easily accessible 'Next Problem' button upon completion.
-2. **Sign In / Create Account Navigation Broken**: The option to create an account or sign in appears to be removed or broken. Clicking "Sign In" displays customizable JSON instead of the login modal/interface that was previously there.
-3. **Cannot Sign Out or Sign In on Other Devices**: Users with connected accounts cannot sign out, nor can they sign in from a different computer due to missing/broken authentication controls.
-4. **'Run Code' Unintentionally Launches Test Comparisons**: Clicking 'Run Code' executes code successfully, but it also triggers test comparisons and displays errors comparing code output against test cases—even though 'Run Code' is not supposed to run tests.
-5. **Visible Test Cases in 'Run Tests' (LeetCode-style)**: In 'Run Tests', test cases (inputs, expected outputs, and actual results) should be explicitly visible to the user (similar to LeetCode) so they can see the exact comparisons being made and verify tests are actually executing.
-6. **Problem Descriptions Give Away Solutions (Move to Hints)**: Specific sections still give explicit code/solution hints in the problem description rather than putting them in the Hints section.
-   - **NumPy Part 3**: *Alternating Pattern & Decimation* (still gives hints/explicit code instructions in the problem description).
-7. **Text Formatting Issues in NumPy Part 5**: Unparsed formatting tokens appear as raw text (such as `*` instead of rendering as bolded/italic text), and some punctuation is missing throughout the problem text.
-8. **Test Failure Error Messages Truncated/Hidden**: When a test fails, the full error details and traceback are hidden or cut off in the UI, preventing the user from viewing the complete failure output.
-9. **'Received Output' Always Shows 'None' on Failed Tests**: When a test fails, the UI always displays `None` for "Received output", even when the user's code executes successfully and returns non-None values that simply did not match expected values.
+1. **State / Progress Reset on Restart**: Closing the computer and opening it back up resets the app to NumPy Part 1 every time, regardless of where the user previously was (e.g. NumPy Part 7, Pandas Part 3, etc.).
+2. **'Next Problem' Button Disabled at Section Boundaries**: When reaching the final problem of Part 7 in a library section (e.g., the last problem of NumPy Part 7), the 'Next Problem' button is disabled instead of navigating to the start of the next section (e.g., Pandas Part 1).
