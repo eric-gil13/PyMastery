@@ -7,3 +7,4 @@
 5. **Navbar Text Formatting & Redundant Library Display**:
    - **Duplicate Part Prefix**: Navbar displays duplicated prefixes (e.g., showing `Part 4: Part 4: Groupby and Aggregations` instead of `Part 4: Groupby and Aggregations`).
    - **Unnecessary Library Name**: Displaying the library name in the navbar header is redundant; showing just the category is sufficient.
+6. **Full Guide Scroll Area Restricted to Center**: In the Full Guide section, mouse scrolling only works when hovering directly over the centered text area. Scrolling should still work when the cursor is positioned over the blank side margins, while keeping the visual layout and text alignment identical.
