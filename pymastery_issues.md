@@ -9,3 +9,4 @@
    - **Unnecessary Library Name**: Displaying the library name in the navbar header is redundant; showing just the category is sufficient.
 6. **Full Guide Scroll Area Restricted to Center**: In the Full Guide section, mouse scrolling only works when hovering directly over the centered text area. Scrolling should still work when the cursor is positioned over the blank side margins, while keeping the visual layout and text alignment identical.
 7. **Full Guide Selected Icon Invisible (Color Overlap)**: When 'Full Guide' is selected, its icon becomes invisible due to a color overlap with the active selected background.
+8. **Solutions Code Text Not Directly Selectable/Copyable**: In the solution view, code text cannot be manually highlighted and copied (e.g., to copy a specific single line). Text selection should be enabled for solutions in addition to the "Copy to Editor" button.
