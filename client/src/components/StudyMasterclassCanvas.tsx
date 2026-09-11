@@ -59,8 +59,9 @@ export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-5 sm:p-8 max-w-5xl mx-auto w-full space-y-7 animate-fade-in text-zinc-100">
-      {/* Header Banner */}
+    <div className="flex-1 w-full h-full overflow-y-auto custom-scrollbar">
+      <div className="p-5 sm:p-8 max-w-5xl mx-auto w-full space-y-7 animate-fade-in text-zinc-100">
+        {/* Header Banner */}
       <div className="border-b border-zinc-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 uppercase tracking-wider">
@@ -406,6 +407,7 @@ export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
           </div>
         </div>
       )}
+      </div>
     </div>
   );
 };

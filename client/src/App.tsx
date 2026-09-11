@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import confetti from 'canvas-confetti';
-import { CURRICULUM_DATA, LIBRARY_CURRICULA } from './data/curriculumData';
+import { CURRICULUM_DATA, LIBRARY_CURRICULA, getAllCurriculumChallenges } from './data/curriculumData';
 import type {
   DayTrack,
   Challenge,
@@ -13,6 +13,8 @@ import type {
 import {
   loadUserProgress,
   saveUserProgress,
+  loadActiveSession,
+  saveActiveSession,
 } from './utils/storage';
 import {
   executeCodeApi,
@@ -32,13 +34,34 @@ import StudyMasterclassCanvas from './components/StudyMasterclassCanvas';
 import ChallengeIntuitionPanel from './components/ChallengeIntuitionPanel';
 
 export function App() {
-  // Curriculum & Active Challenge State
-  const [selectedLibrary, setSelectedLibrary] = useState<LibraryId>('python');
+  // Curriculum & Active Challenge State initialized from saved session (Issue 1)
+  const [selectedLibrary, setSelectedLibrary] = useState<LibraryId>(() => {
+    const saved = loadActiveSession();
+    return saved?.libraryId && LIBRARY_CURRICULA[saved.libraryId] ? saved.libraryId : 'python';
+  });
+
   const curriculum = LIBRARY_CURRICULA[selectedLibrary] || CURRICULUM_DATA;
-  const [currentDay, setCurrentDay] = useState<DayTrack>(CURRICULUM_DATA[0]);
-  const [activeChallenge, setActiveChallenge] = useState<Challenge>(
-    CURRICULUM_DATA[0].challenges[0]
-  );
+
+  const [currentDay, setCurrentDay] = useState<DayTrack>(() => {
+    const saved = loadActiveSession();
+    const libTracks = (saved?.libraryId && LIBRARY_CURRICULA[saved.libraryId]) || CURRICULUM_DATA;
+    if (saved && saved.dayId !== undefined) {
+      const match = libTracks.find((d) => d.id === saved.dayId);
+      if (match) return match;
+    }
+    return libTracks[0] || CURRICULUM_DATA[0];
+  });
+
+  const [activeChallenge, setActiveChallenge] = useState<Challenge>(() => {
+    const saved = loadActiveSession();
+    const libTracks = (saved?.libraryId && LIBRARY_CURRICULA[saved.libraryId]) || CURRICULUM_DATA;
+    const day = (saved && saved.dayId !== undefined ? libTracks.find((d) => d.id === saved.dayId) : null) || libTracks[0] || CURRICULUM_DATA[0];
+    if (saved?.challengeId) {
+      const match = day.challenges.find((c) => c.id === saved.challengeId);
+      if (match) return match;
+    }
+    return day.challenges[0] || CURRICULUM_DATA[0].challenges[0];
+  });
 
   // 3 Studio Layout Modes: 'guided' | 'focus' | 'masterclass'
   const [layoutMode, setLayoutMode] = useState<LayoutMode>('guided');
@@ -152,33 +175,37 @@ export function App() {
     [handleSelectChallenge]
   );
 
-  // 3c. Next Problem Navigation (Issue 1)
-  const allChallengesWithTrack = useMemo(() => {
-    const list: { challenge: Challenge; track: DayTrack }[] = [];
-    for (const track of curriculum) {
-      for (const ch of track.challenges) {
-        list.push({ challenge: ch, track });
-      }
-    }
-    return list;
-  }, [curriculum]);
+  // 1b. Auto-persist active session on navigation (Issue 1)
+  useEffect(() => {
+    saveActiveSession({
+      libraryId: selectedLibrary,
+      dayId: currentDay.id,
+      challengeId: activeChallenge.id,
+    });
+  }, [selectedLibrary, currentDay.id, activeChallenge.id]);
 
-  const currentChallengeIndex = allChallengesWithTrack.findIndex(
+  // 3c. Next Problem Navigation (Cross-Library Chaining - Issue 2)
+  const globalChallengesWithTrack = useMemo(() => getAllCurriculumChallenges(), []);
+
+  const currentGlobalChallengeIndex = globalChallengesWithTrack.findIndex(
     (item) => item.challenge.id === activeChallenge.id
   );
   const hasNextProblem =
-    currentChallengeIndex >= 0 &&
-    currentChallengeIndex < allChallengesWithTrack.length - 1;
+    currentGlobalChallengeIndex >= 0 &&
+    currentGlobalChallengeIndex < globalChallengesWithTrack.length - 1;
 
   const handleNextProblem = useCallback(() => {
     if (
-      currentChallengeIndex >= 0 &&
-      currentChallengeIndex < allChallengesWithTrack.length - 1
+      currentGlobalChallengeIndex >= 0 &&
+      currentGlobalChallengeIndex < globalChallengesWithTrack.length - 1
     ) {
-      const next = allChallengesWithTrack[currentChallengeIndex + 1];
+      const next = globalChallengesWithTrack[currentGlobalChallengeIndex + 1];
+      if (next.libraryId !== selectedLibrary) {
+        setSelectedLibrary(next.libraryId);
+      }
       handleSelectChallenge(next.challenge, next.track);
     }
-  }, [currentChallengeIndex, allChallengesWithTrack, handleSelectChallenge]);
+  }, [currentGlobalChallengeIndex, globalChallengesWithTrack, selectedLibrary, handleSelectChallenge]);
 
   const testsPassed = Boolean(
     executionResult?.testResults &&

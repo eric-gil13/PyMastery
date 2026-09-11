@@ -122,26 +122,52 @@ export const CurriculumNav: React.FC<CurriculumNavProps> = ({
     }));
   };
 
-  // Progress Calculations
+  // Progress Calculations (Scoped to Current Library - Issue 3)
   const totalChallenges = useMemo(
     () => curriculum.reduce((acc, d) => acc + d.challenges.length, 0),
     [curriculum]
   );
-  const totalCompleted = userProgress.completedChallenges.length;
-  const progressPercent = Math.round((totalCompleted / Math.max(totalChallenges, 1)) * 100);
 
-  // Medal Summaries
+  const currentLibraryChallengeIds = useMemo(() => {
+    const ids = new Set<string>();
+    curriculum.forEach((d) => {
+      d.challenges.forEach((ch) => ids.add(ch.id));
+    });
+    return ids;
+  }, [curriculum]);
+
+  const totalCompleted = useMemo(() => {
+    return userProgress.completedChallenges.filter((id) =>
+      currentLibraryChallengeIds.has(id)
+    ).length;
+  }, [userProgress.completedChallenges, currentLibraryChallengeIds]);
+
+  const progressPercent = Math.min(
+    100,
+    Math.round((totalCompleted / Math.max(totalChallenges, 1)) * 100)
+  );
+
+  // Medal Summaries (Scoped to Current Library)
   const goldCount = useMemo(
-    () => Object.values(userProgress.medals || {}).filter((m) => m === 'gold').length,
-    [userProgress.medals]
+    () =>
+      Object.entries(userProgress.medals || {}).filter(
+        ([id, m]) => m === 'gold' && currentLibraryChallengeIds.has(id)
+      ).length,
+    [userProgress.medals, currentLibraryChallengeIds]
   );
   const silverCount = useMemo(
-    () => Object.values(userProgress.medals || {}).filter((m) => m === 'silver').length,
-    [userProgress.medals]
+    () =>
+      Object.entries(userProgress.medals || {}).filter(
+        ([id, m]) => m === 'silver' && currentLibraryChallengeIds.has(id)
+      ).length,
+    [userProgress.medals, currentLibraryChallengeIds]
   );
   const bronzeCount = useMemo(
-    () => Object.values(userProgress.medals || {}).filter((m) => m === 'bronze').length,
-    [userProgress.medals]
+    () =>
+      Object.entries(userProgress.medals || {}).filter(
+        ([id, m]) => m === 'bronze' && currentLibraryChallengeIds.has(id)
+      ).length,
+    [userProgress.medals, currentLibraryChallengeIds]
   );
 
   return (
@@ -262,7 +288,7 @@ export const CurriculumNav: React.FC<CurriculumNavProps> = ({
                   : 'bg-zinc-800/80 text-zinc-400 hover:text-zinc-200 border border-zinc-750'
               }`}
             >
-              Unsolved ({totalChallenges - totalCompleted})
+              Unsolved ({Math.max(0, totalChallenges - totalCompleted)})
             </button>
             <button
               onClick={() => setFilterMode('needs-gold')}

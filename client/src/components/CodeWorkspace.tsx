@@ -433,9 +433,9 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto p-4 bg-[#090B10] font-mono text-xs text-emerald-300 leading-relaxed custom-scrollbar">
-              <pre>
-                <code>{challenge.solutionCode}</code>
+            <div className="flex-1 overflow-auto p-4 bg-[#090B10] font-mono text-xs text-emerald-300 leading-relaxed custom-scrollbar select-text cursor-text">
+              <pre className="select-text">
+                <code className="select-text">{challenge.solutionCode}</code>
               </pre>
             </div>
           </div>

@@ -10,7 +10,6 @@ import {
   LogIn,
 } from 'lucide-react';
 import type { DayTrack, Challenge, LayoutMode, LibraryId } from '../types';
-import { LIBRARY_METADATA } from '../data/curriculumData';
 
 interface HeaderProps {
   currentDay: DayTrack;
@@ -45,7 +44,7 @@ const getDifficultyBadge = (difficulty: string) => {
 export const Header: React.FC<HeaderProps> = ({
   currentDay,
   activeChallenge,
-  selectedLibrary = 'python',
+  selectedLibrary: _selectedLibrary = 'python',
   layoutMode = 'guided',
   onChangeLayout,
   mentorOpen,
@@ -85,13 +84,8 @@ export const Header: React.FC<HeaderProps> = ({
         <div className="h-4 w-px bg-surface-border mx-0.5 hidden md:block" />
 
         <div className="hidden md:flex items-center gap-2 text-xs min-w-0">
-          <span className="text-zinc-200 font-semibold whitespace-nowrap flex items-center gap-1 bg-surface-elevated px-2 py-0.5 rounded border border-surface-border">
-            <span>{LIBRARY_METADATA[selectedLibrary]?.icon || '🐍'}</span>
-            <span>{LIBRARY_METADATA[selectedLibrary]?.name || 'Python'}</span>
-          </span>
-          <span className="text-zinc-600">›</span>
           <span className="text-zinc-400 font-medium whitespace-nowrap">
-            Part {currentDay.dayNumber}: {currentDay.title.split('&')[0].trim()}
+            Part {currentDay.partNumber || currentDay.dayNumber}: {currentDay.title.replace(/^Part\s+\d+:\s*/i, '').split('&')[0].trim()}
           </span>
           <span className="text-zinc-600">›</span>
           <span className="text-white font-semibold truncate max-w-[200px] lg:max-w-[280px]">
@@ -132,8 +126,16 @@ export const Header: React.FC<HeaderProps> = ({
             }`}
             title="Full Part Guide & Masterclass (⌘3)"
           >
-            <BookOpen className="w-3.5 h-3.5 text-accent-indigo group-hover:text-white" />
-            <span className="font-semibold text-white">Full Guide</span>
+            <BookOpen
+              className={`w-3.5 h-3.5 ${
+                layoutMode === 'masterclass'
+                  ? 'text-white'
+                  : 'text-zinc-400 group-hover:text-zinc-200'
+              }`}
+            />
+            <span className={layoutMode === 'masterclass' ? 'font-semibold text-white' : 'font-medium'}>
+              Full Guide
+            </span>
           </button>
 
           <button

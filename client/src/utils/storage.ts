@@ -1,6 +1,7 @@
-import type { UserProgress } from '../types';
+import type { UserProgress, LibraryId } from '../types';
 
 const STORAGE_KEY = 'pymastery_user_progress_v1';
+const ACTIVE_SESSION_KEY = 'pymastery_active_session_v1';
 
 export function generateSyncKey(userTag = 'USER'): string {
   const digits = '0123456789';
@@ -84,4 +85,33 @@ export function importProgressFromJson(jsonString: string): UserProgress {
 
   saveUserProgress(validProgress);
   return validProgress;
+}
+
+export interface ActiveSessionState {
+  libraryId: LibraryId;
+  dayId: number;
+  challengeId: string;
+}
+
+export function saveActiveSession(session: ActiveSessionState): void {
+  try {
+    localStorage.setItem(ACTIVE_SESSION_KEY, JSON.stringify(session));
+  } catch (e) {
+    console.error('Failed to save active session:', e);
+  }
+}
+
+export function loadActiveSession(): ActiveSessionState | null {
+  try {
+    const raw = localStorage.getItem(ACTIVE_SESSION_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && parsed.libraryId && parsed.dayId !== undefined && parsed.challengeId) {
+        return parsed as ActiveSessionState;
+      }
+    }
+  } catch (e) {
+    console.warn('Failed to load active session:', e);
+  }
+  return null;
 }

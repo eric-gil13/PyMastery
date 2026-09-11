@@ -136,4 +136,25 @@ export const PART07_TRACK = PYTHON_PART07_TRACK;
 export const PART_TRACKS: DayTrack[] = PYTHON_ZERO_TO_HERO_TRACKS;
 export const CURRICULUM_DATA: DayTrack[] = PYTHON_ZERO_TO_HERO_TRACKS;
 
+export const ORDERED_LIBRARIES: LibraryId[] = ['python', 'numpy', 'pandas', 'matplotlib', 'sklearn', 'pytorch'];
+
+export interface GlobalCurriculumItem {
+  libraryId: LibraryId;
+  track: DayTrack;
+  challenge: import('../types').Challenge;
+}
+
+export function getAllCurriculumChallenges(): GlobalCurriculumItem[] {
+  const items: GlobalCurriculumItem[] = [];
+  for (const libId of ORDERED_LIBRARIES) {
+    const tracks = LIBRARY_CURRICULA[libId] || [];
+    for (const track of tracks) {
+      for (const challenge of track.challenges) {
+        items.push({ libraryId: libId, track, challenge });
+      }
+    }
+  }
+  return items;
+}
+
 export default CURRICULUM_DATA;
