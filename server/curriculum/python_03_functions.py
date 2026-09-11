@@ -118,12 +118,12 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Write a function `compose_pipeline(*funcs: callable, debug: bool = False) -> callable` that:\n"
-        "1. If no functions are provided in `*funcs`, raise `ValueError(\"At least one function must be provided\")`.\n"
-        "2. If any element in `*funcs` is not callable, raise `TypeError(\"All pipeline stages must be callable\")`.\n"
-        "3. Returns a pipeline function `pipeline(initial_val)` that runs `f(val)` in left-to-right sequence.\n"
-        "4. If any stage raises an exception, catch it and raise `RuntimeError(f\"Pipeline failed at stage {idx} ({fn_name}): {e}\")` from e.\n"
-        "5. If `debug=False` (default), returns the final transformed value.\n"
-        "6. If `debug=True`, returns a dict with 'result' (final output) and 'trace' (list of {'step': idx, 'func': name, 'output': step_out})."
+        "1. Validates that at least one function argument is provided; if empty, raises a `ValueError`.\n"
+        "2. Ensures every supplied argument is callable; if any is not, raises a `TypeError`.\n"
+        "3. Returns a pipeline callable that accepts an initial input value and executes the functions sequentially from left to right, threading the output of each stage into the next.\n"
+        "4. If any stage raises an exception, catches it and raises a `RuntimeError` explicitly chained from the original exception, conveying the stage index, function name (with a fallback name if unnamed), and error message.\n"
+        "5. If `debug=False` (default), returns the final transformed value directly.\n"
+        "6. If `debug=True`, returns a dictionary with 'result' (the final transformed output) and 'trace' (a list of dictionaries documenting each step with 'step' index, 'func' name, and 'output' value)."
     ),
     "starter_code": r'''def compose_pipeline(*funcs: callable, debug: bool = False) -> callable:
     """
@@ -211,9 +211,9 @@ CHALLENGE_1 = {
     return report
 ''',
     "hints": [
-        "Validate `all(callable(f) for f in funcs)`.",
-        "Use `getattr(f, '__name__', f'stage_{idx}')` to reliably obtain function names.",
-        "Raise `RuntimeError(...) from e` to preserve exception causation."
+        "Verify that the variable positional arguments sequence is non-empty, and check that each supplied function satisfies Python's callable interface.",
+        "Construct an inner closure that receives the initial argument and iterates sequentially through each function, updating an accumulator with each stage's result while safely resolving callable names with fallbacks for anonymous lambdas.",
+        "Wrap each stage invocation in an exception handler and use explicit exception chaining to preserve the original exception while raising an informative RuntimeError."
     ]
 }
 
@@ -232,14 +232,14 @@ CHALLENGE_2 = {
     ),
     "instructions": (
         "Write a function `make_bounded_memoizer(maxsize: int = 128) -> callable` that:\n"
-        "1. Validates `maxsize` is an int > 0. If not, raise `ValueError(\"maxsize must be a positive integer\")`.\n"
-        "2. Returns a decorator `decorator(fn: callable) -> callable`.\n"
-        "3. The wrapped function caches returns based on `args` tuple.\n"
-        "4. Tracks `hits` and `misses`.\n"
-        "5. If inserting a new result causes `len(cache) > maxsize`, evicts the oldest inserted key (FIFO).\n"
-        "6. Attaches `wrapper.cache_info() -> dict` returning {'hits', 'misses', 'size', 'maxsize'}.\n"
-        "7. Attaches `wrapper.cache_clear() -> None` which clears the cache and resets hits/misses to 0.\n"
-        "8. Preserves original function metadata via `@wraps(fn)`."
+        "1. Validates that `maxsize` is a positive integer (rejecting non-integers, booleans, and non-positive numbers), raising a `ValueError` if invalid.\n"
+        "2. Acts as a decorator factory returning a decorator that wraps any target callable.\n"
+        "3. Caches computation results in the wrapper closure using the arguments tuple as the lookup key.\n"
+        "4. Checks cache containment before evaluating the target function, tracking hit and miss telemetry accordingly.\n"
+        "5. Implements a bounded FIFO eviction policy: when cache capacity reaches `maxsize` prior to inserting a new result, the oldest inserted entry is evicted.\n"
+        "6. Exposes a `.cache_info()` helper method on the wrapped function that returns a dictionary containing 'hits', 'misses', 'size', and 'maxsize'.\n"
+        "7. Exposes a `.cache_clear()` helper method on the wrapped function that clears the cached results and resets telemetry counters to zero.\n"
+        "8. Preserves the target function's introspection metadata (such as name and docstrings)."
     ),
     "starter_code": r'''def make_bounded_memoizer(maxsize: int = 128) -> callable:
     """
@@ -357,9 +357,10 @@ def make_bounded_memoizer(maxsize: int = 128) -> callable:
     return report
 ''',
     "hints": [
-        "Declare `nonlocal hits, misses` inside `wrapper` and `cache_clear`.",
-        "In Python 3.7+, dictionary iteration order is insertion order: `next(iter(cache))` yields the oldest key.",
-        "Attach `wrapper.cache_info = cache_info` directly onto the wrapper function before returning it."
+        "Maintain cache storage alongside hit and miss counters in the decorator's closure, declaring closure variables as nonlocal when modifying them in inner scopes.",
+        "Check cache containment prior to evaluating the target function to return cached results and update hit or miss telemetry.",
+        "When cache capacity is reached, evict the oldest inserted key relying on standard dictionary insertion order before storing new results.",
+        "Attach inspection and clearance helper functions directly as callable attributes on the returned wrapper, and preserve the target function's metadata."
     ]
 }
 

@@ -176,26 +176,25 @@ print("Merged:", merged)`,
       summary: 'Process raw documents, tokenize text, and construct a full inverted search index with term frequencies.',
       estimatedTime: '20 min',
       hints: [
-        'Use `re.sub(r"[^a-zA-Z0-9\\s]", " ", text.lower())` to extract alphanumeric tokens.',
-        'Use `collections.defaultdict` to track `doc_ids`, `total_count`, and `term_freq`.',
-        'Use a `set` to collect unique doc_ids, then sort with `sorted(list(...))` before returning.',
-        'Sort dictionary keys alphabetically with `sorted(index.keys())`.'
+        'Normalize characters by converting the text to lowercase and replacing non-alphanumeric punctuation with whitespace before token splitting.',
+        'Consider utilizing a grouping structure or default factory mapping to aggregate statistics per token without manual key presence checks.',
+        'Collect document occurrences within unique sets per term to prevent duplicate IDs before producing sorted lists.',
+        'Sort the resulting dictionary keys alphabetically when constructing the final inverted index.'
       ],
       instructions: `Write a function \`build_inverted_index(documents: list[dict]) -> dict\` that:
 1. **Input Validation**:
-   - If \`documents\` is not a list, raise \`TypeError("documents must be a list")\`.
-   - Each item in \`documents\` must be a dictionary with integer \`"id"\` and string \`"text"\`. If invalid or missing, raise \`ValueError("Invalid document entry")\`.
-2. **Tokenization Rules**:
-   - For each document, extract words from \`text\`.
-   - Normalize: convert to lowercase, strip punctuation (strip characters not in letters, digits, or whitespace: keep alphanumeric tokens).
-   - Split on whitespace into tokens (ignore empty strings).
+   - Verify that \`documents\` is a list; if not, raise \`TypeError("documents must be a list")\`.
+   - Ensure every document record is a dictionary containing an integer \`"id"\` and string \`"text"\`. If any entry is invalid, missing required keys, or contains invalid types, raise \`ValueError("Invalid document entry")\`.
+2. **Text Normalization & Tokenization**:
+   - For each document, normalize the content by converting text to lowercase and filtering out all non-alphanumeric punctuation (retaining only alphanumeric characters and whitespace).
+   - Segment the sanitized text on whitespace boundaries into individual token terms, ignoring empty strings.
 3. **Index Construction**:
-   - Return a dictionary where each key is a unique token string mapped to:
-     - \`"doc_ids"\`: a sorted list of unique document IDs where this token appears.
-     - \`"total_count"\`: total number of times the token appears across all documents.
-     - \`"term_freq"\`: dictionary mapping \`doc_id\` (int) to the occurrence count of the token in that document.
+   - Construct a mapping where each unique token maps to its statistical record:
+     - \`"doc_ids"\`: a sorted list of unique document IDs where the token appears.
+     - \`"total_count"\`: aggregate occurrence count of the token across all documents.
+     - \`"term_freq"\`: a dictionary mapping each document ID to the occurrence count of the token in that specific document.
 4. **Ordering**:
-   - The returned dictionary keys should be sorted alphabetically.`,
+   - Return the resulting dictionary with its token keys sorted alphabetically.`,
       starterCode: `def build_inverted_index(documents: list[dict]) -> dict:
     """
     Construct an inverted index mapping tokens to document occurrences and frequencies.
@@ -273,17 +272,17 @@ def build_inverted_index(documents: list[dict]) -> dict:
         title: 'Building Inverted Indices with Hash Tables',
         subtitle: 'The foundational data structure behind full-text search engines',
         overview: 'Search engines like Lucene, Elasticsearch, and Google use inverted indices to instantly find documents containing query terms without reading all files.',
-        mentalModel5s: 'Tokenize documents -> Group occurrences in a defaultdict(lambda: ...) -> Sort and return.',
+        mentalModel5s: 'Tokenize documents -> Group occurrences in hash structures -> Sort and return.',
         visualAnalogy: 'The index in the back of a textbook: words mapped to specific page numbers.',
         pitfalls: [
-          'Using linear list lookups (`doc_id not in doc_ids`) which makes indexing quadratic $O(N^2)$. Use sets for $O(1)$ additions.',
+          'Using linear list lookups for uniqueness checks which makes indexing quadratic $O(N^2)$. Use sets for $O(1)$ additions.',
           'Not stripping punctuation before tokenizing.'
         ],
         progressiveHints: [
-          'Step 1: Validate input types and required fields.',
-          'Step 2: Use regex `re.sub(r"[^a-zA-Z0-9\\s]", " ", text.lower())` to extract clean words.',
-          'Step 3: Track doc_ids with a `set` for $O(1)$ uniqueness.',
-          'Step 4: Sort token keys using `sorted(token_stats.keys())`.'
+          'Step 1: Validate the input container type and verify each document satisfies the required field schema.',
+          'Step 2: Normalize character casing and filter out non-alphanumeric punctuation before isolating word tokens.',
+          'Step 3: Track document occurrences using unique sets per term and tally document-level frequencies.',
+          'Step 4: Convert unique ID sets to sorted lists, and assemble the final dictionary with alphabetically sorted keys.'
         ],
         mathFormulas: [
           {
@@ -293,14 +292,19 @@ def build_inverted_index(documents: list[dict]) -> dict:
           }
         ],
         naiveVsIdiomatic: {
-          naiveCode: `# Manual dict lookup and key initialization
-if token not in index:
-    index[token] = {"doc_ids": [], "count": 0}
-index[token]["count"] += 1`,
-          naiveExplanation: 'Requires constant key existence checks and branch branching in Python.',
-          idiomaticCode: `from collections import defaultdict
-stats = defaultdict(lambda: {"doc_ids": set(), "total_count": 0, "term_freq": defaultdict(int)})`,
-          idiomaticExplanation: 'defaultdict initializes nested structures in compiled C routines.',
+          naiveCode: `# Manual dictionary key initialization
+grouped = {}
+for term, val in occurrences:
+    if term not in grouped:
+        grouped[term] = []
+    grouped[term].append(val)`,
+          naiveExplanation: 'Requires defensive existence checks and manual list allocation on missing keys.',
+          idiomaticCode: `# Idiomatic grouping with defaultdict
+from collections import defaultdict
+grouped = defaultdict(list)
+for term, val in occurrences:
+    grouped[term].append(val)`,
+          idiomaticExplanation: 'defaultdict automatically initializes missing collection entries in compiled C bytecode.',
           speedupText: '3x cleaner & faster'
         },
         memoryLayout: {
@@ -327,24 +331,24 @@ stats = defaultdict(lambda: {"doc_ids": set(), "total_count": 0, "term_freq": de
       summary: 'Recursively flatten nested dictionary hierarchies into dot-delimited key paths and deduplicate records based on a unique identifier.',
       estimatedTime: '20 min',
       hints: [
-        'Define an inner recursive function `_flatten(current_dict, prefix)` to walk nested dictionaries.',
-        'Combine parent prefix and child key as `f"{prefix}.{k}" if prefix else k`.',
-        'Verify `unique_key in flat_record`, otherwise raise `KeyError`.',
-        'Maintain a `seen = set()` of unique key values to deduplicate while preserving list order.'
+        'Employ a recursive traversal strategy that visits nested dictionaries while accumulating hierarchical key paths.',
+        'Form flattened compound keys by joining accumulated parent prefixes with current keys using a dot separator.',
+        'Ensure the designated unique identifier exists in each flattened record, raising a key error if absent.',
+        'Maintain a set of observed identifier values to eliminate duplicate records while preserving sequence order in the output list.'
       ],
       instructions: `Write a function \`flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]\` that:
 1. **Validation**:
-   - If \`records\` is not a list, raise \`TypeError("records must be a list")\`.
-   - If \`not isinstance(unique_key, str) or not unique_key\`, raise \`ValueError("unique_key must be a non-empty string")\`.
-2. **Recursive Flattening**:
-   - For every dictionary record, recursively flatten any nested dictionaries.
-   - Join nested keys with a dot \`"."\`. For example, \`{"user": {"profile": {"name": "Alice"}}}\` becomes \`{"user.profile.name": "Alice"}\`.
-   - Non-dictionary values (lists, primitives, None) remain unflattened leaf values.
-3. **Deduplication**:
-   - Inspect the flattened \`unique_key\` field on each record.
-   - If a record does not contain the \`unique_key\` after flattening, raise \`KeyError(f"Missing unique key '{unique_key}' in record")\`.
-   - Retain only the **first** occurrence of each unique key value, discarding duplicates while preserving insertion order.
-4. **Return**: A list of the flattened, deduplicated dictionaries.`,
+   - Ensure \`records\` is a list, raising \`TypeError("records must be a list")\` if invalid.
+   - Ensure \`unique_key\` is provided as a non-empty string, raising \`ValueError("unique_key must be a non-empty string")\` if invalid or empty.
+   - Ensure each individual record is a dictionary mapping, raising \`ValueError("Each record must be a dict")\` otherwise.
+2. **Hierarchical Flattening**:
+   - Traverse each dictionary record recursively to collapse nested sub-dictionaries into a single flat structure.
+   - Form flattened keys by chaining parent and child path segments delimited by a dot separator (e.g., mapping nested property paths such as \`{"user": {"profile": {"name": "Alice"}}}\` to \`{"user.profile.name": "Alice"}\`).
+   - Treat non-dictionary values (such as lists, scalars, or nulls) as terminal leaf entries.
+3. **Order-Preserving Deduplication**:
+   - Check that each flattened record contains the designated \`unique_key\`. If absent, raise \`KeyError(f"Missing unique key '{unique_key}' in record")\`.
+   - Filter out subsequent duplicate records having an identical value for the specified identifier, retaining solely the first occurrence while preserving the original sequence order.
+4. **Return**: Return a list containing the resulting flattened, deduplicated dictionaries.`,
       starterCode: `def flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]:
     """
     Flatten nested dictionary records and deduplicate based on unique_key.
@@ -422,16 +426,16 @@ def flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]:
         title: 'Recursive Tree Flattening & Order-Preserving Sets',
         subtitle: 'Converting nested document structures into flat records',
         overview: 'Document databases (like MongoDB) and APIs return deeply nested JSON. Machine learning feature stores and SQL databases require flat columns.',
-        mentalModel5s: 'Recursive helper accumulates prefix + "." + key -> Track seen unique IDs in a set.',
+        mentalModel5s: 'Recursive traversal accumulates path prefixes -> Track observed identifiers in a set.',
         visualAnalogy: 'Flattening cardboard boxes: collapsing 3D depth into a flat 2D sheet.',
         pitfalls: [
-          'Using a list to check `val not in seen` which degrades performance to $O(N^2)$. Always use a `set` for $O(1)$ seen checks.'
+          'Using a list for duplicate checks causes $O(N^2)$ quadratic slowdowns. Use a set for $O(1)$ constant-time membership lookups.'
         ],
         progressiveHints: [
-          'Step 1: Write a recursive `_flatten_dict(d, parent_key)` helper.',
-          'Step 2: If a value is a dict, recurse with `new_key = f"{parent_key}.{k}"`.',
-          'Step 3: Check `unique_key in flat` and raise KeyError if absent.',
-          'Step 4: Use a `set()` to remember previously seen values while appending to `result`.'
+          'Step 1: Design a recursive traversal function that tracks accumulated key prefixes as it navigates nested mappings.',
+          'Step 2: When encountering a nested dictionary, recurse downward and append child keys to the prefix path using dot notation.',
+          'Step 3: Confirm that the required unique key is present in each flattened record before processing, raising KeyError if missing.',
+          'Step 4: Maintain a set of encountered identifier values to discard subsequent duplicates while preserving initial insertion order.'
         ],
         mathFormulas: [
           {
@@ -441,15 +445,16 @@ def flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]:
           }
         ],
         naiveVsIdiomatic: {
-          naiveCode: `# Checking uniqueness via list
-seen = []
-if val not in seen:
-    seen.append(val)`,
+          naiveCode: `# Checking uniqueness via list scan
+seen_items = []
+if item not in seen_items:
+    seen_items.append(item)`,
           naiveExplanation: 'Linear scan on every record makes processing slow for large lists ($O(N^2)$).',
-          idiomaticCode: `seen = set()
-if val not in seen:
-    seen.add(val)`,
-          idiomaticExplanation: 'Set membership test is $O(1)$ average time complexity.',
+          idiomaticCode: `# Checking uniqueness via hash set
+seen_items = set()
+if item not in seen_items:
+    seen_items.add(item)`,
+          idiomaticExplanation: 'Set membership testing achieves $O(1)$ average time complexity via hash indexing.',
           speedupText: '50x faster on large datasets'
         },
         memoryLayout: {

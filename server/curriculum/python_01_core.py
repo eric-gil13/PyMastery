@@ -125,15 +125,19 @@ CHALLENGE_1 = {
         "and format a standardized biographical summary string."
     ),
     "instructions": (
-        "Write a function `clean_and_format_record(raw_record: dict) -> dict` that:\n"
-        "1. If `raw_record` is not a dict or is empty, raise `ValueError(\"raw_record must be a non-empty dict\")`.\n"
-        "2. The dict must contain keys: 'name', 'email', 'role', 'score'. If any are missing, raise `KeyError(f\"Missing required key: {k}\")`.\n"
-        "3. Sanitize `name`: strip whitespace and convert to Title Case.\n"
-        "4. Sanitize `email`: strip whitespace and convert to lowercase.\n"
-        "5. Sanitize `role`: strip whitespace and convert to UPPERCASE.\n"
-        "6. Sanitize `score`: convert to float rounded to 2 decimals. If negative or unparseable, raise `ValueError(\"Invalid score\")`.\n"
-        "7. Generate `bio`: formatted as `\"{name} ({role}) - Score: {score:.2f}\"`.\n"
-        "8. Return a new dict with keys 'name', 'email', 'role', 'score', and 'bio'."
+        "Write a function `clean_and_format_record(raw_record: dict) -> dict` that processes and validates user profile data:\n\n"
+        "1. Input Validation:\n"
+        "   - Ensure `raw_record` is a non-empty dictionary; raise a `ValueError` if it is not a dictionary or contains no items.\n"
+        "   - Confirm that all required keys ('name', 'email', 'role', and 'score') are present. If any required key is missing, raise a `KeyError` identifying the missing key.\n"
+        "2. Sanitization Rules:\n"
+        "   - name: Remove leading and trailing whitespace, and normalize to Title Case (e.g., '  jane DOE  ' becomes 'Jane Doe').\n"
+        "   - email: Trim leading and trailing whitespace, and convert all characters to lowercase.\n"
+        "   - role: Trim leading and trailing whitespace, and convert all characters to UPPERCASE.\n"
+        "   - score: Parse as a floating-point number rounded to 2 decimal places. If the value cannot be parsed as a float or is strictly negative, raise a `ValueError`.\n"
+        "3. Generated Summary:\n"
+        "   - Add a key 'bio' formatted as a summary string containing the person's name, role in parentheses, and the score formatted to exactly two decimal places (e.g., 'Alice (ADMIN) - Score: 95.50' or 'Alan Turing (SCIENTIST) - Score: 98.57').\n"
+        "4. Return Value:\n"
+        "   - Return a new dictionary containing the cleaned 'name', 'email', 'role', 'score', and the newly generated 'bio'."
     ),
     "starter_code": r'''def clean_and_format_record(raw_record: dict) -> dict:
     """
@@ -188,7 +192,7 @@ CHALLENGE_1 = {
             report["passed"] = False
             report["errors"].append(msg)
             raise AssertionError(msg)
-
+ 
     # Test 1: Standard dirty input
     dirty = {
         "name": "  alAN turing  ",
@@ -232,10 +236,11 @@ CHALLENGE_1 = {
     return report
 ''',
     "hints": [
-        "Check `isinstance(raw_record, dict) and bool(raw_record)` upfront.",
-        "Use `.strip().title()` for name, `.strip().lower()` for email, and `.strip().upper()` for role.",
-        "Wrap float parsing in `try/except (TypeError, ValueError): raise ValueError('Invalid score')`.",
-        "Format the bio string using `f'{name} ({role}) - Score: {score:.2f}'`."
+        "Validate container types and truthiness upfront to ensure the record is a non-empty dictionary before accessing keys.",
+        "Iterate through the required field names to check dictionary membership, raising an appropriate key error if any are missing.",
+        "Apply string trimming and case normalization methods to clean whitespace and standardize casing across text fields.",
+        "Safely convert numerical values inside an error-handling block to catch invalid types or non-numeric strings, and verify non-negativity.",
+        "Assemble the summary bio using formatted string interpolation with a precision specifier to guarantee two decimal places on the score."
     ]
 }
 
@@ -253,14 +258,23 @@ CHALLENGE_2 = {
         "and inspect mathematical parity."
     ),
     "instructions": (
-        "Write a function `categorize_metric(val: any, low: float = 0.0, high: float = 100.0) -> dict` that:\n"
-        "1. If `val` is None or a bool, raise `ValueError(\"val must be a valid numeric value\")`.\n"
-        "2. Coerce `val` to float. If conversion fails, raise `ValueError(\"val must be a valid numeric value\")`.\n"
-        "3. Coerce `low` and `high` to float. If `low >= high`, raise `ValueError(\"low must be strictly less than high\")`.\n"
-        "4. Categorize range: 'below' if val < low, 'above' if val > high, else 'in_range'.\n"
-        "5. Parity check: if `fval.is_integer()`, set parity to 'even' or 'odd'. Otherwise set parity to 'non-integer'.\n"
-        "6. Ratio: compute `(val - low) / (high - low)` rounded to 4 decimals.\n"
-        "7. Return dict with 'value', 'category', 'parity', and 'ratio'."
+        "Write a function `categorize_metric(val: any, low: float = 0.0, high: float = 100.0) -> dict` that:\n\n"
+        "1. Validation & Coercion:\n"
+        "   - If `val` is None or a boolean (note: in Python, `bool` is a subclass of `int`), raise a `ValueError`.\n"
+        "   - Attempt to coerce `val` to a float. If coercion fails, raise a `ValueError`.\n"
+        "   - Coerce `low` and `high` to float. If `low >= high`, raise a `ValueError`.\n"
+        "2. Range Categorization:\n"
+        "   - If `val < low`: category is 'below'.\n"
+        "   - If `low <= val <= high`: category is 'in_range'.\n"
+        "   - If `val > high`: category is 'above'.\n"
+        "3. Parity Check:\n"
+        "   - If `val` represents an exact integer (e.g. 42.0 or 42):\n"
+        "     - Check if the integer is even ('even') or odd ('odd').\n"
+        "   - If `val` has a non-zero fractional part (e.g. 42.5), parity is 'non-integer'.\n"
+        "4. Normalized Ratio:\n"
+        "   - Compute ratio = (val - low) / (high - low) rounded to 4 decimal places.\n"
+        "5. Return Value:\n"
+        "   - Return a dictionary with keys: 'value' (float), 'category' (str), 'parity' (str), 'ratio' (float)."
     ),
     "starter_code": r'''def categorize_metric(val: any, low: float = 0.0, high: float = 100.0) -> dict:
     """
@@ -358,9 +372,9 @@ CHALLENGE_2 = {
     return report
 ''',
     "hints": [
-        "Remember that `isinstance(True, int)` is True in Python! Check `isinstance(val, bool)` explicitly.",
-        "Use `fval.is_integer()` on float values to verify if there is any decimal fraction.",
-        "Compute `round((fval - flow) / (fhigh - flow), 4)`."
+        "Remember that booleans inherit from integers in Python (`isinstance(True, int)` is True). Test for boolean types explicitly before numeric coercion.",
+        "Float instances provide a built-in method to test whether they represent a whole number without any fractional part.",
+        "Normalize the value relative to the range bounds and apply rounding to 4 decimal places."
     ]
 }
 

@@ -95,11 +95,11 @@ CHALLENGE_1 = {
         "Build an enterprise event bus with prioritized subscribers, isolated error boundaries, and telemetry metrics."
     ),
     "instructions": (
-        "Implement an `EventDispatcher` class:\n"
-        "1. `subscribe(event_type: str, handler: callable, priority: int = 0)`: validates non-empty event_type and callable handler. Handlers with higher priority values execute first. Maintain insertion order for tied priorities.\n"
-        "2. `unsubscribe(event_type: str, handler: callable) -> bool`: removes handler from event_type, returns True if removed, False otherwise.\n"
-        "3. `listener_count(event_type: str = None) -> int`: returns count of listeners for specific event (or total if None).\n"
-        "4. `dispatch(event_type: str, payload: dict = None) -> list[dict]`: invokes listeners in priority order passing payload. Catches any handler exception without interrupting subsequent handlers. Returns list of `{'handler': name, 'priority': prio, 'success': bool, 'result': res, 'error': err_str}`."
+        "Implement an `EventDispatcher` class providing prioritized event distribution with fault containment:\n"
+        "1. `subscribe(event_type: str, handler: callable, priority: int = 0)`: Validates that event_type is a non-empty string (raising ValueError with message 'event_type must be a non-empty string') and handler is callable (raising TypeError with message 'handler must be callable'). Subscribes the handler such that higher numerical priorities execute before lower ones, preserving registration arrival order when priorities tie.\n"
+        "2. `unsubscribe(event_type: str, handler: callable) -> bool`: Detaches the specified handler from the given event type, returning True if the listener was found and removed, or False otherwise.\n"
+        "3. `listener_count(event_type: str = None) -> int`: Returns the total number of registered subscribers for a specific event type, or the cumulative count across all events if omitted or None.\n"
+        "4. `dispatch(event_type: str, payload: dict = None) -> list[dict]`: Executes all registered handlers for the event type in descending priority order with the supplied payload (defaulting to an empty dictionary). Enforces an error boundary around each subscriber so exceptions do not abort remaining listeners. Returns a list of execution report dictionaries containing handler name, numeric priority, boolean success status, returned result, and captured error message."
     ),
     "starter_code": r'''class EventDispatcher:
     """
@@ -238,9 +238,9 @@ class EventDispatcher:
     return report
 ''',
     "hints": [
-        "Store subscribers as `(-priority, insertion_order, handler)` to sort by priority descending.",
-        "Catch `Exception as e` inside `dispatch` to maintain fault isolation.",
-        "Return structured report dictionaries with `handler`, `priority`, `success`, `result`, `error`."
+        "Represent subscriber entries with composite priority keys and arrival sequence counters to enable stable descending priority sorting.",
+        "Enclose each listener execution inside an error boundary to prevent isolated subscriber failures from breaking the dispatch chain.",
+        "Construct execution report records mapping handler identity, priority ranking, completion status, output value, and diagnostic error details."
     ]
 }
 
@@ -258,13 +258,13 @@ CHALLENGE_2 = {
         "and preserves result ordering."
     ),
     "instructions": (
-        "Write an async function `async_task_batcher(tasks: list[callable], max_concurrency: int = 5) -> list[dict]` that:\n"
-        "1. Validates `tasks` is a list and `max_concurrency` is an int > 0 (else ValueError/TypeError).\n"
-        "2. Uses an `asyncio.Semaphore(max_concurrency)` to throttle concurrent executions.\n"
-        "3. Concurrently calls each task (supporting both `async def` and synchronous callables).\n"
-        "4. Catches exceptions per task without cancelling other tasks.\n"
-        "5. Returns result dicts in the exact original task order: `{'index': i, 'success': bool, 'result': res, 'error': err_str}`.\n"
-        "6. Provide `run_batcher_sync(tasks, max_concurrency=5)` helper wrapping the async function."
+        "Write an asynchronous function `async_task_batcher(tasks: list[callable], max_concurrency: int = 5) -> list[dict]` that executes callables with bounded concurrency:\n"
+        "1. Validates that tasks is a list (raising TypeError with message 'tasks must be a list') and max_concurrency is a strictly positive integer, rejecting non-integers and booleans (raising ValueError with message 'max_concurrency must be a positive integer').\n"
+        "2. Throttles concurrent operations using an asyncio semaphore synchronization primitive to bound simultaneous active tasks.\n"
+        "3. Concurrently executes each callable, correctly awaiting coroutines and calling synchronous functions while handling awaitables.\n"
+        "4. Enforces error isolation per task so exceptions do not abort remaining operations.\n"
+        "5. Returns a list of execution reports preserved in original task index order, containing zero-based index, boolean success indicator, resolved return value, and diagnostic error message.\n"
+        "6. Provide a companion `run_batcher_sync(tasks, max_concurrency=5)` helper executing the batcher within a synchronous runner."
     ),
     "starter_code": r'''import asyncio
 import inspect
@@ -377,9 +377,9 @@ def run_tests(candidate_target):
     return report
 ''',
     "hints": [
-        "Create `sem = asyncio.Semaphore(max_concurrency)`.",
-        "In a worker function, use `async with sem:` and check `inspect.iscoroutinefunction(task)`.",
-        "Use `await asyncio.gather(*coros)` which preserves the original task order."
+        "Bound in-flight task execution using an asyncio semaphore primitive configured to the maximum concurrency limit.",
+        "In a worker coroutine, manage semaphore acquisition using asynchronous context handling, inspecting callable signatures to await coroutines or invoke synchronous functions properly.",
+        "Aggregate concurrent worker executions with an awaitable gather primitive to preserve original input index ordering in the output reports."
     ]
 }
 

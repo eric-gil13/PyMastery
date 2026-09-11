@@ -162,27 +162,32 @@ print(process_command("set database postgres"))`,
       summary: 'Build an enterprise event bus with prioritized subscribers, isolated error boundaries, and telemetry metrics.',
       estimatedTime: '25 min',
       hints: [
-        'Validate `event_type` is non-empty string and `callable(handler)`.',
-        'Maintain listeners in `defaultdict(list)`, tracking `(-priority, sequence_id, handler)`.',
-        'In `dispatch`, iterate sorted listeners inside `try/except Exception as e:` blocks.',
-        'Collect reports `{"handler": getattr(h, "__name__", "anonymous"), "priority": prio, "success": True/False, "result": res, "error": err}`.'
+        'Validate that the event type is a non-empty string and verify the handler is callable before registration.',
+        'Organize listeners by event type, tracking an insertion counter alongside priority to ensure descending priority sorting with deterministic FIFO tie-breaking.',
+        'Iterate through prioritized listeners within an error boundary during dispatch to capture subscriber exceptions without interrupting remaining handlers.',
+        'Format execution reports as structured records tracking handler identity, priority level, success flag, returned output, and any error message.'
       ],
-      instructions: `Implement an \`EventDispatcher\` class that satisfies:
+      instructions: `Implement an \`EventDispatcher\` class that manages prioritized subscribers with isolated error boundaries:
 1. **Subscription Management**:
    - \`subscribe(self, event_type: str, handler: callable, priority: int = 0)\`:
-     - If \`not isinstance(event_type, str) or not event_type\`, raise \`ValueError("event_type must be a non-empty string")\`.
-     - If \`not callable(handler)\`, raise \`TypeError("handler must be callable")\`.
-     - Registers the handler under \`event_type\`. Handlers with higher priority values execute before lower priority handlers. If priorities match, maintain insertion order.
+     - Validate that the event type is a non-empty string (raise \`ValueError\` with message \`"event_type must be a non-empty string"\` otherwise).
+     - Validate that the handler is a callable target (raise \`TypeError\` with message \`"handler must be callable"\` otherwise).
+     - Register the handler under the designated event type. Higher priority values must execute before lower priority handlers. When priorities are equal, preserve chronological registration order.
    - \`unsubscribe(self, event_type: str, handler: callable) -> bool\`:
-     - Removes the handler from the given \`event_type\`. Returns \`True\` if found and removed, or \`False\` if not subscribed.
+     - Remove the specified handler from the registered event type. Return \`True\` if the handler was found and removed, or \`False\` if it was not subscribed.
    - \`listener_count(self, event_type: str = None) -> int\`:
-     - If \`event_type\` is specified, returns subscriber count for that event.
-     - If \`None\`, returns total subscribers across all event types.
+     - When an event type is provided, return the total count of subscribers registered for that event.
+     - When omitted or set to \`None\`, return the cumulative count of subscribers across all event types.
 2. **Event Dispatch & Error Isolation**:
    - \`dispatch(self, event_type: str, payload: dict = None) -> list[dict]\`:
-     - Invokes registered handlers in decreasing priority order passing \`payload\` (defaulting to empty dict \`{}\`).
-     - **Error Boundary**: If a handler raises an exception, the dispatcher catches it and does NOT break the remaining handlers!
-     - Returns a list of execution reports: \`[{"handler": handler_name, "priority": int, "success": bool, "result": return_value_or_None, "error": error_message_or_None}, ...]\`.`,
+     - Invoke all registered subscribers for the given event type in descending priority order, passing the provided payload dictionary (defaulting to an empty dictionary if None).
+     - **Error Boundary**: Isolate each handler execution within a fault containment wrapper so that any runtime exception raised by a subscriber is safely captured without terminating remaining handlers.
+     - Return a list of execution report dictionaries containing:
+       - \`handler\`: String name or representation of the handler function.
+       - \`priority\`: Integer priority level assigned to the handler.
+       - \`success\`: Boolean indicating whether execution completed without error.
+       - \`result\`: The return value of the handler on success, or \`None\` on failure.
+       - \`error\`: String representation of the captured exception on failure, or \`None\` on success.`,
       starterCode: `class EventDispatcher:
     """
     Enterprise event bus with prioritized subscribers and fault-tolerant dispatch.
@@ -296,17 +301,17 @@ class EventDispatcher:
         title: 'Event-Driven Architectures & Publish-Subscribe',
         subtitle: 'Decoupling producers from consumers with prioritized dispatchers',
         overview: 'Modern microservices and UI frameworks (React, Vue, Node.js EventEmitter) use event dispatchers to propagate state mutations without tight coupling.',
-        mentalModel5s: 'Register handler in a priority list -> On dispatch: sort by priority -> execute each inside try/except block.',
+        mentalModel5s: 'Register handler in prioritized registry -> On dispatch: order by priority and sequence -> execute within fault-isolated boundary.',
         visualAnalogy: 'A radio broadcast station: listeners tune into frequencies without the broadcaster needing to know who is listening.',
         pitfalls: [
           'Allowing one crashing listener to kill the entire event broadcast.',
           'Sorting priorities without preserving stable insertion order.'
         ],
         progressiveHints: [
-          'Step 1: Use `defaultdict(list)` to store listeners per event.',
-          'Step 2: Store `(-priority, insertion_order, handler)` to sort cleanly with `sorted()`.',
-          'Step 3: In `dispatch()`, wrap each `handler(data)` in a `try/except Exception as e:` block.',
-          'Step 4: Return formatted report dictionaries.'
+          'Step 1: Maintain a collection mapping event types to their subscriber registrations.',
+          'Step 2: Store priority tuples combining inverted numerical rank with an incrementing insertion counter to ensure stable descending ordering.',
+          'Step 3: In `dispatch()`, isolate each subscriber invocation inside an error containment boundary to trap exceptions.',
+          'Step 4: Assemble and return structured telemetry dictionaries detailing execution outcome and diagnostics.'
         ],
         mathFormulas: [
           {
@@ -350,26 +355,29 @@ def on_user_signup(user):
       summary: 'Design an asynchronous task runner that bounds maximum concurrent tasks using an asyncio Semaphore and preserves result ordering.',
       estimatedTime: '25 min',
       hints: [
-        'Validate `isinstance(tasks, list)` and `isinstance(max_concurrency, int) and max_concurrency > 0`.',
-        'Use `sem = asyncio.Semaphore(max_concurrency)` inside `async_task_batcher`.',
-        'In worker coroutine, acquire semaphore with `async with sem:`, check `asyncio.iscoroutinefunction(t)` or `asyncio.iscoroutine(res)` to await if needed.',
-        'Use `await asyncio.gather(*coros)` and collect results preserving original indexed order.',
-        'Implement `run_batcher_sync` using `asyncio.run(async_task_batcher(tasks, max_concurrency))`.'
+        'Validate that tasks is a list and max_concurrency is a positive non-boolean integer.',
+        'Throttle concurrent executions using an asyncio semaphore synchronization primitive configured to the specified capacity.',
+        'In worker coroutines, manage semaphore acquisition using an asynchronous context manager, inspecting whether tasks are coroutines or standard callables to resolve them correctly.',
+        'Concurrently schedule all worker tasks with an awaitable aggregation primitive that maintains original input index order.',
+        'Provide a synchronous helper that delegates execution to the event loop runtime.'
       ],
-      instructions: `Write an asynchronous function (or runner) \`async_task_batcher(tasks: list[callable], max_concurrency: int = 5) -> list[dict]\` that:
+      instructions: `Write an asynchronous function \`async_task_batcher(tasks: list[callable], max_concurrency: int = 5) -> list[dict]\` that executes callables with bounded concurrency:
 1. **Validation**:
-   - If \`not isinstance(tasks, list)\`, raise \`TypeError("tasks must be a list")\`.
-   - If \`not isinstance(max_concurrency, int) or max_concurrency <= 0\`, raise \`ValueError("max_concurrency must be a positive integer")\`.
+   - Validate that \`tasks\` is a list (raise \`TypeError\` with message \`"tasks must be a list"\` otherwise).
+   - Validate that \`max_concurrency\` is a strictly positive integer, explicitly rejecting non-integers and booleans (raise \`ValueError\` with message \`"max_concurrency must be a positive integer"\` otherwise).
 2. **Concurrency Control**:
-   - Limits the number of simultaneously running tasks to at most \`max_concurrency\` using an \`asyncio.Semaphore(max_concurrency)\`.
-3. **Execution**:
-   - Each task in \`tasks\` is an async callable \`async def task()\` or a sync callable. Call it appropriately (\`await task()\` if coroutine, else \`task()\`).
-   - If a task raises an exception, catch it: do NOT abort the remaining tasks.
+   - Throttle concurrent operations so that no more than \`max_concurrency\` tasks run simultaneously by bounding in-flight workers with an asyncio semaphore primitive.
+3. **Callable Execution & Fault Tolerance**:
+   - Support both asynchronous coroutine functions and synchronous callables, awaiting coroutine execution and directly invoking synchronous functions (awaiting if an awaitable is returned).
+   - Enforce per-task error isolation so any exception raised by a task is caught and recorded without terminating or cancelling sibling tasks.
 4. **Output Report**:
-   - Return a list of result dictionaries corresponding to the original tasks **in their exact input order**:
-     \`[{"index": i, "success": bool, "result": result_or_none, "error": error_str_or_none}, ...]\`.
-5. **Sync Wrapper Helper**:
-   - Also provide a companion function \`run_batcher_sync(tasks: list[callable], max_concurrency: int = 5) -> list[dict]\` that executes \`async_task_batcher\` synchronously using \`asyncio.run()\`.`,
+   - Return a list of report dictionaries corresponding to the input tasks preserved in their **exact original input index order**:
+     - \`index\`: Zero-based original integer index of the task.
+     - \`success\`: Boolean indicating whether execution completed without raising an exception.
+     - \`result\`: The resolved return value of the callable on success, or \`None\` on failure.
+     - \`error\`: String representation of the captured exception on failure, or \`None\` on success.
+5. **Synchronous Runner Wrapper**:
+   - Provide a companion function \`run_batcher_sync(tasks: list[callable], max_concurrency: int = 5) -> list[dict]\` that runs \`async_task_batcher\` to completion within a synchronous environment using the standard asyncio execution runner.`,
       starterCode: `import asyncio
 import inspect
 from typing import List, Callable
@@ -459,17 +467,17 @@ def run_batcher_sync(tasks: List[Callable], max_concurrency: int = 5) -> List[di
         title: 'Asyncio Semaphore & Coroutine Orchestration',
         subtitle: 'High-throughput concurrency without thread safety headaches',
         overview: 'Rate-limiting API clients (like web scrapers or cloud SDKs) use asyncio.Semaphore to throttle simultaneous requests and respect provider rate limits.',
-        mentalModel5s: 'Wrap task execution in `async with sem:` -> Gather coroutines with `asyncio.gather()` -> Maintain order with enumerate index.',
+        mentalModel5s: 'Throttle workers via concurrency semaphore -> Inspect callable type -> Gather coroutines preserving sequence index.',
         visualAnalogy: 'A nightclub velvet rope: only 5 patrons allowed inside simultaneously; as one exits, the next enters.',
         pitfalls: [
           'Using threads for I/O when asyncio delivers 10x higher concurrency with lower memory.',
           'Not awaiting coroutines returned by callable functions.'
         ],
         progressiveHints: [
-          'Step 1: Check `max_concurrency > 0`.',
-          'Step 2: Create `sem = asyncio.Semaphore(max_concurrency)`.',
-          'Step 3: Inside worker: `async with sem:`, call/await task, return record dict.',
-          'Step 4: Use `await asyncio.gather(*coros)`.'
+          'Step 1: Validate input parameters, verifying positive integer concurrency bounds.',
+          'Step 2: Initialize an asyncio semaphore primitive with the concurrency limit.',
+          'Step 3: Build an asynchronous worker that acquires a semaphore slot, inspects whether the callable is a coroutine function or produces an awaitable, and catches any runtime errors.',
+          'Step 4: Concurrently collect worker executions using an awaitable gather primitive that maintains original task ordering.'
         ],
         mathFormulas: [
           {

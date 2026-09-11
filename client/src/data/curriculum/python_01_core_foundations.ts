@@ -322,10 +322,10 @@ print("Result of empty list and:", val)`,
           'Not handling negative numbers or string representations of numbers in float conversion.'
         ],
         progressiveHints: [
-          'Step 1: Check `isinstance(raw_record, dict) and bool(raw_record)`.',
-          'Step 2: Loop over required keys and check membership.',
-          'Step 3: Use `.strip()`, `.title()`, `.lower()`, and `.upper()` on string fields.',
-          'Step 4: Use `f"{score:.2f}"` to guarantee exactly 2 decimal places in bio.'
+          'Step 1: Verify that raw_record is a dictionary instance and is non-empty before processing.',
+          'Step 2: Loop over required keys and verify dictionary membership, raising a KeyError if any are missing.',
+          'Step 3: Apply string trimming and case normalization methods to clean whitespace and standardize casing across text fields.',
+          'Step 4: Construct the bio string using formatted string interpolation with a precision specifier for two decimal places.'
         ],
         mathFormulas: [
           {
@@ -336,9 +336,9 @@ print("Result of empty list and:", val)`,
         ],
         naiveVsIdiomatic: {
           naiveCode: `# Manual string concatenation with % formatting
-bio = name + " (" + role + ") - Score: " + "%0.2f" % score`,
+label = item + " (" + category + ") - Total: " + "%0.2f" % total`,
           naiveExplanation: 'Hard to read, error-prone with spacing, and slower than f-strings.',
-          idiomaticCode: `bio = f"{name} ({role}) - Score: {score:.2f}"`,
+          idiomaticCode: `label = f"{item} ({category}) - Total: {total:.2f}"`,
           idiomaticExplanation: 'F-strings are evaluated as optimized BUILD_STRING bytecode instructions in CPython.',
           speedupText: '2x faster'
         },
@@ -367,9 +367,9 @@ bio = name + " (" + role + ") - Score: " + "%0.2f" % score`,
       estimatedTime: '15 min',
       instructions: `Write a function \`categorize_metric(val: any, low: float = 0.0, high: float = 100.0) -> dict\` that:
 1. **Validation & Coercion**:
-   - If \`val\` is \`None\` or a boolean (note: in Python, \`bool\` is a subclass of \`int\`), raise \`ValueError("val must be a valid numeric value")\`.
-   - Attempt to coerce \`val\` to a \`float\`. If coercion fails, raise \`ValueError("val must be a valid numeric value")\`.
-   - If \`low >= high\`, raise \`ValueError("low must be strictly less than high")\`.
+   - If \`val\` is \`None\` or a boolean (note: in Python, \`bool\` is a subclass of \`int\`), raise a \`ValueError\`.
+   - Attempt to coerce \`val\` to a \`float\`. If coercion fails, raise a \`ValueError\`.
+   - If \`low >= high\`, raise a \`ValueError\`.
 2. **Range Categorization**:
    - If \`val < low\`: category is \`"below"\`.
    - If \`low <= val <= high\`: category is \`"in_range"\`.
@@ -382,9 +382,9 @@ bio = name + " (" + role + ") - Score: " + "%0.2f" % score`,
    - Compute \`ratio = (val - low) / (high - low)\` rounded to 4 decimal places.
 5. **Return**: A dictionary with keys: \`"value"\` (float), \`"category"\` (str), \`"parity"\` (str), \`"ratio"\` (float).`,
       hints: [
-        'Remember that `isinstance(True, int)` is True in Python! Check `isinstance(val, bool)` explicitly.',
-        'Use `fval.is_integer()` on float values to verify if there is any decimal fraction.',
-        'Compute `round((fval - flow) / (fhigh - flow), 4)`.'
+        'Remember that booleans inherit from integers in Python (`isinstance(True, int)` is True). Test for boolean types explicitly before numeric coercion.',
+        'Float instances provide a built-in method to test whether they represent a whole number without any fractional part.',
+        'Normalize the value relative to the range bounds and apply rounding to 4 decimal places.'
       ],
       starterCode: `def categorize_metric(val: any, low: float = 0.0, high: float = 100.0) -> dict:
     """
@@ -463,17 +463,17 @@ bio = name + " (" + role + ") - Score: " + "%0.2f" % score`,
         title: 'Safe Coercion & Boolean Gotchas',
         subtitle: 'Why bool is an int and how to enforce strict type semantics',
         overview: 'In Python, bool subclasses int: `isinstance(True, int)` is True! Safe code checks for bool explicitly when handling numeric inputs.',
-        mentalModel5s: 'Check `isinstance(val, bool)` before float coercion to prevent True becoming 1.0.',
+        mentalModel5s: 'Filter out boolean values before float coercion to prevent True becoming 1.0.',
         visualAnalogy: 'A strict bouncer at the door: checking specific credentials rather than relying on loose type affinity.',
         pitfalls: [
-          'Checking `isinstance(val, (int, float))` without checking `not isinstance(val, bool)`.',
-          'Using `% 2` directly on floats without verifying `f.is_integer()`.'
+          'Checking numeric types without filtering out booleans, since bool subclasses int in Python.',
+          'Performing integer parity operations on floats without first verifying they represent whole numbers.'
         ],
         progressiveHints: [
-          'Step 1: Check `if val is None or isinstance(val, bool): raise ValueError()`.',
-          'Step 2: Try converting `val`, `low`, and `high` to float.',
-          'Step 3: Check `low < high`.',
-          'Step 4: Use `fval.is_integer()` to decide if parity applies.'
+          'Step 1: Explicitly reject None and boolean values upfront by raising a ValueError.',
+          'Step 2: Coerce the input metric and bounds to floating-point numbers, catching conversion errors.',
+          'Step 3: Verify the boundary condition ensuring the lower bound is strictly less than the upper bound.',
+          'Step 4: Check if the floating-point value represents a whole number to evaluate even/odd parity; otherwise classify it as non-integer.'
         ],
         mathFormulas: [
           {
@@ -483,15 +483,13 @@ bio = name + " (" + role + ") - Score: " + "%0.2f" % score`,
           }
         ],
         naiveVsIdiomatic: {
-          naiveCode: `# Checking if float is int via string manipulation
-if "." in str(fval) and str(fval).split(".")[1] != "0":
-    parity = "non-integer"`,
+          naiveCode: `# Checking if float is a whole number via string splitting
+if "." in str(num) and str(num).split(".")[1] != "0":
+    is_whole = False`,
           naiveExplanation: 'Fragile, slow string parsing fails on scientific notation (e.g. 1e-05).',
-          idiomaticCode: `if fval.is_integer():
-    parity = "even" if int(fval) % 2 == 0 else "odd"
-else:
-    parity = "non-integer"`,
-          idiomaticExplanation: 'Python float built-in .is_integer() checks IEEE-754 mantissa directly.',
+          idiomaticCode: `# The built-in method inspects the IEEE-754 representation directly
+is_whole = num.is_integer()`,
+          idiomaticExplanation: 'Python float built-in .is_integer() checks IEEE-754 mantissa directly without string manipulation.',
           speedupText: '10x faster'
         },
         memoryLayout: {

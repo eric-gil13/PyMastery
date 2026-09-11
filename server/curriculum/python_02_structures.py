@@ -94,14 +94,19 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Write a function `build_inverted_index(documents: list[dict]) -> dict` that:\n"
-        "1. Validates `documents` is a list. If not, raise `TypeError(\"documents must be a list\")`.\n"
-        "2. Validates each doc is a dict with integer 'id' and string 'text'. If invalid, raise `ValueError(\"Invalid document entry\")`.\n"
-        "3. Cleans text: converts to lowercase, strips non-alphanumeric chars (replacing with space), splits into non-empty tokens.\n"
-        "4. For each unique token, produces a dict with:\n"
-        "   - 'doc_ids': sorted list of unique document IDs where the token occurs.\n"
-        "   - 'total_count': total count of this token across all documents.\n"
-        "   - 'term_freq': dict mapping doc_id -> count in that document.\n"
-        "5. Returns the dictionary sorted alphabetically by token key."
+        "1. Input Validation:\n"
+        "   - Validates that `documents` is a list, raising `TypeError(\"documents must be a list\")` if invalid.\n"
+        "   - Ensures each document record is a dictionary containing an integer 'id' and string 'text', raising `ValueError(\"Invalid document entry\")` if invalid or missing.\n"
+        "2. Text Normalization & Tokenization:\n"
+        "   - For each document, normalizes text to lowercase and strips out non-alphanumeric punctuation (retaining only alphanumeric characters and separating whitespace).\n"
+        "   - Splits the sanitized text on whitespace boundaries into individual token terms, ignoring empty strings.\n"
+        "3. Index Construction:\n"
+        "   - For each unique token, constructs an index record containing:\n"
+        "     - 'doc_ids': a sorted list of unique document IDs where the token occurs.\n"
+        "     - 'total_count': aggregate count of the token across all documents.\n"
+        "     - 'term_freq': a dictionary mapping each doc_id to its occurrence count in that document.\n"
+        "4. Ordering:\n"
+        "   - Returns the resulting dictionary sorted alphabetically by token key."
     ),
     "starter_code": r'''def build_inverted_index(documents: list[dict]) -> dict:
     """
@@ -196,9 +201,10 @@ def build_inverted_index(documents: list[dict]) -> dict:
     return report
 ''',
     "hints": [
-        "Use `re.sub(r'[^a-zA-Z0-9\\s]', ' ', text.lower()).split()` to tokenize.",
-        "Store document IDs in a `set` to guarantee uniqueness before converting to a sorted list.",
-        "Use `collections.defaultdict` for both the outer stats and the inner `term_freq`."
+        "Normalize characters by converting the text to lowercase and replacing non-alphanumeric punctuation with whitespace before token splitting.",
+        "Consider utilizing a grouping structure or default factory mapping to aggregate statistics per token without manual key presence checks.",
+        "Collect document occurrences within unique sets per term to prevent duplicate IDs before producing sorted lists.",
+        "Sort the resulting dictionary keys alphabetically when constructing the final inverted index."
     ]
 }
 
@@ -216,12 +222,17 @@ CHALLENGE_2 = {
     ),
     "instructions": (
         "Write a function `flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]` that:\n"
-        "1. If `records` is not a list, raise `TypeError(\"records must be a list\")`.\n"
-        "2. If `unique_key` is not a non-empty string, raise `ValueError(\"unique_key must be a non-empty string\")`.\n"
-        "3. Recursively flattens any nested dictionaries, joining keys with '.' (e.g. {'a': {'b': 1}} -> {'a.b': 1}).\n"
-        "4. If `unique_key` is not present in a flattened record, raise `KeyError(f\"Missing unique key '{unique_key}' in record\")`.\n"
-        "5. Deduplicates records based on `record[unique_key]`, keeping the first seen occurrence and preserving original order.\n"
-        "6. Returns the list of flattened, deduplicated dictionaries."
+        "1. Validation:\n"
+        "   - Ensures `records` is a list, raising `TypeError(\"records must be a list\")` if invalid.\n"
+        "   - Ensures `unique_key` is provided as a non-empty string, raising `ValueError(\"unique_key must be a non-empty string\")` if empty or invalid.\n"
+        "   - Ensures each individual record is a dictionary mapping, raising `ValueError(\"Each record must be a dict\")` otherwise.\n"
+        "2. Hierarchical Flattening:\n"
+        "   - Recursively traverses and flattens nested dictionary hierarchies, constructing composite keys by joining path segments with a dot delimiter while leaving non-dictionary leaf values intact.\n"
+        "3. Order-Preserving Deduplication:\n"
+        "   - Verifies that the flattened `unique_key` exists in each record, raising `KeyError(f\"Missing unique key '{unique_key}' in record\")` if missing.\n"
+        "   - Deduplicates records based on the designated unique identifier value, preserving the initial appearance of each value and maintaining the original sequence order.\n"
+        "4. Return:\n"
+        "   - Returns the list of flattened, deduplicated dictionaries."
     ),
     "starter_code": r'''def flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]:
     """
@@ -314,9 +325,10 @@ def flatten_and_deduplicate(records: list[dict], unique_key: str) -> list[dict]:
     return report
 ''',
     "hints": [
-        "Write a recursive helper `_flatten(d, prefix='')` that loops over `d.items()`.",
-        "If a value is a dict, recurse with `f'{prefix}.{k}'`.",
-        "Track seen identifiers in a `set()` to maintain $O(1)$ deduplication checks."
+        "Employ a recursive traversal strategy that visits nested dictionaries while accumulating hierarchical key paths.",
+        "Form flattened compound keys by joining accumulated parent prefixes with current keys using a dot separator.",
+        "Ensure the designated unique identifier exists in each flattened record, raising a key error if absent.",
+        "Maintain a set of observed identifier values to eliminate duplicate records while preserving sequence order in the output list."
     ]
 }
 

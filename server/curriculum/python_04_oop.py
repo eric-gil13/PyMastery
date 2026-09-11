@@ -104,15 +104,15 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Create a class `Vector2D` that:\n"
-        "1. Defines `__slots__ = ('_x', '_y')` to minimize memory overhead.\n"
-        "2. In `__init__(x, y)`, coerces x and y to float. If invalid, raises `TypeError(\"Vector coordinates must be numeric\")`.\n"
-        "3. Exposes read-only properties `x` and `y`.\n"
-        "4. Implements `__repr__` -> `\"Vector2D({self._x}, {self._y})\"`.\n"
-        "5. Implements `__eq__` comparing x and y within tolerance 1e-6 (returns False for non-Vector2D).\n"
-        "6. Implements `__add__(other)` returning a new Vector2D (or `NotImplemented`).\n"
-        "7. Implements `__mul__(scalar)` and `__rmul__(scalar)` for scalar multiplication.\n"
-        "8. Implements `magnitude` property (and `__abs__`) returning `math.sqrt(x**2 + y**2)`.\n"
-        "9. Implements `__len__` returning 2 and `__getitem__` supporting index 0 (x) and 1 (y), raising `IndexError` otherwise."
+        "1. Declares slot-based attribute storage for internal coordinates to eliminate instance __dict__ allocation.\n"
+        "2. In `__init__(x, y)`, coerces coordinates to float, raising `TypeError(\"Vector coordinates must be numeric\")` if invalid.\n"
+        "3. Exposes read-only properties `x` and `y` backed by internal coordinates.\n"
+        "4. Implements `__repr__` returning an unambiguous string formatted as `Vector2D(<x>, <y>)`.\n"
+        "5. Implements `__eq__` comparing x and y coordinates against another Vector2D within a 1e-6 tolerance (returning False for non-Vector2D objects).\n"
+        "6. Implements `__add__(other)` returning a new Vector2D representing vector addition, or returning `NotImplemented` for incompatible types.\n"
+        "7. Implements `__mul__(scalar)` and `__rmul__(scalar)` for scalar scaling, returning `NotImplemented` for non-numeric scalars.\n"
+        "8. Implements a `magnitude` property (and `__abs__`) returning the Euclidean distance from the origin.\n"
+        "9. Implements container protocols `__len__` returning 2 and `__getitem__` supporting indices 0 and 1, raising `IndexError` otherwise."
     ),
     "starter_code": r'''import math
 
@@ -229,9 +229,9 @@ class Vector2D:
     return report
 ''',
     "hints": [
-        "Remember to declare `__slots__ = ('_x', '_y')` at class level.",
-        "Implement `__rmul__(self, scalar)` by simply returning `self.__mul__(scalar)`.",
-        "Return `NotImplemented` from `__add__` if `not isinstance(other, Vector2D)`."
+        "Declare the slot sequence at class scope using internal coordinate attribute names to suppress __dict__ creation.",
+        "Implement reflected scalar multiplication by delegating the reflected operator call to your primary multiplication method.",
+        "Return the NotImplemented singleton from binary dunder methods when operand types are unsupported to trigger Python's reflection fallback."
     ]
 }
 
@@ -251,18 +251,18 @@ CHALLENGE_2 = {
     "instructions": (
         "Create an account hierarchy:\n"
         "1. Base class `BankAccount(account_id, owner, initial_balance=0.0)`:\n"
-        "   - Validates initial_balance >= 0 (else ValueError).\n"
-        "   - Read-only properties `balance` (float) and `transaction_history` (list of dicts).\n"
-        "   - `deposit(amount)`: validates amount > 0, updates balance, appends audit dict, returns new balance.\n"
-        "   - `withdraw(amount)`: validates amount > 0 and amount <= balance (else ValueError), updates balance, logs audit, returns new balance.\n"
+        "   - Validates that initial_balance is non-negative (raising ValueError if negative).\n"
+        "   - Read-only properties `balance` (float) and `transaction_history` (defensive copy of audit records).\n"
+        "   - `deposit(amount)`: validates amount > 0, updates balance, logs an audit entry recording transaction type, amount, and resulting balance, and returns new balance.\n"
+        "   - `withdraw(amount)`: validates amount > 0 and funds are sufficient (raising ValueError if insufficient), updates balance, logs audit record, and returns new balance.\n"
         "2. Derived class `CheckingAccount(BankAccount)`:\n"
-        "   - `__init__(account_id, owner, initial_balance=0.0, overdraft_limit=500.0)`.\n"
+        "   - `__init__(account_id, owner, initial_balance=0.0, overdraft_limit=500.0)`: delegates initialization to parent and validates overdraft limit.\n"
         "   - Read-only property `overdraft_limit`.\n"
-        "   - Overrides `withdraw(amount)`: permits withdrawal up to `balance + overdraft_limit`. Raises ValueError if exceeded.\n"
+        "   - Overrides `withdraw(amount)`: permits withdrawal up to the combined sum of current balance and overdraft limit, raising ValueError if exceeded.\n"
         "3. Derived class `SavingsAccount(BankAccount)`:\n"
-        "   - `__init__(account_id, owner, initial_balance=0.0, interest_rate=0.05)`.\n"
+        "   - `__init__(account_id, owner, initial_balance=0.0, interest_rate=0.05)`: delegates initialization to parent and validates interest rate.\n"
         "   - Read-only property `interest_rate`.\n"
-        "   - Method `accrue_interest() -> float`: calculates `round(balance * interest_rate, 2)`, deposits it, and returns the interest accrued."
+        "   - Method `accrue_interest() -> float`: calculates simple interest on current balance rounded to 2 decimal places, credits positive interest via deposit, and returns accrued interest."
     ),
     "starter_code": r'''class BankAccount:
     """Base class for financial accounts."""
@@ -401,9 +401,9 @@ class SavingsAccount(BankAccount):
     return report
 ''',
     "hints": [
-        "Call `super().__init__(account_id, owner, initial_balance)` in child classes.",
-        "Check `amount <= (self._balance + self._overdraft_limit)` in `CheckingAccount.withdraw`.",
-        "In `SavingsAccount.accrue_interest`, call `self.deposit(interest)`."
+        "Delegate base attribute initialization from derived classes using cooperative super() calls.",
+        "In CheckingAccount.withdraw, check that the withdrawal amount does not exceed available funds augmented by the overdraft allowance.",
+        "In SavingsAccount.accrue_interest, reuse the inherited deposit method to ensure balance updates and transaction logging remain synchronized."
     ]
 }
 

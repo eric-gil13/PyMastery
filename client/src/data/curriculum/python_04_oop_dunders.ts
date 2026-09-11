@@ -175,28 +175,28 @@ print([1, 2, 3] * sm)  # Uses __rmul__ on sm!`,
       summary: 'Implement an immutable, memory-efficient 2D Vector class supporting vector addition, scalar multiplication, container indexing, and magnitude.',
       estimatedTime: '20 min',
       hints: [
-        'Set `__slots__ = ("_x", "_y")` inside the class body before `__init__`.',
-        'Coerce `x` and `y` to float in `__init__`, raising `TypeError` on ValueError/TypeError.',
-        'Implement read-only `@property def x(self): return self._x` and `y`.',
-        'In `__add__`, check `if not isinstance(other, Vector2D): return NotImplemented`.',
-        'In `__mul__` and `__rmul__`, support scalar multiplication and return `NotImplemented` if not numeric.'
+        'Declare class-level slots using internal attribute names to eliminate per-instance dictionary overhead.',
+        'Validate and coerce incoming coordinate values to float during initialization, raising a TypeError if conversion fails.',
+        'Expose coordinate attributes using read-only property getters without setters to preserve immutability.',
+        'Return the NotImplemented singleton from binary arithmetic special methods when an operand is not an instance of Vector2D or numeric.',
+        'Support reflected scalar multiplication by delegating the reflected operator to your primary multiplication logic, and map index 0 and 1 to your internal coordinates.'
       ],
       instructions: `Create a class \`Vector2D\` that satisfies:
 1. **Memory Optimization**:
-   - Define \`__slots__ = ('_x', '_y')\` to prevent \`__dict__\` allocation.
+   - Configure slot-based attribute storage for internal coordinate attributes to eliminate instance \`__dict__\` allocation.
 2. **Initialization & Properties**:
-   - \`__init__(self, x: float, y: float)\`: Coerce \`x\` and \`y\` to \`float\`. If coercion fails, raise \`TypeError("Vector coordinates must be numeric")\`.
-   - Read-only properties \`x\` and \`y\` returning \`self._x\` and \`self._y\`. Attempting to set \`v.x = 10\` should raise \`AttributeError\`.
+   - \`__init__(self, x: float, y: float)\`: Coerce coordinates to \`float\`. If coercion fails due to invalid types or values, raise \`TypeError("Vector coordinates must be numeric")\`.
+   - Expose read-only properties \`x\` and \`y\` backed by the internal coordinates. Attempting to assign new values directly to \`v.x\` or \`v.y\` must raise an \`AttributeError\`.
 3. **Representation & Equality**:
-   - \`__repr__(self) -> str\`: Returns \`f"Vector2D({self._x}, {self._y})"\`.
-   - \`__eq__(self, other) -> bool\`: Returns \`True\` if \`other\` is a \`Vector2D\` and \`abs(self._x - other._x) < 1e-6\` and \`abs(self._y - other._y) < 1e-6\`. Returns \`False\` for non-Vector2D objects.
+   - \`__repr__(self) -> str\`: Returns an unambiguous string in the standard format \`Vector2D(<x>, <y>)\`.
+   - \`__eq__(self, other) -> bool\`: Returns \`True\` if \`other\` is a \`Vector2D\` with both coordinates matching within an absolute tolerance of \`1e-6\`. Returns \`False\` for non-Vector2D objects.
 4. **Vector Arithmetic**:
-   - \`__add__(self, other)\`: Adds two \`Vector2D\` instances and returns a new \`Vector2D\`. If \`other\` is not a \`Vector2D\`, return \`NotImplemented\`.
-   - \`__mul__(self, scalar: float)\` and \`__rmul__(self, scalar: float)\`: Scalar multiplication returning a new \`Vector2D(self._x * scalar, self._y * scalar)\`. If scalar is not numeric, return \`NotImplemented\`.
+   - \`__add__(self, other)\`: Computes vector addition and returns a new \`Vector2D\`. If \`other\` is not a \`Vector2D\`, returns \`NotImplemented\`.
+   - \`__mul__(self, scalar: float)\` and \`__rmul__(self, scalar: float)\`: Computes scalar multiplication returning a new scaled \`Vector2D\`. If the scalar cannot be coerced to a float, returns \`NotImplemented\`.
 5. **Magnitude & Container Protocol**:
-   - \`magnitude(self) -> float\` (or \`__abs__\`): returns \`math.sqrt(self._x**2 + self._y**2)\`.
-   - \`__len__(self) -> int\`: always returns \`2\`.
-   - \`__getitem__(self, index: int) -> float\`: \`v[0]\` returns \`self._x\`, \`v[1]\` returns \`self._y\`. Any other index raises \`IndexError("Vector2D index out of range")\`.`,
+   - \`magnitude(self) -> float\` (and \`__abs__\`): Returns the Euclidean length (distance from origin) as a float.
+   - \`__len__(self) -> int\`: Returns \`2\` representing the two-dimensional coordinate pair.
+   - \`__getitem__(self, index: int) -> float\`: Accesses index 0 for the x-coordinate and index 1 for the y-coordinate. Any other index raises an \`IndexError\`.`,
       starterCode: `import math
 
 class Vector2D:
@@ -304,10 +304,10 @@ class Vector2D:
           'Attempting to assign attributes not declared in `__slots__`.'
         ],
         progressiveHints: [
-          'Step 1: Declare `__slots__ = ("_x", "_y")`.',
-          'Step 2: Use `@property` for `x` and `y` without setters.',
-          'Step 3: In `__add__`, return `NotImplemented` if `not isinstance(other, Vector2D)`.',
-          'Step 4: Implement `__getitem__` with bounds checking for 0 and 1.'
+          'Step 1: Configure class-level slots for internal coordinates to prevent dictionary allocation.',
+          'Step 2: Protect coordinate attributes by defining property getters without corresponding setters.',
+          'Step 3: Return the NotImplemented singleton in binary operations whenever operand types are unsupported to allow reflected operations.',
+          'Step 4: Implement container protocol methods with explicit index boundary checks mapping 0 and 1 to coordinates.'
         ],
         mathFormulas: [
           {
@@ -350,32 +350,33 @@ mag = v1.magnitude`,
       summary: 'Design an object-oriented financial account system with inheritance, transaction auditing, overdraft guards, and interest accrual.',
       estimatedTime: '20 min',
       hints: [
-        'Call `super().__init__(account_id, owner, initial_balance)` in subclasses.',
-        'Use `_balance` as an internal float and expose a `@property def balance(self): return self._balance`.',
-        'In `withdraw`, raise `ValueError("Insufficient funds")` or `ValueError("Overdraft limit exceeded")`.',
-        'Append audit dicts `{"type": ..., "amount": ..., "balance": ...}` to `self._transactions`.'
+        'Chain child class initializers to the parent constructor using cooperative super() delegation.',
+        'Encapsulate mutable account balance behind an internal attribute exposed via a read-only property getter.',
+        'Structure transaction log entries as dictionaries recording transaction type, amount, and the resulting balance.',
+        'Guard withdrawal boundaries carefully, raising a ValueError when requested funds exceed balance or overdraft allowances.',
+        'Reuse the existing deposit method during interest accrual to keep balance updates and audit logs synchronized.'
       ],
       instructions: `Create a polymorphic bank account hierarchy:
 1. **Base Class \`BankAccount\`**:
    - \`__init__(self, account_id: str, owner: str, initial_balance: float = 0.0)\`:
-     - If \`initial_balance < 0\`, raise \`ValueError("Initial balance cannot be negative")\`.
-     - Initializes \`account_id\`, \`owner\`, \`_balance\` (float), and \`_transactions\` (list of transaction dicts).
+     - Validates that \`initial_balance\` is non-negative; raises \`ValueError("Initial balance cannot be negative")\` if negative.
+     - Initializes account identifier, owner, internal balance (float), and an internal list of transaction audit logs. If an initial balance was provided, logs an initial deposit.
    - Properties:
-     - \`balance -> float\`: read-only balance.
-     - \`transaction_history -> list[dict]\`: copy of transaction logs.
+     - \`balance -> float\`: Read-only property exposing current balance.
+     - \`transaction_history -> list[dict]\`: Returns a defensive shallow copy of all audit log dictionaries.
    - Methods:
-     - \`deposit(self, amount: float) -> float\`: If \`amount <= 0\`, raise \`ValueError("Deposit amount must be positive")\`. Adds amount to balance, logs \`{"type": "deposit", "amount": amount, "balance": self._balance}\`, and returns new balance.
-     - \`withdraw(self, amount: float) -> float\`: Base implementation checks \`amount > 0\` and \`self._balance >= amount\`. If insufficient funds, raises \`ValueError("Insufficient funds")\`. Logs transaction and returns new balance.
+     - \`deposit(self, amount: float) -> float\`: Validates that \`amount\` is strictly positive (raises \`ValueError("Deposit amount must be positive")\` otherwise). Increments balance, records an audit log entry with type "deposit", transaction amount, and updated balance, and returns the new balance.
+     - \`withdraw(self, amount: float) -> float\`: Validates that \`amount\` is positive and does not exceed available balance (raises \`ValueError("Insufficient funds")\` if balance is exceeded). Decrements balance, records an audit log entry with type "withdrawal", transaction amount, and updated balance, and returns the new balance.
 2. **Derived Class \`CheckingAccount(BankAccount)\`**:
    - \`__init__(self, account_id: str, owner: str, initial_balance: float = 0.0, overdraft_limit: float = 500.0)\`:
-     - Uses \`super().__init__(account_id, owner, initial_balance)\`.
-     - Read-only property \`overdraft_limit\`.
-     - Overrides \`withdraw(amount)\`: allows withdrawing up to \`self._balance + self.overdraft_limit\`. If exceeding overdraft limit, raises \`ValueError("Overdraft limit exceeded")\`.
+     - Chains to the parent constructor via \`super()\` and validates non-negative overdraft limit.
+     - Exposes read-only property \`overdraft_limit\`.
+     - Overrides \`withdraw(amount)\`: Allows withdrawals up to the sum of current balance and overdraft limit. If the withdrawal exceeds this combined boundary, raises \`ValueError("Overdraft limit exceeded")\`. Logs the withdrawal audit entry and returns the new balance.
 3. **Derived Class \`SavingsAccount(BankAccount)\`**:
    - \`__init__(self, account_id: str, owner: str, initial_balance: float = 0.0, interest_rate: float = 0.05)\`:
-     - Uses \`super().__init__(account_id, owner, initial_balance)\`.
-     - Read-only property \`interest_rate\`.
-     - Method \`accrue_interest(self) -> float\`: Computes interest as \`self._balance * self.interest_rate\` (rounded to 2 decimals), deposits it, and returns the interest amount accrued.`,
+     - Chains to the parent constructor via \`super()\` and validates non-negative interest rate.
+     - Exposes read-only property \`interest_rate\`.
+     - Method \`accrue_interest(self) -> float\`: Computes simple interest based on the current balance and interest rate (rounded to 2 decimal places), credits positive interest using the deposit method, and returns the accrued interest amount.`,
       starterCode: `class BankAccount:
     """Base class for financial accounts."""
     def __init__(self, account_id: str, owner: str, initial_balance: float = 0.0):
@@ -503,9 +504,10 @@ class SavingsAccount(BankAccount):
           'Forgetting to return a defensive copy of `transaction_history`.'
         ],
         progressiveHints: [
-          'Step 1: In `BankAccount.__init__`, validate `initial_balance >= 0`.',
-          'Step 2: In `CheckingAccount.withdraw`, compare against `self._balance + self._overdraft_limit`.',
-          'Step 3: In `SavingsAccount.accrue_interest`, calculate interest and call `self.deposit(interest)`.'
+          'Step 1: Enforce non-negative initial constraints in the base constructor and isolate balance within a protected attribute.',
+          'Step 2: Chain derived class constructors with super() and expose configuration limits as read-only properties.',
+          'Step 3: Specialize withdrawal rules in derived accounts by evaluating balance plus permitted overdraft before deducting funds.',
+          'Step 4: Deposit calculated interest through existing deposit workflows to maintain audit log consistency.'
         ],
         mathFormulas: [
           {

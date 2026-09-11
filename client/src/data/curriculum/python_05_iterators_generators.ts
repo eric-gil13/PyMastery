@@ -170,22 +170,19 @@ for n in Countdown(3):
       summary: 'Implement a memory-bounded sliding window generator that streams windows of elements from any finite or infinite iterable.',
       estimatedTime: '20 min',
       hints: [
-        'Validate `window_size > 0` and `step > 0`.',
-        'Convert input using `it = iter(iterable)` to handle arbitrary iterators.',
-        'Use `collections.deque(islice(it, window_size), maxlen=window_size)` to prime the first window.',
-        'In the loop, yield `tuple(window)` and advance `step` items using `islice` or repeated `next(it)`.'
+        'Obtain an iterator from the input stream to consume items sequentially on demand.',
+        'Maintain a bounded FIFO queue sized to the window capacity to hold active window elements.',
+        'Prime the buffer with the first window of elements, and emit it only if the buffer reaches the required size.',
+        'In a streaming loop, emit the current window contents as a tuple, then advance the iterator by pulling up to step new items.',
+        'Terminate the generator gracefully when the input iterator is exhausted and cannot supply further items.'
       ],
       instructions: `Write a generator function \`stream_sliding_window(iterable, window_size: int, step: int = 1)\` that:
-1. **Validation**:
-   - If \`not isinstance(window_size, int) or window_size <= 0\`, raise \`ValueError("window_size must be a positive integer")\`.
-   - If \`not isinstance(step, int) or step <= 0\`, raise \`ValueError("step must be a positive integer")\`.
-2. **Streaming Execution**:
-   - Lazily consumes from \`iterable\`.
-   - Yields tuples of length \`window_size\`.
-   - Advances the window by \`step\` elements on each iteration.
-   - If fewer than \`window_size\` elements remain, iteration halts (no partial/truncated windows yielded).
-3. **Memory Constraint**:
-   - **Crucial**: The generator must NEVER convert the entire input into a list or consume all elements upfront. It must maintain bounded memory ($O(\\text{window\\_size})$) using a \`collections.deque(maxlen=window_size)\` or sliding buffer.`,
+1. **Validation**: Validates that \`window_size\` and \`step\` are positive integers (> 0, rejecting booleans). Raise \`ValueError\` if invalid.
+2. **Lazy Streaming**: Lazily consumes from \`iterable\` on demand without loading the full stream or collection into memory.
+3. **Sliding Windows**: Yields tuples of length \`window_size\` representing each sliding window.
+4. **Step Advancement**: Advances the window forward by \`step\` elements between successive yields.
+5. **Clean Termination**: Halts cleanly when the stream is exhausted and fewer than \`window_size\` elements remain to form a complete window.
+6. **Memory Constraint**: Maintains strictly bounded auxiliary memory ($O(\\text{window\\_size})$) throughout execution.`,
       starterCode: `from typing import Generator, Any
 
 def stream_sliding_window(iterable, window_size: int, step: int = 1) -> Generator[tuple, None, None]:
@@ -269,10 +266,10 @@ def stream_sliding_window(iterable, window_size: int, step: int = 1) -> Generato
           'Calling `list(iterable)` which reads the entire dataset into memory, crashing on infinite streams.'
         ],
         progressiveHints: [
-          'Step 1: Check `window_size > 0` and `step > 0`.',
-          'Step 2: Get iterator: `it = iter(iterable)`.',
-          'Step 3: Seed deque: `window = deque(islice(it, window_size), maxlen=window_size)`.',
-          'Step 4: In a loop, yield `tuple(window)` and advance `step` items using `next(it)`.'
+          'Step 1: Validate window_size and step as strictly positive integers, rejecting boolean values.',
+          'Step 2: Convert the input collection or stream into an iterator to consume items lazily on demand.',
+          'Step 3: Prime a bounded double-ended queue sized to the window capacity with the initial batch of elements.',
+          'Step 4: In a streaming loop, emit the buffered window as a tuple, advance the iterator by pulling up to step new elements, and break when the input is exhausted.'
         ],
         mathFormulas: [
           {
@@ -287,10 +284,9 @@ data = list(iterable)
 for i in range(0, len(data) - w + 1, step):
     yield tuple(data[i:i+w])`,
           naiveExplanation: 'Allocates massive memory and fails entirely on infinite generators.',
-          idiomaticCode: `window = deque(islice(it, window_size), maxlen=window_size)
-while True:
-    yield tuple(window)
-    # advance step items`,
+          idiomaticCode: `# Maintain a bounded queue of window_size elements
+buffer = deque(maxlen=window_size)
+# Lazily pull elements, yield tuple(buffer), and advance by step`,
           idiomaticExplanation: 'Runs in strictly bounded O(window_size) RAM regardless of input stream size.',
           speedupText: 'Infinite stream support with zero RAM spike'
         },
@@ -318,25 +314,19 @@ while True:
       summary: 'Build a multi-stage generator pipeline that lazily parses streaming log lines, filters by severity thresholds, and selects specific services.',
       estimatedTime: '20 min',
       hints: [
-        'Define a level severity mapping dict: `LEVEL_MAP = {"DEBUG": 10, "INFO": 20, "WARNING": 30, "ERROR": 40, "CRITICAL": 50}`.',
-        'Validate `min_level.upper() in LEVEL_MAP`.',
-        'Use `re.compile(r"^\\[([^\\]]+)\\]\\s+\\[([^\\]]+)\\]\\s+\\[([^\\]]+)\\]\\s+(.*)$")` to parse bracketed log lines.',
-        'Compare `LEVEL_MAP[level] >= min_rank` and check service filter before yielding.'
+        'Map standard log severity names to an ascending integer scale to easily compare priority thresholds.',
+        'Compile a regular expression pattern once upfront that captures bracketed fields and the trailing message text.',
+        'Use named capture groups in the regex to extract timestamp, level, service, and message cleanly.',
+        'Iterate over the incoming lines lazily, ignoring non-string inputs and lines that fail pattern matching.',
+        'Normalize severity levels to uppercase and service names to lowercase for consistent filtering comparisons.'
       ],
       instructions: `Write a generator function \`pipeline_log_stream(log_lines, min_level: str = "WARNING", service: str = None)\` that:
-1. **Validation**:
-   - Valid log levels in increasing severity: \`["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]\`.
-   - If \`min_level.upper()\` is not in this list, raise \`ValueError(f"Invalid min_level: {min_level}")\`.
-2. **Streaming Parser**:
-   - Consumes strings from \`log_lines\` lazily.
-   - Expected log format: \`"[TIMESTAMP] [LEVEL] [SERVICE] MESSAGE"\` (e.g. \`"[2026-09-05 12:00:00] [ERROR] [auth] Database connection failed"\`).
-   - If a line is malformed (does not match the regex/bracket pattern), skip it silently without halting the pipeline.
-3. **Filtering Rules**:
-   - Extract \`timestamp\` (str), \`level\` (str, uppercase), \`service\` (str, lowercase), and \`message\` (str, stripped).
-   - Only yield records where:
-     - The event severity \`level >= min_level\` (based on the severity hierarchy).
-     - If the \`service\` filter parameter is provided (not None), the event \`service\` must match \`service.lower()\`.
-4. **Yield**: A parsed dictionary: \`{"timestamp": str, "level": str, "service": str, "message": str}\`.`,
+1. **Validation**: Validates that \`min_level\` represents a recognized severity level: DEBUG, INFO, WARNING, ERROR, or CRITICAL (case-insensitive). Raise \`ValueError\` for invalid levels.
+2. **Lazy Consumption**: Lazily consumes line strings from \`log_lines\` without buffering the entire input.
+3. **Log Parsing**: Parses lines formatted with bracketed timestamp, level, and service tokens followed by a message: \`[TIMESTAMP] [LEVEL] [SERVICE] MESSAGE\`. Silently skips malformed lines.
+4. **Severity Filtering**: Filters events so only records meeting or exceeding the \`min_level\` severity threshold are retained.
+5. **Service Filtering**: If \`service\` is specified, filters for events matching that service name (case-insensitive).
+6. **Yield**: Yields structured dictionaries containing trimmed 'timestamp', uppercase 'level', lowercase 'service', and trimmed 'message'.`,
       starterCode: `from typing import Generator
 
 def pipeline_log_stream(log_lines, min_level: str = "WARNING", service: str = None) -> Generator[dict, None, None]:
@@ -437,10 +427,10 @@ def pipeline_log_stream(log_lines, min_level: str = "WARNING", service: str = No
           'Crashing on non-string or malformed lines.'
         ],
         progressiveHints: [
-          'Step 1: Map levels: `DEBUG: 10, INFO: 20, WARNING: 30, ERROR: 40, CRITICAL: 50`.',
-          'Step 2: Check `min_level in LEVEL_HIERARCHY`.',
-          'Step 3: Use named regex groups: `\\[(?P<timestamp>[^\\]]+)\\] ...`.',
-          'Step 4: Check `evt_rank >= min_rank` and optional `service` match before yielding.'
+          'Step 1: Establish an ordinal ranking for severity levels (DEBUG through CRITICAL) using a lookup map or enum.',
+          'Step 2: Normalize min_level to uppercase, validate against recognized levels, and determine the minimum threshold rank.',
+          'Step 3: Precompile a regex with named capture groups to parse bracketed tokens and the trailing message body.',
+          'Step 4: Lazily iterate lines, skip malformed entries, verify threshold rank and optional service filter, then yield structured records.'
         ],
         mathFormulas: [
           {

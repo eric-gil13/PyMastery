@@ -299,17 +299,17 @@ print("Cell content:", times3.__closure__[0].cell_contents)`,
         title: 'Function Composition & Pipeline Architecture',
         subtitle: 'Chaining pure transformations into clean, testable data workflows',
         overview: 'Pipelines in machine learning, data engineering, and web middleware are built by composing small pure functions.',
-        mentalModel5s: 'Loop through `funcs`, updating `val = f(val)` -> Wrap in a try/except for diagnostic traceability.',
+        mentalModel5s: 'Iterate through functions while threading the intermediate value -> Intercept stage errors to chain diagnostics.',
         visualAnalogy: 'An assembly line where each worker applies a specialized polish before handing the object to the next station.',
         pitfalls: [
-          'Forgetting that `getattr(f, "__name__", ...)` is needed for anonymous lambdas or callable objects.',
-          'Not chaining exceptions using `from e`.'
+          'Assuming every callable exposes a standard __name__ attribute without providing a fallback string for anonymous lambdas or callable instances.',
+          'Swallowing the underlying traceback rather than explicitly chaining the caught exception with the raised RuntimeError.'
         ],
         progressiveHints: [
-          'Step 1: Check `if not funcs:` and verify `all(callable(f) for f in funcs)`.',
-          'Step 2: Define the inner `pipeline(initial_val)` closure.',
-          'Step 3: Accumulate steps in a `trace` list if `debug=True`.',
-          'Step 4: Return `pipeline` callable.'
+          'Step 1: Validate that at least one argument was passed and confirm every element satisfies callable validation.',
+          'Step 2: Define an inner closure that accepts the starting input value and maintains an intermediate accumulator variable.',
+          'Step 3: If debugging is active, record execution telemetry (step index, callable identifier, and stage result) for each transformation.',
+          'Step 4: Return the final accumulated value (or trace dictionary when debugging) from the closure, and return the closure from the factory.'
         ],
         mathFormulas: [
           {
@@ -351,26 +351,27 @@ res = pipeline(x)`,
       summary: 'Build a closure-based function decorator that caches expensive computation results with FIFO eviction and statistics tracking.',
       estimatedTime: '20 min',
       hints: [
-        'Validate `isinstance(maxsize, int) and maxsize > 0`.',
-        'Inside `make_bounded_memoizer`, declare `cache = {}`, `hits = 0`, `misses = 0`.',
-        'In wrapper(*args), check `if args in cache: hits += 1; return cache[args]`.',
-        'If evicting, use `del cache[next(iter(cache))]` to remove the oldest FIFO entry.',
-        'Attach `cache_info` and `cache_clear` to wrapper, and decorate with `@wraps(fn)`.'
+        'Validate that the capacity limit is a strictly positive integer before configuring the decorator.',
+        'Encapsulate cache mapping and hit/miss counters in the decorator closure, ensuring reassignments in inner functions declare enclosing scope variables as nonlocal.',
+        'Check whether the incoming arguments tuple is already present in the cache before evaluation to serve cached results and increment hit/miss telemetry.',
+        'When capacity is reached, evict the earliest inserted entry by leveraging standard dictionary insertion ordering before inserting new results.',
+        'Attach inspection and clearance helper functions directly as callable attributes on the returned wrapper, and apply decorator wrapping utilities to retain original function metadata.'
       ],
       instructions: `Write a function \`make_bounded_memoizer(maxsize: int = 128) -> callable\` that:
 1. **Validation**:
-   - If \`not isinstance(maxsize, int) or maxsize <= 0\`, raise \`ValueError("maxsize must be a positive integer")\`.
+   - Verify that \`maxsize\` is a strictly positive integer (rejecting non-integers, booleans, and values <= 0); raise a \`ValueError\` if invalid.
 2. **Decorator Factory**:
-   - Returns a decorator function \`memoize(fn: callable) -> callable\`.
-   - The returned wrapped function caches results based on the tuple of arguments \`(*args,)\` passed to \`fn\`.
-3. **Eviction Policy**:
+   - Acts as a decorator factory returning a decorator that wraps any target callable.
+   - The wrapped function caches computation results in a closure using the tuple of positional arguments as the lookup key.
+3. **Cache Evaluation & Eviction Policy**:
+   - Check cache containment before evaluating the target function, tracking hits and misses.
    - If a new computation must be cached and the cache size has reached \`maxsize\`, evict the **oldest** inserted cache entry (FIFO eviction).
-4. **Cache Metrics & Management**:
+4. **Cache Telemetry & Management**:
    - The wrapped function must expose two callable helper attributes:
-     - \`.cache_info() -> dict\`: returns \`{"hits": int, "misses": int, "size": int, "maxsize": int}\`.
-     - \`.cache_clear() -> None\`: clears the cache dictionary and resets \`hits\` and \`misses\` to \`0\`.
+     - \`.cache_info() -> dict\`: returns a dictionary with \`"hits"\`, \`"misses"\`, \`"size"\`, and \`"maxsize"\`.
+     - \`.cache_clear() -> None\`: clears the cache dictionary and resets \`hits\` and \`misses\` counters to \`0\`.
 5. **Metadata Preservation**:
-   - The wrapper function must preserve the original function's \`__name__\` and \`__doc__\` (using \`functools.wraps\`).`,
+   - The wrapper function must preserve the original target callable's introspection metadata (such as function name and docstring).`,
       starterCode: `def make_bounded_memoizer(maxsize: int = 128) -> callable:
     """
     Factory creating a memoization decorator with bounded FIFO cache size and metrics.
@@ -464,18 +465,18 @@ def make_bounded_memoizer(maxsize: int = 128) -> callable:
         title: 'Stateful Closures & Memoization Mechanics',
         subtitle: 'Trading space for time with function caches',
         overview: 'Expensive calculations (dynamic programming, database reads, API lookups) use memoization caches to return previously computed results in $O(1)$ time.',
-        mentalModel5s: 'Encapsulate `cache`, `hits`, `misses` inside closure -> Attach `.cache_info` and `.cache_clear` to `wrapper`.',
+        mentalModel5s: 'Encapsulate cache mapping and telemetry counters inside closure -> Expose management hooks on the returned wrapper.',
         visualAnalogy: 'A desk drawer containing answered letters: if the same question arrives, read the drawer answer instead of recalculating.',
         pitfalls: [
-          'Forgetting `nonlocal hits, misses` when reassigning counters in wrapper.',
-          'Not preserving `__name__` and `__doc__` with `@functools.wraps`.'
+          'Forgetting to declare enclosed counter variables as nonlocal when modifying them inside inner scopes.',
+          'Failing to preserve wrapper introspection attributes, obscuring the decorated function identity and documentation.'
         ],
         progressiveHints: [
-          'Step 1: Check `maxsize > 0`.',
-          'Step 2: Define `cache = {}`, `hits = 0`, `misses = 0` inside the decorator.',
-          'Step 3: In `wrapper(*args)`, use `args` as the cache key.',
-          'Step 4: If `len(cache) >= maxsize`, pop the oldest key: `del cache[next(iter(cache))]`.',
-          'Step 5: Attach `wrapper.cache_info` and `wrapper.cache_clear`.'
+          'Step 1: Validate that the configured capacity is a strictly positive integer.',
+          'Step 2: Initialize private storage and telemetry counters in the decorator closure.',
+          'Step 3: In the wrapper, check arguments containment to return cached values on hits or compute and record on misses.',
+          'Step 4: If cache capacity is reached prior to insertion, evict the earliest inserted key relying on dictionary insertion order.',
+          'Step 5: Bind inspection and clearance helper callables directly onto the wrapper and preserve target function metadata.'
         ],
         mathFormulas: [
           {
@@ -503,8 +504,8 @@ def calc(x): ...`,
         },
         keyTakeaways: [
           'Closures retain private encapsulated state without requiring explicit classes.',
-          'Use `next(iter(dict))` to access the oldest inserted key in Python 3.7+.',
-          'Always use `@functools.wraps` on decorators to keep introspection intact.'
+          'Modern Python dictionaries maintain insertion order, enabling FIFO eviction by iterating through keys.',
+          'Preserve target callable introspection by decorating wrappers with metadata preservation helpers.'
         ]
       }
     }

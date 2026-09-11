@@ -450,17 +450,17 @@ class AtomicTransaction:
         title: 'ACID Transactions with Context Managers',
         subtitle: 'The Atomicity invariant: all changes succeed, or none do',
         overview: 'Databases use write-ahead logs (WAL) to ensure that if a server dies mid-transaction, dirty writes are rolled back. You can apply this exact pattern in Python using context managers.',
-        mentalModel5s: 'Snapshot in `__enter__` -> If exception in `__exit__`: `target.clear()` and `target.update(snapshot)`.',
+        mentalModel5s: 'Snapshot in __enter__ -> On exception in __exit__: revert mutations in-place to restore original state and allow the error to bubble up.',
         visualAnalogy: 'A computer undo stack: creating a restore point before attempting risky system updates.',
         pitfalls: [
           'Using shallow copy (`dict.copy()`) which fails to roll back mutations to nested lists or dictionaries.',
-          'Returning `True` from `__exit__`, which would silently swallow the transaction failure exception.'
+          'Suppressing exceptions in the exit hook, which would silently swallow the transaction failure.'
         ],
         progressiveHints: [
-          'Step 1: Check `isinstance(target_dict, dict)`.',
-          'Step 2: In `__enter__`, do `self._snapshot = copy.deepcopy(self.target)`.',
-          'Step 3: In `__exit__`, if `exc_type is not None`, restore: `self.target.clear(); self.target.update(self._snapshot)`.',
-          'Step 4: Return `False` to ensure exceptions propagate.'
+          'Step 1: Validate that the incoming target object is a dictionary instance, raising a TypeError if an incompatible type is provided.',
+          'Step 2: During context entry, capture a deep copy snapshot of the target dictionary to isolate nested structures from mutation, and return the target mapping.',
+          'Step 3: In the exit hook, detect whether an exception occurred; if so, clear the modified state and restore snapshot entries in-place without replacing the dictionary object reference.',
+          'Step 4: Explicitly signal to Python context manager protocol that exceptions must propagate by returning a falsy value from the exit handler.'
         ],
         mathFormulas: [
           {
@@ -489,8 +489,8 @@ except:
         },
         keyTakeaways: [
           'Use deepcopy when rolling back nested mutable structures.',
-          'Return False from __exit__ so callers are alerted to the transaction failure.',
-          'Mutate the original dictionary in-place (.clear() and .update()) to preserve existing object references.'
+          'Allow exceptions to propagate by returning a falsy status from __exit__ so callers are alerted to the transaction failure.',
+          'Mutate the original dictionary in-place by wiping current keys and restoring snapshot entries to preserve existing object references.'
         ]
       }
     }

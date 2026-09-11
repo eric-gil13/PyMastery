@@ -92,13 +92,19 @@ CHALLENGE_1 = {
         "Build a production-grade parameterized retry decorator that catches transient errors and retries with exponential backoff."
     ),
     "instructions": (
-        "Write a decorator factory `retry_with_backoff(max_retries=3, initial_delay=0.01, backoff_factor=2.0, exceptions=(Exception,))` that:\n"
-        "1. Validates `max_retries >= 0`, `initial_delay >= 0`, and `backoff_factor >= 1.0` (else ValueError).\n"
-        "2. Intercepts calls to `fn(*args, **kwargs)`.\n"
-        "3. If an exception matching `exceptions` is raised, sleeps for `current_delay`, multiplies delay by `backoff_factor`, and retries up to `max_retries`.\n"
-        "4. If retries are exhausted, re-raises the final caught exception.\n"
-        "5. Preserves function metadata via `@wraps(fn)`.\n"
-        "6. Exposes a `.total_attempts` attribute tracking total invocations across calls."
+        "Write a decorator factory `retry_with_backoff(max_retries: int = 3, initial_delay: float = 0.01, backoff_factor: float = 2.0, exceptions=(Exception,))` that equips callables with resilient retry semantics:\n"
+        "1. Validation & Configuration:\n"
+        "   - Ensure `max_retries` and `initial_delay` are non-negative, and `backoff_factor` is at least 1.0. Raise ValueError('Invalid retry configuration') if any parameter violates these constraints.\n"
+        "   - Accept either a single exception type or a tuple of exception types to intercept.\n"
+        "2. Retry Execution & Geometric Backoff:\n"
+        "   - Decorate callable targets while preserving original function metadata and signature introspection.\n"
+        "   - Execute the target with all supplied positional and keyword arguments.\n"
+        "   - If an intercepted exception is raised, pause execution for the active delay duration before retrying.\n"
+        "   - Scale the delay interval geometrically after each failed attempt by multiplying it by the backoff factor.\n"
+        "   - Continue retrying until the target succeeds or the maximum retry quota is exhausted, at which point the final caught exception must propagate.\n"
+        "   - Any exception type not specified in `exceptions` must bubble up immediately without triggering retries.\n"
+        "3. Execution Statistics:\n"
+        "   - Expose a `.total_attempts` attribute on the decorated wrapper that tracks the cumulative count of target invocations across all calls."
     ),
     "starter_code": r'''from functools import wraps
 import time
@@ -220,9 +226,16 @@ def retry_with_backoff(
     return report
 ''',
     "hints": [
-        "Check `max_retries >= 0`, `initial_delay >= 0`, and `backoff_factor >= 1.0`.",
-        "Catch `exceptions as e` in a `while True:` loop.",
-        "Wrap the function with a callable object or expose a property for `total_attempts`."
+        "Validate configuration boundaries upfront, ensuring retry counts and initial delays are non-negative and the backoff multiplier is at least 1.0.",
+        "Normalize intercepted exceptions so single exception classes and tuples of exceptions are handled uniformly.",
+        "Maintain an invocation counter across calls, exposing it through an attribute or property on the outer wrapper object.",
+        "Structure the retry loop to intercept designated exceptions, pause using the current backoff interval, scale the wait duration geometrically by the backoff factor, and re-raise once retries are exhausted."
+    ],
+    "progressive_hints": [
+        "Step 1: Guard against invalid inputs by asserting non-negative retry limits/delays and a backoff multiplier of 1.0 or greater.",
+        "Step 2: Maintain cumulative attempt telemetry within the decorator closure or wrapper object.",
+        "Step 3: Wrap invocation in an execution loop guarded by exception handling for the target error classes.",
+        "Step 4: On failure, pause execution for the active delay, geometrically scale the wait duration, decrement available retries, or re-raise if exhausted."
     ]
 }
 
@@ -239,13 +252,17 @@ CHALLENGE_2 = {
         "Implement a transactional context manager that creates a snapshot of a dictionary and rolls back all mutations if an error occurs."
     ),
     "instructions": (
-        "Create a context manager class `AtomicTransaction`:\n"
-        "1. In `__init__(target_dict)`, validate `isinstance(target_dict, dict)` (else TypeError).\n"
-        "2. In `__enter__()`, create a deep backup of `target_dict` using `copy.deepcopy`, and return `target_dict`.\n"
-        "3. In `__exit__(exc_type, exc_val, exc_tb)`:\n"
-        "   - If `exc_type is not None`, clear `target_dict` and restore the snapshot.\n"
-        "   - Return `False` so the exception bubbles up.\n"
-        "   - If no exception occurred, keep the changes."
+        "Create a context manager class `AtomicTransaction` that provides all-or-nothing transactional guarantees for dictionary mutations:\n"
+        "1. Initialization:\n"
+        "   - `__init__(self, target_dict: dict)`: Validate that `target_dict` is a dictionary instance; raise TypeError('target_dict must be a dictionary') if an invalid type is supplied.\n"
+        "   - Retain a reference to the underlying dictionary target.\n"
+        "2. Context Entry (`__enter__`):\n"
+        "   - Capture an isolated deep snapshot of the dictionary state so nested structures are safeguarded against in-flight mutation.\n"
+        "   - Return the original target dictionary reference to allow binding via `with AtomicTransaction(d) as state:`.\n"
+        "3. Context Exit (`__exit__`):\n"
+        "   - Commit on Success: When the block completes without error, finalize the transaction by retaining all mutations.\n"
+        "   - Rollback on Failure: When an exception occurs within the block, restore the dictionary to its pre-transaction state in-place, ensuring the original container object retains its identity while reverting all changes.\n"
+        "   - Exception Propagation: Allow the triggering exception to bubble up naturally rather than suppressing it."
     ),
     "starter_code": r'''import copy
 
@@ -327,9 +344,16 @@ class AtomicTransaction:
     return report
 ''',
     "hints": [
-        "Use `self._snapshot = copy.deepcopy(self.target)` in `__enter__`.",
-        "In `__exit__`, restore using `self.target.clear(); self.target.update(self._snapshot)`.",
-        "Always return `False` from `__exit__` to allow exceptions to propagate."
+        "Verify the target argument type during initialization and raise TypeError for non-dictionary instances.",
+        "During context entry, create an isolated deep copy of the target mapping so modifications to nested collections do not taint the snapshot.",
+        "During context exit on error, revert the target mapping in-place to preserve object identity while restoring previous key-value mappings.",
+        "Ensure the exit hook signals that exceptions should bubble up rather than being suppressed."
+    ],
+    "progressive_hints": [
+        "Step 1: Validate that the incoming target object is a dictionary mapping, raising a TypeError if an incompatible type is provided.",
+        "Step 2: During context entry, capture a deep copy snapshot of the target dictionary to isolate nested structures from mutation, and return the dictionary instance.",
+        "Step 3: In the exit hook, detect whether an exception occurred; if so, clear the modified state and restore snapshot entries in-place without replacing the dictionary object reference.",
+        "Step 4: Explicitly signal to Python context manager protocol that exceptions must propagate by returning a falsy value from the exit handler."
     ]
 }
 
