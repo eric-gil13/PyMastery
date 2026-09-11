@@ -44,7 +44,7 @@ _MATPLOTLIB_AVAILABLE = False
 _plots = []
 
 try:
-    if "matplotlib" in sys.modules or os.environ.get("MPLBACKEND"):
+    if "matplotlib" in sys.modules or os.environ.get("PYMASTERY_ENABLE_MPL") == "1":
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
@@ -695,7 +695,7 @@ class CodeRunner:
         """Executes the request asynchronously with watchdog timer and memory threshold."""
         self._ensure_harness()
 
-        timeout_sec = min(max(req.timeout, 0.5), 10.0)
+        timeout_sec = min(max(req.timeout, 0.5), 35.0)
         memory_limit_mb = min(max(req.memory_limit_mb, 64.0), 1024.0)
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as in_f:
@@ -716,7 +716,9 @@ class CodeRunner:
         env["PYMASTERY_IN_FILE"] = in_file_path
         env["PYMASTERY_OUT_FILE"] = out_file_path
         env["PYTHONUNBUFFERED"] = "1"
-        env["MPLBACKEND"] = "Agg"
+        if "matplotlib" in req.code or "plt" in req.code:
+            env["MPLBACKEND"] = "Agg"
+            env["PYMASTERY_ENABLE_MPL"] = "1"
 
         start_time = time.perf_counter()
         peak_memory_mb = 0.0

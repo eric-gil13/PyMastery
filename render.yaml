@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: pymastery
+    env: docker
+    plan: free
+    region: oregon
+    branch: main

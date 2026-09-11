@@ -84,7 +84,7 @@ class RunRequest(BaseModel):
     benchmark_setup: Optional[str] = None
     benchmark_stmt: Optional[str] = None
     benchmark_iterations: int = 100
-    timeout: float = 5.0  # Max 10.0 seconds
+    timeout: float = 25.0  # Increased for cloud free tier environments
     memory_limit_mb: float = 512.0  # Max 1024 MB
     stdin: Optional[str] = ""
 

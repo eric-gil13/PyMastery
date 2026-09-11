@@ -206,24 +206,27 @@ print("Cell content:", times3.__closure__[0].cell_contents)`,
       summary: 'Compose an arbitrary sequence of callable transformation stages into a single callable execution pipeline with optional debugging traces.',
       estimatedTime: '20 min',
       hints: [
-        'Validate `if not funcs` and check `all(callable(f) for f in funcs)`.',
-        'Inside the returned pipeline closure, loop through `funcs` tracking stage index `i`.',
-        'In `debug=True` mode, record `{ "step": i, "func": getattr(f, "__name__", "<callable>"), "output": current_val }`.',
-        'Catch stage errors with `except Exception as e:` and raise `RuntimeError(...) from e`.'
+        'Verify that the variable positional arguments sequence is non-empty, and check that each supplied function satisfies Python\'s callable interface.',
+        'Construct an inner closure that receives the initial argument and iterates sequentially through each function, updating an accumulator with each stage\'s result.',
+        'When debug mode is requested, track execution by recording the zero-based step index, resolving the callable name (with fallback handling for anonymous or callable objects), and storing the stage output.',
+        'Wrap each stage invocation in an exception handler and use explicit exception chaining to preserve the original exception while raising a informative RuntimeError.'
       ],
       instructions: `Write a function \`compose_pipeline(*funcs: callable, debug: bool = False) -> callable\` that:
 1. **Validation**:
-   - If no functions are provided in \`*funcs\`, raise \`ValueError("At least one function must be provided")\`.
-   - Every function in \`*funcs\` must be callable (\`callable(f)\`). If any is not, raise \`TypeError("All pipeline stages must be callable")\`.
+   - If no functions are provided, raise a \`ValueError\` indicating that at least one function is required.
+   - Ensure every argument provided is callable; if any is not, raise a \`TypeError\`.
 2. **Composed Function Execution**:
-   - The returned pipeline function must accept an initial input \`initial_val\`.
-   - Passes the data sequentially from left to right: \`f1(initial_val) -> f2(...) -> fn(...)\`.
-   - If any function in the pipeline raises an exception during execution, catch it and raise a \`RuntimeError(f"Pipeline failed at stage {i} ({func.__name__}): {err}")\` with the original exception chained.
+   - The returned pipeline function must accept an initial input value.
+   - It executes the functions sequentially from left to right, threading the output of each stage as the input to the next.
+   - If any stage raises an exception during execution, catch it and raise a \`RuntimeError\` with the original exception explicitly chained. The error message should convey the failed stage index, the function's name (with a fallback name if unnamed), and the underlying error message.
 3. **Debug Mode**:
-   - If \`debug=False\` (default): returns the final output value directly.
-   - If \`debug=True\`: returns a dictionary with:
-     - \`"result"\`: the final transformed output value.
-     - \`"trace"\`: a list of records for each step: \`[{"step": index, "func": func.__name__, "output": step_output}, ...]\`.`,
+   - If \`debug=False\` (default): Returns the final transformed output value directly.
+   - If \`debug=True\`: Returns a dictionary containing:
+     - \`"result"\`: The final transformed output value.
+     - \`"trace"\`: A list of dictionaries documenting each step, where each entry contains:
+       - \`"step"\`: The zero-based integer index of the stage.
+       - \`"func"\`: The string identifier/name of the function.
+       - \`"output"\`: The intermediate value produced by that stage.`,
       starterCode: `def compose_pipeline(*funcs: callable, debug: bool = False) -> callable:
     """
     Compose multiple callable functions into a single left-to-right execution pipeline.

@@ -185,23 +185,24 @@ work()`,
       summary: 'Build a production-grade parameterized retry decorator that catches transient errors and retries with exponential backoff.',
       estimatedTime: '20 min',
       hints: [
-        'Validate `max_retries >= 0`, `initial_delay >= 0`, and `backoff_factor >= 1.0`.',
-        'Check `isinstance(exceptions, tuple)` or convert a single exception class into a tuple.',
-        'Track `total_attempts = 0` and expose it as a property or attribute on the wrapper.',
-        'Catch specified exceptions, sleep for current delay, multiply delay by `backoff_factor`, and retry.'
+        'Validate configuration boundaries upfront, ensuring retry counts and initial delays are non-negative and the backoff multiplier is at least 1.0.',
+        'Normalize intercepted exceptions so single exception classes and tuples of exceptions are handled uniformly.',
+        'Maintain an invocation counter across calls, exposing it through an attribute or property on the outer wrapper object.',
+        'Structure the retry loop to intercept designated exceptions, pause using the current backoff interval, scale the wait duration geometrically by the backoff factor, and re-raise once retries are exhausted.'
       ],
-      instructions: `Write a decorator factory \`retry_with_backoff(max_retries: int = 3, initial_delay: float = 0.01, backoff_factor: float = 2.0, exceptions=(Exception,))\` that:
-1. **Validation**:
-   - If \`max_retries < 0\` or \`initial_delay < 0\` or \`backoff_factor < 1.0\`, raise \`ValueError("Invalid retry configuration")\`.
-   - \`exceptions\` must be an exception class or tuple of exception classes.
-2. **Retry Execution**:
-   - Decorates callable \`fn\`. Preserves metadata using \`@functools.wraps(fn)\`.
-   - Attempts to call \`fn(*args, **kwargs)\`.
-   - If an exception matching \`exceptions\` is raised:
-     - If remaining retries > 0, sleep for \`current_delay\` (using \`time.sleep(current_delay)\`), update \`current_delay = current_delay * backoff_factor\`, and retry.
-     - If retries are exhausted, re-raise the final caught exception.
+      instructions: `Write a decorator factory \`retry_with_backoff(max_retries: int = 3, initial_delay: float = 0.01, backoff_factor: float = 2.0, exceptions=(Exception,))\` that equips callables with resilient retry semantics:
+1. **Validation & Configuration**:
+   - Ensure \`max_retries\` and \`initial_delay\` are non-negative, and \`backoff_factor\` is at least \`1.0\`. Raise \`ValueError("Invalid retry configuration")\` if any parameter violates these constraints.
+   - Accept either a single exception type or a tuple of exception types to intercept.
+2. **Retry Execution & Geometric Backoff**:
+   - Decorate callable targets while preserving original function metadata and signature introspection.
+   - Execute the target with all supplied positional and keyword arguments.
+   - If an intercepted exception is raised, pause execution for the active delay duration before retrying.
+   - Scale the delay interval geometrically after each failed attempt by multiplying it by the backoff factor.
+   - Continue retrying until the target succeeds or the maximum retry quota is exhausted, at which point the final caught exception must propagate.
+   - Any exception type not specified in \`exceptions\` must bubble up immediately without triggering retries.
 3. **Execution Statistics**:
-   - The wrapped function must expose a counter attribute \`.total_attempts\` tracking how many times the underlying function was invoked across all calls.`,
+   - Expose a \`.total_attempts\` attribute on the decorated wrapper that tracks the cumulative count of target invocations across all calls.`,
       starterCode: `from functools import wraps
 import time
 from typing import Tuple, Type
@@ -313,17 +314,17 @@ def retry_with_backoff(
         title: 'Transient Failure Handling & Exponential Backoff',
         subtitle: 'Resilient network requests with parameterized decorators',
         overview: 'Network calls to remote databases, APIs, and microservices encounter blips. Exponential backoff prevents thundering herd collisions while recovering from glitches.',
-        mentalModel5s: 'Loop up to max_retries -> On error: sleep(delay) -> delay *= factor -> re-raise on final exhaustion.',
+        mentalModel5s: 'Invoke callable -> On intercepted error: pause, scale delay geometrically, and retry until attempt quota expires.',
         visualAnalogy: 'Knocking on a door: knock, wait 1 second, knock again, wait 2 seconds, knock, wait 4 seconds before walking away.',
         pitfalls: [
           'Setting backoff factor to less than 1.0 which would decrease delay over time.',
           'Not preserving the original exception traceback when re-raising.'
         ],
         progressiveHints: [
-          'Step 1: Validate parameters (`max_retries >= 0`, `backoff_factor >= 1.0`).',
-          'Step 2: Track `total_attempts` in closure.',
-          'Step 3: Loop while `True`: try `fn()`, except `exceptions as e:` check `retries_left`.',
-          'Step 4: Sleep for `delay`, update `delay *= backoff_factor`, decrement retries.'
+          'Step 1: Guard against invalid inputs by asserting non-negative retry limits/delays and a backoff multiplier of 1.0 or greater.',
+          'Step 2: Maintain cumulative attempt telemetry within the decorator closure or wrapper object.',
+          'Step 3: Wrap invocation in an execution loop guarded by exception handling for the target error classes.',
+          'Step 4: On failure, pause execution for the active delay, geometrically scale the wait duration, decrement available retries, or re-raise if exhausted.'
         ],
         mathFormulas: [
           {
@@ -367,25 +368,22 @@ def call_api(): ...`,
       summary: 'Implement a transactional context manager that creates a snapshot of a dictionary and rolls back all mutations if an error occurs.',
       estimatedTime: '20 min',
       hints: [
-        'In `__init__`, check `if not isinstance(target_dict, dict): raise TypeError()`.',
-        'In `__enter__`, store `self._snapshot = copy.deepcopy(self.target_dict)` and return `self.target_dict`.',
-        'In `__exit__`, check `if exc_type is not None: self.target_dict.clear(); self.target_dict.update(self._snapshot)`.',
-        'Return `False` from `__exit__` so exceptions continue bubbling up.'
+        'Verify the target argument type during initialization and raise TypeError for non-dictionary instances.',
+        'During context entry, create an isolated deep copy of the target mapping so modifications to nested collections do not taint the snapshot.',
+        'During context exit on error, revert the target mapping in-place to preserve object identity while restoring previous key-value mappings.',
+        'Ensure the exit hook signals that exceptions should bubble up rather than being suppressed.'
       ],
-      instructions: `Create a context manager class \`AtomicTransaction\`:
+      instructions: `Create a context manager class \`AtomicTransaction\` that provides all-or-nothing transactional guarantees for dictionary mutations:
 1. **Initialization**:
-   - \`__init__(self, target_dict: dict)\`: If \`not isinstance(target_dict, dict)\`, raise \`TypeError("target_dict must be a dictionary")\`.
-   - Stores a reference to \`target_dict\`.
+   - \`__init__(self, target_dict: dict)\`: Validate that \`target_dict\` is a dictionary instance; raise \`TypeError("target_dict must be a dictionary")\` if an invalid type is supplied.
+   - Retain a reference to the underlying dictionary target.
 2. **Context Entry (\`__enter__\`)**:
-   - Creates a deep backup snapshot of \`target_dict\` (using \`copy.deepcopy\`).
-   - Returns \`target_dict\` so it can be bound using \`with AtomicTransaction(d) as state:\`.
+   - Capture an isolated deep snapshot of the dictionary state so nested structures are safeguarded against in-flight mutation.
+   - Return the original target dictionary reference to allow binding via \`with AtomicTransaction(d) as state:\`.
 3. **Context Exit (\`__exit__\`)**:
-   - If no exception occurred (\`exc_type is None\`):
-     - The transaction **commits** (the mutations made inside the block are kept).
-     - Returns \`None\` (or \`False\`).
-   - If an exception occurred (\`exc_type is not None\`):
-     - The transaction **aborts & rolls back**: clears \`target_dict\` and restores the exact key-value pairs from the backup snapshot!
-     - Returns \`False\` so the original exception is re-raised and propagates naturally.`,
+   - **Commit on Success**: When the block completes without error, finalize the transaction by retaining all mutations.
+   - **Rollback on Failure**: When an exception occurs within the block, restore the dictionary to its pre-transaction state in-place, ensuring the original container object retains its identity while reverting all changes.
+   - **Exception Propagation**: Allow the triggering exception to bubble up naturally rather than suppressing it.`,
       starterCode: `import copy
 
 class AtomicTransaction:

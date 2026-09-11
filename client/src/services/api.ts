@@ -69,6 +69,7 @@ export async function executeCodeApi(
         challenge_id: challenge.id,
         code,
         mode,
+        timeout: 25.0,
       }),
       signal: controller.signal,
     });
@@ -231,12 +232,12 @@ export async function executeRawSnippetApi(code: string): Promise<{
 }> {
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 6000);
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const res = await fetch(`${API_BASE_URL}/run`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
+      body: JSON.stringify({ code, mode: 'run', timeout: 25.0 }),
       signal: controller.signal,
     });
     clearTimeout(timeoutId);

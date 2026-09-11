@@ -56,6 +56,10 @@ RUN pip install --no-cache-dir \
 COPY --chown=user:user server/ ./server/
 COPY --chown=user:user pyproject.toml ./
 
+# Pre-compile Python bytecode and initialize font/ML caches for fast execution
+RUN python -c "import numpy, pandas, torch, matplotlib.pyplot; print('Pre-warmed ML libraries')"
+
+
 # Copy compiled frontend from Stage 1
 COPY --chown=user:user --from=frontend-builder /app/client/dist ./client/dist
 

@@ -224,23 +224,26 @@ print("Result of empty list and:", val)`,
       category: 'String & Type Processing',
       summary: 'Clean raw user profile records, sanitize email addresses, round numerical scores, and format a standardized summary string.',
       estimatedTime: '15 min',
-      instructions: `Write a function \`clean_and_format_record(raw_record: dict) -> dict\` that:
+      instructions: `Write a function \`clean_and_format_record(raw_record: dict) -> dict\` that processes and validates user profile data:
+
 1. **Input Validation**:
-   - If \`raw_record\` is not a dictionary or is empty, raise \`ValueError("raw_record must be a non-empty dict")\`.
-   - The dictionary must contain keys \`"name"\`, \`"email"\`, \`"role"\`, and \`"score"\`. If any required key is missing, raise \`KeyError(f"Missing required key: {key}")\`.
+   - Ensure \`raw_record\` is a non-empty dictionary; raise a \`ValueError\` if it is not a dictionary or contains no items.
+   - Confirm that all required keys (\`"name"\`, \`"email"\`, \`"role"\`, and \`"score"\`) are present. If any required key is missing, raise a \`KeyError\` identifying the missing key.
 2. **Sanitization Rules**:
-   - \`name\`: Strip leading/trailing whitespace and convert to Title Case (e.g. \`"  jane DOE  "\` -> \`"Jane Doe"\`).
-   - \`email\`: Strip whitespace and convert to all lowercase.
-   - \`role\`: Strip whitespace and convert to UPPERCASE.
-   - \`score\`: Convert to \`float\` rounded to 2 decimal places. If \`score\` cannot be converted to float or is negative, raise \`ValueError("Invalid score")\`.
+   - \`name\`: Remove leading and trailing whitespace, and normalize to Title Case (e.g., \`"  jane DOE  "\` becomes \`"Jane Doe"\`).
+   - \`email\`: Trim leading and trailing whitespace, and convert all characters to lowercase.
+   - \`role\`: Trim leading and trailing whitespace, and convert all characters to UPPERCASE.
+   - \`score\`: Parse as a floating-point number rounded to 2 decimal places. If the value cannot be parsed as a float or is strictly negative, raise a \`ValueError\`.
 3. **Generated Summary**:
-   - Add a key \`"bio"\`: formatted exactly as \`"{name} ({role}) - Score: {score:.2f}"\`.
-4. **Return**: A new dictionary with cleaned \`"name"\`, \`"email"\`, \`"role"\`, \`"score"\`, and \`"bio"\`.`,
+   - Add a key \`"bio"\` formatted as a summary string containing the person's name, role in parentheses, and the score formatted to exactly two decimal places (e.g., \`"Alice (ADMIN) - Score: 95.50"\` or \`"Alan Turing (SCIENTIST) - Score: 98.57"\`).
+4. **Return Value**:
+   - Return a new dictionary containing the cleaned \`"name"\`, \`"email"\`, \`"role"\`, \`"score"\`, and the newly generated \`"bio"\`.`,
       hints: [
-        'Check `isinstance(raw_record, dict) and bool(raw_record)` upfront.',
-        'Use `.strip().title()` for name, `.strip().lower()` for email, and `.strip().upper()` for role.',
-        'Wrap float parsing in `try/except (TypeError, ValueError): raise ValueError("Invalid score")`.',
-        'Format the bio string using `f"{name} ({role}) - Score: {score:.2f}"`.'
+        'Validate container types and truthiness upfront to ensure the record is a non-empty dictionary before accessing keys.',
+        'Iterate through the required field names to check dictionary membership, raising an appropriate key error if any are missing.',
+        'Apply string trimming and case normalization methods to clean whitespace and standardize casing across text fields.',
+        'Safely convert numerical values inside an error-handling block to catch invalid types or non-numeric strings, and verify non-negativity.',
+        'Assemble the summary bio using formatted string interpolation with a precision specifier to guarantee two decimal places on the score.'
       ],
       starterCode: `def clean_and_format_record(raw_record: dict) -> dict:
     """

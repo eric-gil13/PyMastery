@@ -86,11 +86,11 @@ CHALLENGE_1 = {
     ),
     "instructions": (
         "Write a generator function `stream_sliding_window(iterable, window_size: int, step: int = 1)` that:\n"
-        "1. Validates `window_size` and `step` are integers > 0 (else ValueError).\n"
-        "2. Lazily consumes `iterable` without loading everything into memory.\n"
-        "3. Yields tuples of length `window_size`.\n"
-        "4. Advances by `step` elements between windows.\n"
-        "5. Halts when fewer than `window_size` elements remain in the stream."
+        "1. Validates that `window_size` and `step` are positive integers (> 0, rejecting booleans). Raise ValueError if invalid.\n"
+        "2. Lazily consumes from `iterable` on demand without loading the full stream or collection into memory.\n"
+        "3. Yields tuples of length `window_size` representing each sliding window.\n"
+        "4. Advances the window forward by `step` elements between successive yields.\n"
+        "5. Halts cleanly when the stream is exhausted and fewer than `window_size` elements remain to form a complete window."
     ),
     "starter_code": r'''from typing import Generator
 
@@ -174,9 +174,11 @@ def stream_sliding_window(iterable, window_size: int, step: int = 1) -> Generato
     return report
 ''',
     "hints": [
-        "Use `it = iter(iterable)` and `deque(islice(it, window_size), maxlen=window_size)`.",
-        "Advance by calling `next(it)` up to `step` times.",
-        "Catch `StopIteration` to gracefully terminate."
+        "Obtain an iterator from the input stream to consume items sequentially on demand.",
+        "Maintain a bounded FIFO queue sized to the window capacity to hold active window elements.",
+        "Prime the buffer with the first window of elements, and emit it only if the buffer reaches the required size.",
+        "In a streaming loop, emit the current window contents as a tuple, then advance the iterator by pulling up to step new items.",
+        "Terminate the generator gracefully when the input iterator is exhausted and cannot supply further items."
     ]
 }
 
@@ -195,11 +197,12 @@ CHALLENGE_2 = {
     ),
     "instructions": (
         "Write a generator function `pipeline_log_stream(log_lines, min_level: str = \"WARNING\", service: str = None)` that:\n"
-        "1. Validates `min_level` is one of: DEBUG (10), INFO (20), WARNING (30), ERROR (40), CRITICAL (50) (else ValueError).\n"
-        "2. Parses lines matching: `\"[TIMESTAMP] [LEVEL] [SERVICE] MESSAGE\"`. Skips non-matching lines.\n"
-        "3. Filters out events below `min_level` severity rank.\n"
-        "4. If `service` is provided, filters for exact service match (case-insensitive).\n"
-        "5. Yields dicts with 'timestamp', 'level', 'service', 'message'."
+        "1. Validates that `min_level` represents a recognized severity level: DEBUG, INFO, WARNING, ERROR, or CRITICAL (case-insensitive). Raise ValueError for invalid levels.\n"
+        "2. Lazily consumes line strings from `log_lines` without buffering the entire input.\n"
+        "3. Parses lines formatted with bracketed timestamp, level, and service tokens followed by a message: `[TIMESTAMP] [LEVEL] [SERVICE] MESSAGE`. Silently skips malformed lines.\n"
+        "4. Filters events so only records meeting or exceeding the `min_level` severity threshold are retained.\n"
+        "5. If `service` is specified, filters for events matching that service name (case-insensitive).\n"
+        "6. Yields structured dictionaries containing trimmed 'timestamp', uppercase 'level', lowercase 'service', and trimmed 'message'."
     ),
     "starter_code": r'''from typing import Generator
 
@@ -307,9 +310,11 @@ def pipeline_log_stream(log_lines, min_level: str = "WARNING", service: str = No
     return report
 ''',
     "hints": [
-        "Use a dictionary mapping level name strings to severity integers.",
-        "Compile the regex pattern once with `re.compile(...)`.",
-        "Use named capture groups `(?P<group_name>...)` for readable group extraction."
+        "Map standard log severity names to an ascending integer scale to easily compare priority thresholds.",
+        "Compile a regular expression pattern once upfront that captures bracketed fields and the trailing message text.",
+        "Use named capture groups in the regex to extract timestamp, level, service, and message cleanly.",
+        "Iterate over the incoming lines lazily, ignoring non-string inputs and lines that fail pattern matching.",
+        "Normalize severity levels to uppercase and service names to lowercase for consistent filtering comparisons."
     ]
 }
 

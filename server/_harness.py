@@ -14,7 +14,7 @@ _MATPLOTLIB_AVAILABLE = False
 _plots = []
 
 try:
-    if "matplotlib" in sys.modules or os.environ.get("MPLBACKEND"):
+    if "matplotlib" in sys.modules or os.environ.get("PYMASTERY_ENABLE_MPL") == "1":
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
