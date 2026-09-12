@@ -154,34 +154,7 @@ def run_harness_payload(payload: dict) -> dict:
 
                 def _wrap_candidate(cand_obj):
                     if isinstance(cand_obj, type):
-                        class WrappedClass(cand_obj):
-                            def __init__(self, *args, **kwargs):
-                                nonlocal actual_val, captured_input
-                                try:
-                                    arg_strs = [_safe_repr(a, 100) for a in args] + [f"{k}={_safe_repr(v, 100)}" for k, v in kwargs.items()]
-                                    captured_input = f"{cand_obj.__name__}({', '.join(arg_strs)})"
-                                except Exception:
-                                    pass
-                                super().__init__(*args, **kwargs)
-
-                            def __getattribute__(self, name):
-                                attr = super().__getattribute__(name)
-                                if callable(attr) and not name.startswith("__"):
-                                    def method_wrapper(*m_args, **m_kwargs):
-                                        nonlocal actual_val, captured_input
-                                        try:
-                                            m_arg_strs = [_safe_repr(a, 100) for a in m_args] + [f"{k}={_safe_repr(v, 100)}" for k, v in m_kwargs.items()]
-                                            captured_input = f"{name}({', '.join(m_arg_strs)})"
-                                        except Exception:
-                                            pass
-                                        res = attr(*m_args, **m_kwargs)
-                                        actual_val = res
-                                        return res
-                                    return method_wrapper
-                                return attr
-                        WrappedClass.__name__ = cand_obj.__name__
-                        WrappedClass.__module__ = getattr(cand_obj, "__module__", "__main__")
-                        return WrappedClass
+                        return cand_obj
                     elif callable(cand_obj):
                         def func_wrapper(*args, **kwargs):
                             nonlocal actual_val, captured_input
@@ -219,88 +192,104 @@ def run_harness_payload(payload: dict) -> dict:
                                 err_msg = f"Assertion failed: {call_expr} returned unexpected value."
                     elif test_code:
                         test_ns = dict(exec_globals)
-                        for k, v in list(exec_globals.items()):
-                            if not k.startswith("_") and (callable(v) or isinstance(v, type)) and getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>"):
-                                test_ns[k] = _wrap_candidate(v)
-
                         exec(test_code, test_ns)
                         run_tests_fn = test_ns.get("run_tests")
                         if run_tests_fn and callable(run_tests_fn):
+                            KNOWN_TARGETS = {
+                                "day01_ch01_pairwise_distance": lambda ns: ns.get("pairwise_euclidean_distance"),
+                                "day01_ch02_strided_conv2d": lambda ns: ns.get("conv2d"),
+                                "day02_ch01_financial_resampling": lambda ns: ns.get("resample_and_compute_metrics"),
+                                "day02_ch02_categorical_pipeline": lambda ns: ns.get("build_customer_analytics_pipeline"),
+                                "day03_ch01_ml_diagnostic_dashboard": lambda ns: ns.get("create_diagnostic_dashboard"),
+                                "day04_ch01_robust_target_encoder": lambda ns: ns.get("RobustOutlierTargetEncoder"),
+                                "day04_ch02_cv_classification_pipeline": lambda ns: ns.get("build_and_tune_pipeline"),
+                                "day05_ch01_parametric_swish": lambda ns: {
+                                    "ParametricSwishFunction": ns.get("ParametricSwishFunction"),
+                                    "ParametricSwish": ns.get("ParametricSwish")
+                                },
+                                "day05_ch02_focal_loss": lambda ns: ns.get("FocalLoss"),
+                                "day06_ch01_residual_block": lambda ns: ns.get("ResidualBlock"),
+                                "day06_ch02_robust_train_loop": lambda ns: ns.get("train_model"),
+                                "day07_ch01_full_pipeline_capstone": lambda ns: ns.get("EndToEndMLPipeline"),
+                                "torch-p3-c1": lambda ns: ns.get("build_and_run_mlp"),
+                                "torch-p3-c2": lambda ns: ns.get("build_residual_block"),
+                                "python-p4-c1": lambda ns: ns.get("Vector2D"),
+                                "python-p4-c2": lambda ns: {
+                                    "BankAccount": ns.get("BankAccount"),
+                                    "CheckingAccount": ns.get("CheckingAccount"),
+                                    "SavingsAccount": ns.get("SavingsAccount")
+                                },
+                                "python-p7-c1": lambda ns: ns.get("EventDispatcher"),
+                                "python-p7-c2": lambda ns: {
+                                    "async_task_batcher": ns.get("async_task_batcher"),
+                                    "run_batcher_sync": ns.get("run_batcher_sync")
+                                },
+                            }
+
                             user_callables = [
-                                v for k, v in test_ns.items()
+                                (k, v) for k, v in test_ns.items()
                                 if not k.startswith("_")
                                 and k != "run_tests"
                                 and (callable(v) or isinstance(v, type))
-                                and (k in exec_globals or getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>"))
+                                and getattr(v, "__module__", "") in ("", None, "__main__", "<user_code>", "<string>")
+                                and not getattr(getattr(v, "__class__", None), "__module__", "").startswith("typing")
+                                and getattr(v, "__module__", "") != "typing"
                             ]
+
                             invoked = False
                             last_err = None
-                            for cand in user_callables:
-                                cand_was_called = False
-                                def _make_invocation_tracker(c):
-                                    if isinstance(c, type):
-                                        class TrackedClass(c):
-                                            def __init__(self, *args, **kwargs):
-                                                nonlocal cand_was_called
-                                                cand_was_called = True
-                                                super().__init__(*args, **kwargs)
-                                        TrackedClass.__name__ = c.__name__
-                                        return TrackedClass
-                                    elif callable(c):
-                                        def tracked_fn(*args, **kwargs):
-                                            nonlocal cand_was_called
-                                            cand_was_called = True
-                                            return c(*args, **kwargs)
-                                        if hasattr(c, "__name__"):
-                                            tracked_fn.__name__ = c.__name__
-                                        return tracked_fn
-                                    return c
+                            res_rep = None
 
-                                tracked_cand = _make_invocation_tracker(cand)
-                                try:
-                                    res_rep = run_tests_fn(tracked_cand)
-                                    if actual_val is None:
-                                        actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
-                                    if isinstance(res_rep, dict) and not res_rep.get("success", res_rep.get("passed", True)):
-                                        tc_status = "failed"
-                                        err_msg = res_rep.get("error", "Test suite reported failure.")
-                                        diff_msg = res_rep.get("diff")
-                                    invoked = True
-                                    break
-                                except (TypeError, ValueError, KeyError) as e:
-                                    if cand_was_called:
+                            cid = payload.get("challenge_id") or tc.get("challenge_id") or ""
+                            if cid in KNOWN_TARGETS:
+                                target = KNOWN_TARGETS[cid](test_ns)
+                                if target is not None:
+                                    try:
+                                        wrapped_target = _wrap_candidate(target) if (callable(target) or isinstance(target, type)) else target
+                                        res_rep = run_tests_fn(wrapped_target)
+                                        invoked = True
+                                    except Exception as e:
+                                        last_err = e
+
+                            if not invoked:
+                                for k, cand in reversed(user_callables):
+                                    try:
+                                        wrapped_cand = _wrap_candidate(cand)
+                                        res_rep = run_tests_fn(wrapped_cand)
+                                        invoked = True
+                                        break
+                                    except AssertionError:
                                         raise
-                                    last_err = e
-                                    continue
+                                    except (TypeError, ValueError, KeyError) as e:
+                                        last_err = e
+                                        continue
 
                             if not invoked and user_callables:
                                 try:
-                                    cand_dict = {k: v for k, v in test_ns.items() if not k.startswith("_") and (callable(v) or isinstance(v, type))}
+                                    cand_dict = {k: v for k, v in user_callables}
                                     res_rep = run_tests_fn(cand_dict)
-                                    if actual_val is None:
-                                        actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
-                                    if isinstance(res_rep, dict) and not res_rep.get("success", res_rep.get("passed", True)):
-                                        tc_status = "failed"
-                                        err_msg = res_rep.get("error", "Test suite reported failure.")
-                                        diff_msg = res_rep.get("diff")
                                     invoked = True
-                                except (TypeError, ValueError, KeyError):
-                                    pass
+                                except (TypeError, ValueError, KeyError) as e:
+                                    last_err = e
 
                             if not invoked:
                                 try:
                                     res_rep = run_tests_fn()
-                                    if actual_val is None:
-                                        actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed")) else str(res_rep)
-                                    if isinstance(res_rep, dict) and not res_rep.get("success", res_rep.get("passed", True)):
-                                        tc_status = "failed"
-                                        err_msg = res_rep.get("error", "Test suite reported failure.")
-                                        diff_msg = res_rep.get("diff")
                                     invoked = True
-                                except TypeError:
-                                    if last_err:
-                                        raise last_err
-                                    raise ValueError("Could not find matching function/class to evaluate against test suite.")
+                                except (TypeError, ValueError, KeyError) as e:
+                                    last_err = e
+
+                            if not invoked:
+                                if last_err:
+                                    raise last_err
+                                raise ValueError("Could not find matching function/class to evaluate against test suite.")
+
+                            if actual_val is None:
+                                actual_val = "All test assertions passed!" if res_rep is None or (isinstance(res_rep, dict) and res_rep.get("passed", res_rep.get("success", True))) else str(res_rep)
+                            if isinstance(res_rep, dict) and not res_rep.get("success", res_rep.get("passed", True)):
+                                tc_status = "failed"
+                                err_msg = res_rep.get("error", "Test suite reported failure.")
+                                diff_msg = res_rep.get("diff")
                         else:
                             actual_val = "Test executed successfully."
                     else:
