@@ -13,6 +13,9 @@ import {
   BookOpen,
   Settings,
   Key,
+  ExternalLink,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import type { Challenge, ChatMessage, ExecutionResponse } from '../types';
 import ChatMessageRenderer from './ChatMessageRenderer';
@@ -46,6 +49,7 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showHowTo, setShowHowTo] = useState(true);
   const [byokKey, setByokKey] = useState(() => localStorage.getItem('pymastery_byok_key') || '');
   const [byokProvider, setByokProvider] = useState(() => localStorage.getItem('pymastery_byok_provider') || 'auto');
   const [byokModel, setByokModel] = useState(() => {
@@ -259,13 +263,21 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-sm font-bold text-white">Socratic AI Mentor</h2>
-                <span className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded-full border ${
-                  lastApiError && byokKey.trim()
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
-                    : 'bg-accent-indigo/10 text-accent-indigo border-accent-indigo/30'
-                }`}>
-                  {byokKey.trim() ? (lastApiError ? 'Fallback Active' : (byokProvider === 'auto' ? 'Custom Key' : byokProvider.toUpperCase())) : 'Auto / Free'}
-                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.2 rounded-full border transition cursor-pointer hover:opacity-80 flex items-center gap-1 ${
+                    lastApiError && byokKey.trim()
+                      ? 'bg-amber-500/10 text-amber-400 border-amber-500/30'
+                      : byokKey.trim()
+                      ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30'
+                      : 'bg-accent-indigo/10 text-accent-indigo border-accent-indigo/30'
+                  }`}
+                  title="Click to configure AI Model & Google AI Studio Key"
+                >
+                  <Key className="w-2.5 h-2.5" />
+                  <span>{byokKey.trim() ? (lastApiError ? 'Fallback Active' : (byokProvider === 'auto' ? 'Custom Key' : byokProvider.toUpperCase())) : 'Connect AI / Free'}</span>
+                </button>
               </div>
               <p className="text-xs text-zinc-400 truncate max-w-[240px]">
                 {challenge.title} • {challenge.category}
@@ -304,6 +316,97 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
                 AI Model & API Key Configuration
               </span>
               <span className="text-[10px] text-zinc-400">Stored locally in browser</span>
+            </div>
+
+            {/* Quick How-To Guide for Google AI Studio */}
+            <div className="bg-[#121624] border border-accent-indigo/25 rounded-xl p-3 space-y-2.5 text-zinc-300 shadow-xs">
+              <div
+                className="flex items-center justify-between cursor-pointer select-none"
+                onClick={() => setShowHowTo(!showHowTo)}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 rounded-md bg-accent-indigo/20 text-accent-indigo flex items-center justify-center font-bold text-[10px]">
+                    ⚡
+                  </div>
+                  <span className="font-semibold text-white text-xs">
+                    Quick How-To: Get Free Google AI Studio Key
+                  </span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[10px] px-1.5 py-0.2 rounded bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 font-medium">
+                    Free Tier (~30s)
+                  </span>
+                  <button
+                    type="button"
+                    className="text-zinc-400 hover:text-white p-0.5 transition"
+                    title={showHowTo ? 'Collapse guide' : 'Expand guide'}
+                  >
+                    {showHowTo ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                  </button>
+                </div>
+              </div>
+
+              {showHowTo && (
+                <div className="pt-2 border-t border-surface-border/60 space-y-2 text-[11px] leading-relaxed animate-in fade-in duration-100">
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 w-4 h-4 rounded-full bg-accent-indigo/20 border border-accent-indigo/40 text-accent-indigo flex items-center justify-center font-bold text-[10px] mt-0.5">
+                      1
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-zinc-200">
+                        Go to{' '}
+                        <a
+                          href="https://aistudio.google.com/app/apikey"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-accent-indigo hover:text-indigo-300 font-semibold underline inline-flex items-center gap-0.5"
+                        >
+                          Google AI Studio (API Keys)
+                          <ExternalLink className="w-2.5 h-2.5 inline" />
+                        </a>{' '}
+                        and sign in with your Google account.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 w-4 h-4 rounded-full bg-accent-indigo/20 border border-accent-indigo/40 text-accent-indigo flex items-center justify-center font-bold text-[10px] mt-0.5">
+                      2
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-zinc-200">
+                        Click <strong className="text-white bg-zinc-800 px-1.5 py-0.2 rounded border border-zinc-700">"Create API key"</strong> (or "Get API key") and select/create a Google Cloud project.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2">
+                    <span className="shrink-0 w-4 h-4 rounded-full bg-accent-indigo/20 border border-accent-indigo/40 text-accent-indigo flex items-center justify-center font-bold text-[10px] mt-0.5">
+                      3
+                    </span>
+                    <div className="flex-1">
+                      <p className="text-zinc-200">
+                        Copy the generated key, paste it into the <strong className="text-white">API Key</strong> field below, and click <strong className="text-accent-indigo">Test Connection</strong>.
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="pt-1.5 flex items-center justify-between gap-2 border-t border-zinc-800/60">
+                    <a
+                      href="https://aistudio.google.com/app/apikey"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-accent-indigo hover:bg-accent-indigo/80 text-white font-medium rounded-lg text-[10px] transition shadow-xs cursor-pointer"
+                    >
+                      <span>Open Google AI Studio</span>
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    <span className="text-[10px] text-zinc-400">
+                      Zero setup required • Fast Gemini Flash response
+                    </span>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-2">
@@ -392,12 +495,25 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
             )}
 
             <div>
-              <label className="text-[10px] text-zinc-400 uppercase font-semibold">
-                API Key {byokProvider === 'custom' ? '(Optional for Local LAN)' : '(BYOK)'}
-              </label>
+              <div className="flex items-center justify-between">
+                <label className="text-[10px] text-zinc-400 uppercase font-semibold">
+                  API Key {byokProvider === 'custom' ? '(Optional for Local LAN)' : '(BYOK)'}
+                </label>
+                {(byokProvider === 'gemini' || byokProvider === 'auto') && (
+                  <a
+                    href="https://aistudio.google.com/app/apikey"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[10px] text-accent-indigo hover:text-indigo-300 font-medium flex items-center gap-1 hover:underline"
+                  >
+                    <span>Get Key from Google AI Studio</span>
+                    <ExternalLink className="w-2.5 h-2.5" />
+                  </a>
+                )}
+              </div>
               <input
                 type="password"
-                placeholder={byokProvider === 'custom' ? 'Optional (leave blank if local server has no auth)' : 'Leave blank to use Server / Free Tier default'}
+                placeholder={byokProvider === 'custom' ? 'Optional (leave blank if local server has no auth)' : 'e.g. AIzaSy... (paste Google AI Studio key)'}
                 value={byokKey}
                 onChange={(e) => saveAiSettings(e.target.value, byokProvider, byokModel, byokBaseUrl)}
                 className="w-full mt-1 bg-surface-base border border-surface-border rounded-lg px-2.5 py-1.5 text-zinc-200 text-xs focus:border-accent-indigo outline-none font-mono"
@@ -405,7 +521,7 @@ export const AIMentorPanel: React.FC<AIMentorPanelProps> = ({
               <p className="mt-1 text-[10px] text-zinc-400">
                 {byokProvider === 'custom'
                   ? 'Key is forwarded via Bearer authorization if provided.'
-                  : 'Get a free Gemini key at aistudio.google.com or use personal keys for OpenAI/Groq.'}
+                  : 'Key is saved only in your local browser storage. Free Gemini Flash tier available at aistudio.google.com.'}
               </p>
             </div>
 
