@@ -60,7 +60,7 @@ export async function executeCodeApi(
 
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+    const timeoutId = setTimeout(() => controller.abort(), 45000);
 
     const res = await fetch(`${API_BASE_URL}/run`, {
       method: 'POST',
@@ -69,7 +69,7 @@ export async function executeCodeApi(
         challenge_id: challenge.id,
         code,
         mode,
-        timeout: 25.0,
+        timeout: 35.0,
       }),
       signal: controller.signal,
     });

@@ -5,11 +5,18 @@ Executes code payloads over an IPC Pipe with sub-millisecond dispatch time.
 """
 
 from __future__ import annotations
+import os
+# Restrict OpenMP / BLAS thread pools to 1 thread to avoid CPU thrashing on throttled containers
+os.environ["OMP_NUM_THREADS"] = "1"
+os.environ["MKL_NUM_THREADS"] = "1"
+os.environ["OPENBLAS_NUM_THREADS"] = "1"
+os.environ["VECLIB_MAXIMUM_THREADS"] = "1"
+os.environ["NUMEXPR_NUM_THREADS"] = "1"
+
 import ast
 import io
 import math
 import multiprocessing as mp
-import os
 import sys
 import time
 import traceback
@@ -196,6 +203,103 @@ def run_harness_payload(payload: dict) -> dict:
                         run_tests_fn = test_ns.get("run_tests")
                         if run_tests_fn and callable(run_tests_fn):
                             KNOWN_TARGETS = {
+                                # PyTorch Progressive Track
+                                "torch-p1-c1": lambda ns: ns.get("init_tensor_matrices"),
+                                "torch-p1-c2": lambda ns: ns.get("bridge_numpy_to_tensor"),
+                                "torch-p2-c1": lambda ns: ns.get("compute_polynomial_gradients"),
+                                "torch-p2-c2": lambda ns: ns.get("evaluate_inference_no_grad"),
+                                "torch-p3-c1": lambda ns: ns.get("build_and_run_mlp") or ns.get("SimpleMLP"),
+                                "torch-p3-c2": lambda ns: ns.get("build_residual_block") or ns.get("ResidualBlock"),
+                                "torch-p4-c1": lambda ns: ns.get("evaluate_losses"),
+                                "torch-p4-c2": lambda ns: ns.get("single_step_adam_update"),
+                                "torch-p5-c1": lambda ns: ns.get("train_model"),
+                                "torch-p5-c2": lambda ns: ns.get("train_with_early_stopping"),
+                                "torch-p6-c1": lambda ns: ns.get("TabularDataset"),
+                                "torch-p6-c2": lambda ns: ns.get("create_and_inspect_dataloader") or ns.get("create_data_loader"),
+                                "torch-p7-c1": lambda ns: ns.get("ConvFeatureExtractor"),
+                                "torch-p7-c2": lambda ns: ns.get("SelfAttentionBlock") or ns.get("MultiheadSelfAttention"),
+
+                                # Pure Python Progressive Track
+                                "python-p1-c1": lambda ns: ns.get("clean_and_format_record"),
+                                "python-p1-c2": lambda ns: ns.get("categorize_metric"),
+                                "python-p2-c1": lambda ns: ns.get("build_inverted_index"),
+                                "python-p2-c2": lambda ns: ns.get("flatten_and_deduplicate"),
+                                "python-p3-c1": lambda ns: ns.get("compose_pipeline"),
+                                "python-p3-c2": lambda ns: ns.get("make_bounded_memoizer"),
+                                "python-p4-c1": lambda ns: ns.get("Vector2D"),
+                                "python-p4-c2": lambda ns: {
+                                    "BankAccount": ns.get("BankAccount"),
+                                    "CheckingAccount": ns.get("CheckingAccount"),
+                                    "SavingsAccount": ns.get("SavingsAccount"),
+                                },
+                                "python-p5-c1": lambda ns: ns.get("stream_sliding_window"),
+                                "python-p5-c2": lambda ns: ns.get("pipeline_log_stream"),
+                                "python-p6-c1": lambda ns: ns.get("retry_with_backoff"),
+                                "python-p6-c2": lambda ns: ns.get("AtomicTransaction"),
+                                "python-p7-c1": lambda ns: ns.get("EventDispatcher"),
+                                "python-p7-c2": lambda ns: {
+                                    "async_task_batcher": ns.get("async_task_batcher"),
+                                    "run_batcher_sync": ns.get("run_batcher_sync"),
+                                },
+
+                                # NumPy Track
+                                "d1-c1": lambda ns: ns.get("init_sensor_data"),
+                                "d1-c2": lambda ns: ns.get("generate_range_and_samples"),
+                                "d2-c1": lambda ns: ns.get("reshape_stream_to_grid"),
+                                "d2-c2": lambda ns: ns.get("format_multichannel_tensor"),
+                                "d3-c1": lambda ns: ns.get("crop_bounding_box"),
+                                "d3-c2": lambda ns: ns.get("decimate_and_isolate"),
+                                "d4-c1": lambda ns: ns.get("compute_financial_metrics"),
+                                "d4-c2": lambda ns: ns.get("clamped_exp_activation"),
+                                "d5-c1": lambda ns: ns.get("aggregate_scorecard"),
+                                "d5-c2": lambda ns: ns.get("analyze_cashflow"),
+                                "d6-c1": lambda ns: ns.get("clean_sensor_readings"),
+                                "d6-c2": lambda ns: ns.get("sieve_server_telemetry"),
+                                "d7-c1": lambda ns: ns.get("normalize_features"),
+                                "d7-c2": lambda ns: ns.get("compute_portfolio_returns"),
+                                "d7-c3": lambda ns: ns.get("pairwise_euclidean_distance"),
+
+                                # Pandas Track
+                                "pandas-p1-c1": lambda ns: ns.get("build_employee_directory"),
+                                "pandas-p1-c2": lambda ns: ns.get("inspect_dataframe"),
+                                "pandas-p2-c1": lambda ns: ns.get("filter_high_earners"),
+                                "pandas-p2-c2": lambda ns: ns.get("slice_subtable"),
+                                "pandas-p3-c1": lambda ns: ns.get("clean_and_impute_dataset"),
+                                "pandas-p3-c2": lambda ns: ns.get("normalize_customer_records"),
+                                "pandas-p4-c1": lambda ns: ns.get("aggregate_department_metrics"),
+                                "pandas-p4-c2": lambda ns: ns.get("rank_regional_performance"),
+                                "pandas-p5-c1": lambda ns: ns.get("join_customer_orders"),
+                                "pandas-p5-c2": lambda ns: ns.get("combine_retail_data"),
+                                "pandas-p6-c1": lambda ns: ns.get("calculate_stock_metrics"),
+                                "pandas-p6-c2": lambda ns: ns.get("resample_sales_and_detect_peaks"),
+                                "pandas-p7-c1": lambda ns: ns.get("build_rfm_pipeline"),
+                                "pandas-p7-c2": lambda ns: ns.get("build_production_kpi_pipeline"),
+
+                                # Matplotlib Track
+                                "mpl-p1-c1": lambda ns: ns.get("plot_metric_curves"),
+                                "mpl-p1-c2": lambda ns: ns.get("plot_trajectories"),
+                                "mpl-p2-c1": lambda ns: ns.get("plot_scatter_and_bar"),
+                                "mpl-p2-c2": lambda ns: ns.get("plot_distribution_with_density"),
+                                "mpl-p3-c1": lambda ns: ns.get("create_diagnostic_grid"),
+                                "mpl-p3-c2": lambda ns: ns.get("plot_volume_price_twin"),
+                                "mpl-p4-c1": lambda ns: ns.get("annotate_peak_anomaly"),
+                                "mpl-p4-c2": lambda ns: ns.get("build_publication_figure"),
+
+                                # Scikit-Learn Track
+                                "sk-p1-c1": lambda ns: ns.get("stratified_train_test_split"),
+                                "sk-p1-c2": lambda ns: ns.get("temporal_train_test_split"),
+                                "sk-p2-c1": lambda ns: ns.get("scale_features_leak_free"),
+                                "sk-p2-c2": lambda ns: ns.get("preprocess_mixed_features"),
+                                "sk-p3-c1": lambda ns: ns.get("train_churn_classifier"),
+                                "sk-p3-c2": lambda ns: ns.get("inspect_tree_feature_importances"),
+                                "sk-p4-c1": lambda ns: ns.get("train_housing_regressor"),
+                                "sk-p4-c2": lambda ns: ns.get("compare_ols_and_ridge"),
+                                "sk-p5-c1": lambda ns: ns.get("evaluate_model_cv"),
+                                "sk-p5-c2": lambda ns: ns.get("tune_decision_tree_grid"),
+                                "sk-p6-c1": lambda ns: ns.get("build_preprocessing_classifier_pipeline"),
+                                "sk-p6-c2": lambda ns: ns.get("build_and_evaluate_capstone_pipeline"),
+
+                                # Legacy Curriculum Track
                                 "day01_ch01_pairwise_distance": lambda ns: ns.get("pairwise_euclidean_distance"),
                                 "day01_ch02_strided_conv2d": lambda ns: ns.get("conv2d"),
                                 "day02_ch01_financial_resampling": lambda ns: ns.get("resample_and_compute_metrics"),
@@ -210,20 +314,7 @@ def run_harness_payload(payload: dict) -> dict:
                                 "day05_ch02_focal_loss": lambda ns: ns.get("FocalLoss"),
                                 "day06_ch01_residual_block": lambda ns: ns.get("ResidualBlock"),
                                 "day06_ch02_robust_train_loop": lambda ns: ns.get("train_model"),
-                                "day07_ch01_full_pipeline_capstone": lambda ns: ns.get("EndToEndMLPipeline"),
-                                "torch-p3-c1": lambda ns: ns.get("build_and_run_mlp"),
-                                "torch-p3-c2": lambda ns: ns.get("build_residual_block"),
-                                "python-p4-c1": lambda ns: ns.get("Vector2D"),
-                                "python-p4-c2": lambda ns: {
-                                    "BankAccount": ns.get("BankAccount"),
-                                    "CheckingAccount": ns.get("CheckingAccount"),
-                                    "SavingsAccount": ns.get("SavingsAccount")
-                                },
-                                "python-p7-c1": lambda ns: ns.get("EventDispatcher"),
-                                "python-p7-c2": lambda ns: {
-                                    "async_task_batcher": ns.get("async_task_batcher"),
-                                    "run_batcher_sync": ns.get("run_batcher_sync")
-                                },
+                                "day07_ch01_full_pipeline_capstone": lambda ns: ns.get("EndToEndMLPipeline") or ns.get("DeepMLP"),
                             }
 
                             user_callables = [
@@ -240,14 +331,22 @@ def run_harness_payload(payload: dict) -> dict:
                             last_err = None
                             res_rep = None
 
-                            cid = payload.get("challenge_id") or tc.get("challenge_id") or ""
-                            if cid in KNOWN_TARGETS:
-                                target = KNOWN_TARGETS[cid](test_ns)
+                            cid = (payload.get("challenge_id") or tc.get("challenge_id") or "").strip().lower()
+                            # Match normalized cid
+                            matched_entry = next((fn for k, fn in KNOWN_TARGETS.items() if k.lower() == cid), None)
+                            if matched_entry:
+                                target = matched_entry(test_ns)
                                 if target is not None:
                                     try:
                                         wrapped_target = _wrap_candidate(target) if (callable(target) or isinstance(target, type)) else target
                                         res_rep = run_tests_fn(wrapped_target)
                                         invoked = True
+                                    except TypeError:
+                                        try:
+                                            res_rep = run_tests_fn()
+                                            invoked = True
+                                        except Exception as e_noarg:
+                                            last_err = e_noarg
                                     except Exception as e:
                                         last_err = e
 
@@ -431,23 +530,67 @@ def run_harness_payload(payload: dict) -> dict:
 
 def warm_worker_loop(pipe: mp.connection.Connection):
     """Main loop for the warm worker process. Pre-loads packages and processes requests."""
-    # Pre-warm heavy scientific packages
+    # 1. Pre-warm NumPy, Pandas, Matplotlib
     try:
-        import numpy
+        import numpy as np
     except Exception:
         pass
     try:
-        import pandas
-    except Exception:
-        pass
-    try:
-        import torch
+        import pandas as pd
     except Exception:
         pass
     try:
         import matplotlib
         matplotlib.use("Agg")
         import matplotlib.pyplot as plt
+    except Exception:
+        pass
+
+    # 2. Pre-warm Scikit-Learn
+    try:
+        import sklearn
+        import sklearn.model_selection
+        import sklearn.preprocessing
+        import sklearn.pipeline
+        import sklearn.ensemble
+    except Exception:
+        pass
+
+    # 3. Pre-warm PyTorch Core, NN, Optim, Autograd Dispatcher, and DataLoader
+    try:
+        import torch
+        torch.set_num_threads(1)
+        torch.set_num_interop_threads(1)
+        import torch.nn as nn
+        import torch.optim as optim
+        from torch.utils.data import DataLoader, TensorDataset
+
+        # Instantiate core layers and loss functions
+        dummy_m = nn.Linear(2, 1)
+        dummy_conv = nn.Conv2d(1, 1, 3)
+        dummy_mse = nn.MSELoss()
+        dummy_ce = nn.CrossEntropyLoss()
+
+        # Instantiate optimizers (triggers first-time C++ dispatcher bindings)
+        dummy_opt = optim.Adam(dummy_m.parameters(), lr=0.01)
+        dummy_sgd = optim.SGD(dummy_m.parameters(), lr=0.01)
+
+        # Trigger first forward, loss, backward, and optimizer steps to link dispatcher kernels into memory
+        dummy_opt.zero_grad()
+        dummy_out = dummy_m(torch.ones(1, 2))
+        dummy_loss = dummy_mse(dummy_out, torch.zeros(1, 1))
+        dummy_loss.backward()
+        dummy_opt.step()
+        dummy_sgd.step()
+
+        # Pre-warm DataLoader iterator
+        dummy_dl = DataLoader(TensorDataset(torch.ones(2, 2), torch.zeros(2, 1)), batch_size=1)
+        for _ in dummy_dl:
+            pass
+
+        # Pre-warm activation and reduction functions
+        _ = torch.softmax(torch.tensor([[1.0, 2.0]]), dim=-1)
+        _ = torch.argmax(torch.tensor([[1.0, 2.0]]), dim=-1)
     except Exception:
         pass
 

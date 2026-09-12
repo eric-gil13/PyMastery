@@ -694,8 +694,8 @@ class WarmWorkerManager:
             self.proc.start()
             self.pipe = parent_conn
 
-            # Wait for ready signal (up to 20s for initial import/linking of torch/openblas)
-            if self.pipe.poll(20.0):
+            # Wait for ready signal (up to 35s for initial import/linking of torch/openblas/autograd)
+            if self.pipe.poll(35.0):
                 msg = self.pipe.recv()
                 if not (isinstance(msg, dict) and msg.get("type") == "ready"):
                     raise RuntimeError(f"Unexpected worker handshake: {msg}")
@@ -955,7 +955,7 @@ class CodeRunner:
 
     async def execute(self, req: RunRequest) -> RunResponse:
         """Executes the request via warm worker with fallback to isolated subprocess."""
-        timeout_sec = min(max(req.timeout, 0.5), 35.0)
+        timeout_sec = min(max(req.timeout, 0.5), 45.0)
         memory_limit_mb = min(max(req.memory_limit_mb, 64.0), 1024.0)
 
         payload = {
