@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   BookOpen,
   Zap,
@@ -9,6 +9,9 @@ import {
   TrendingUp,
   HardDrive,
   Code2,
+  BarChart2,
+  ShieldCheck,
+  Cpu,
 } from 'lucide-react';
 import type { DayTrack, Challenge } from '../types';
 import MathRenderer from './MathRenderer';
@@ -18,6 +21,8 @@ import InteractiveArrayVisualizer from './InteractiveArrayVisualizer';
 import InteractiveDataframeVisualizer from './InteractiveDataframeVisualizer';
 import InteractiveAutogradVisualizer from './InteractiveAutogradVisualizer';
 import InteractivePythonMemoryVisualizer from './InteractivePythonMemoryVisualizer';
+import InteractiveMatplotlibVisualizer from './InteractiveMatplotlibVisualizer';
+import InteractiveSklearnVisualizer from './InteractiveSklearnVisualizer';
 import MarkdownGuideRenderer from './MarkdownGuideRenderer';
 
 interface StudyMasterclassCanvasProps {
@@ -25,6 +30,8 @@ interface StudyMasterclassCanvasProps {
   activeChallenge: Challenge;
   onSwitchToCode: () => void;
 }
+
+type SupportedLabId = 'python' | 'numpy' | 'pandas' | 'matplotlib' | 'sklearn' | 'pytorch';
 
 export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
   currentDay,
@@ -35,27 +42,109 @@ export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
 
   const mechanics = currentDay.libraryMechanics;
 
-  // Render appropriate interactive visualizer widget based on track
+  // Identify the native lab ID based on currentDay / library / activeChallenge
+  const getNativeLabId = (): SupportedLabId => {
+    const libName = mechanics?.libraryName?.toLowerCase() || '';
+    const chId = activeChallenge.id.toLowerCase();
+    const widgetType = mechanics?.interactiveWidgetType;
+
+    if (chId.startsWith('python-') || libName.includes('python') || widgetType === 'python-memory') {
+      return 'python';
+    }
+    if (chId.startsWith('matplotlib-') || libName.includes('matplotlib') || widgetType === 'matplotlib-artists') {
+      return 'matplotlib';
+    }
+    if (chId.startsWith('sklearn-') || libName.includes('sklearn') || libName.includes('scikit') || widgetType === 'sklearn-pipeline') {
+      return 'sklearn';
+    }
+    if (chId.startsWith('pytorch-') || libName.includes('pytorch') || libName.includes('torch') || widgetType === 'pytorch-autograd' || widgetType === 'pytorch-nn') {
+      return 'pytorch';
+    }
+    if (chId.startsWith('pandas-') || libName.includes('pandas') || widgetType === 'pandas-blockmanager') {
+      return 'pandas';
+    }
+    if (chId.startsWith('numpy-') || libName.includes('numpy') || widgetType === 'numpy-strides') {
+      return 'numpy';
+    }
+
+    return 'numpy';
+  };
+
+  const nativeLabId = getNativeLabId();
+  const [selectedLabOverride, setSelectedLabOverride] = useState<SupportedLabId | null>(null);
+  const activeLabId: SupportedLabId = selectedLabOverride || nativeLabId;
+
+  // Reset override whenever active challenge or track changes
+  useEffect(() => {
+    setSelectedLabOverride(null);
+  }, [activeChallenge.id, currentDay.id]);
+
+  const LAB_METADATA: Record<SupportedLabId, { title: string; subtitle: string; icon: any; color: string; badge: string }> = {
+    python: {
+      title: 'Python Memory & Object References Studio',
+      subtitle: 'Inspect heap object allocation, pointer assignment, mutable in-place mutations, and LEGB scope resolution in real-time.',
+      icon: Sparkles,
+      color: 'text-amber-400',
+      badge: 'CPython Virtual Machine',
+    },
+    numpy: {
+      title: 'NumPy 2D/3D Array Strides & Hardware Memory Studio',
+      subtitle: 'Inspect C-contiguous vs Fortran byte offsets, zero-copy pointer transformations, broadcasting expansion, and axis reductions.',
+      icon: Zap,
+      color: 'text-sky-400',
+      badge: 'C Memory Buffers & Strides',
+    },
+    pandas: {
+      title: 'Pandas BlockManager & Column Memory Studio',
+      subtitle: 'Explore 2D BlockManager consolidation, categorical RAM downcasting savings, and Split-Apply-Combine GroupBy mechanics.',
+      icon: HardDrive,
+      color: 'text-cyan-400',
+      badge: 'Columnar BlockManager',
+    },
+    matplotlib: {
+      title: 'Matplotlib Object-Oriented Figure & Artist Studio',
+      subtitle: 'Experiment with the Artist containment hierarchy, live reactive plotting primitives (lines, scatter, bars), and multi-panel subplot grids.',
+      icon: BarChart2,
+      color: 'text-orange-400',
+      badge: 'Figure & Artist Hierarchy',
+    },
+    sklearn: {
+      title: 'Scikit-Learn ML Pipeline & Classifier Playground',
+      subtitle: 'Explore 2D decision boundary geometries, real-time confusion matrix metrics (Accuracy, F1), and data-leakage-free sequential Pipelines.',
+      icon: ShieldCheck,
+      color: 'text-emerald-400',
+      badge: 'Pipeline & Estimator API',
+    },
+    pytorch: {
+      title: 'PyTorch Autograd & Neural Network Architecture Studio',
+      subtitle: 'Step through reverse-mode DAG graph propagation (VJP), and visually inspect layer-by-layer forward tensor shape transformations & parameter counts.',
+      icon: Cpu,
+      color: 'text-rose-400',
+      badge: 'Dynamic DAG & nn.Module',
+    },
+  };
+
+  const currentLabMeta = LAB_METADATA[activeLabId];
+  const CurrentLabIcon = currentLabMeta.icon;
+
+  // Render appropriate interactive visualizer widget based on activeLabId
   const renderInteractiveWidget = () => {
-    if (!mechanics) return null;
-    const widgetType = mechanics.interactiveWidgetType;
-    const isPython = activeChallenge.id.startsWith('python-') || mechanics.libraryName.toLowerCase().includes('python');
-
-    if (widgetType === 'python-memory' || isPython) {
-      return <InteractivePythonMemoryVisualizer />;
+    switch (activeLabId) {
+      case 'python':
+        return <InteractivePythonMemoryVisualizer />;
+      case 'numpy':
+        return <InteractiveArrayVisualizer />;
+      case 'pandas':
+        return <InteractiveDataframeVisualizer />;
+      case 'matplotlib':
+        return <InteractiveMatplotlibVisualizer />;
+      case 'sklearn':
+        return <InteractiveSklearnVisualizer />;
+      case 'pytorch':
+        return <InteractiveAutogradVisualizer />;
+      default:
+        return <InteractiveArrayVisualizer />;
     }
-    if (widgetType === 'numpy-strides' || (currentDay.dayNumber === 1 && !activeChallenge.id.startsWith('pandas-'))) {
-      return <InteractiveArrayVisualizer />;
-    }
-    if (widgetType === 'pandas-blockmanager' || currentDay.dayNumber === 2) {
-      return <InteractiveDataframeVisualizer />;
-    }
-    if (widgetType === 'pytorch-autograd' || currentDay.dayNumber === 5 || currentDay.dayNumber === 6) {
-      return <InteractiveAutogradVisualizer />;
-    }
-
-    // Default fallback to array visualizer
-    return <InteractiveArrayVisualizer />;
   };
 
   return (
@@ -278,11 +367,61 @@ export const StudyMasterclassCanvas: React.FC<StudyMasterclassCanvasProps> = ({
       {/* TAB 2: Interactive Lab & Visualizers */}
       {activeTab === 'interactive' && (
         <div className="space-y-6 animate-fade-in">
-          <div className="p-4 bg-purple-950/20 border border-purple-900/40 rounded-2xl flex items-center gap-3">
-            <Zap className="w-5 h-5 text-purple-400 shrink-0" />
-            <p className="text-xs text-purple-200">
-              <strong>Interactive Studio:</strong> Experiment with live parameters, inspect hardware byte offsets, and watch how memory pointers transform without allocating RAM.
-            </p>
+          {/* Dynamic Studio Banner */}
+          <div className="p-4 bg-zinc-900/90 border border-zinc-800 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className={`p-2.5 rounded-xl bg-zinc-950 border border-zinc-800 ${currentLabMeta.color} shrink-0`}>
+                <CurrentLabIcon className="w-5 h-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h2 className="text-xs sm:text-sm font-bold text-zinc-100">{currentLabMeta.title}</h2>
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-300 font-semibold">
+                    {currentLabMeta.badge}
+                  </span>
+                </div>
+                <p className="text-xs text-zinc-400 mt-0.5 leading-relaxed">
+                  {currentLabMeta.subtitle}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Interactive Lab Studio Switcher */}
+          <div className="flex items-center gap-1.5 p-1.5 bg-zinc-950/80 border border-zinc-800/80 rounded-2xl overflow-x-auto">
+            <span className="text-[11px] font-mono text-zinc-500 uppercase px-2 font-semibold shrink-0">
+              Interactive Labs:
+            </span>
+            {[
+              { id: 'python' as SupportedLabId, label: 'Python Memory', icon: '🐍' },
+              { id: 'numpy' as SupportedLabId, label: 'NumPy Strides', icon: '⚡' },
+              { id: 'pandas' as SupportedLabId, label: 'Pandas BlockManager', icon: '📊' },
+              { id: 'matplotlib' as SupportedLabId, label: 'Matplotlib Studio', icon: '📈' },
+              { id: 'sklearn' as SupportedLabId, label: 'Scikit-Learn ML', icon: '🛡️' },
+              { id: 'pytorch' as SupportedLabId, label: 'PyTorch Autograd & NN', icon: '🔥' },
+            ].map((lab) => {
+              const isSelected = activeLabId === lab.id;
+              const isNative = nativeLabId === lab.id;
+              return (
+                <button
+                  key={lab.id}
+                  onClick={() => setSelectedLabOverride(lab.id)}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold whitespace-nowrap transition ${
+                    isSelected
+                      ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/30'
+                      : 'text-zinc-400 hover:text-zinc-200 hover:bg-zinc-900'
+                  }`}
+                >
+                  <span>{lab.icon}</span>
+                  <span>{lab.label}</span>
+                  {isNative && (
+                    <span className="text-[9px] px-1.5 py-0.2 rounded bg-indigo-950 text-indigo-300 border border-indigo-800/50">
+                      current
+                    </span>
+                  )}
+                </button>
+              );
+            })}
           </div>
 
           {renderInteractiveWidget()}

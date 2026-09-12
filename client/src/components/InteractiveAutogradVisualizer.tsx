@@ -6,6 +6,10 @@ import {
   Pause,
   ArrowRight,
   ArrowLeft,
+  Layers,
+  Sliders,
+  Copy,
+  Check,
 } from 'lucide-react';
 
 type StepStage =
@@ -20,6 +24,16 @@ type StepStage =
   | 8; // Optimizer Step: w_new, b_new updated!
 
 export const InteractiveAutogradVisualizer: React.FC = () => {
+  const [torchTab, setTorchTab] = useState<'autograd' | 'nn'>('autograd');
+
+  // NN Architecture state
+  const [batchSize, setBatchSize] = useState<number>(32);
+  const [inFeatures, setInFeatures] = useState<number>(128);
+  const [hiddenFeatures, setHiddenFeatures] = useState<number>(256);
+  const [numClasses, setNumClasses] = useState<number>(10);
+  const [useBatchNorm, setUseBatchNorm] = useState<boolean>(true);
+  const [useDropout, setUseDropout] = useState<boolean>(true);
+  const [copiedNNCode, setCopiedNNCode] = useState<boolean>(false);
   const [xVal, setXVal] = useState<number>(2.0);
   const [wVal, setWVal] = useState<number>(3.0);
   const [bVal, setBVal] = useState<number>(1.0);
@@ -108,8 +122,69 @@ export const InteractiveAutogradVisualizer: React.FC = () => {
     }
   };
 
+  const linear1Params = inFeatures * hiddenFeatures + hiddenFeatures;
+  const bnParams = useBatchNorm ? 2 * hiddenFeatures : 0;
+  const linear2Params = hiddenFeatures * numClasses + numClasses;
+  const totalParams = linear1Params + bnParams + linear2Params;
+  const paramMemoryKb = ((totalParams * 4) / 1024).toFixed(1);
+
+  const generatedNNCode = `import torch
+import torch.nn as nn
+
+class ClassifierMLP(nn.Module):
+    def __init__(self, in_features=${inFeatures}, hidden_dim=${hiddenFeatures}, num_classes=${numClasses}):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),${useBatchNorm ? '\n            nn.BatchNorm1d(hidden_dim),' : ''}
+            nn.ReLU(),${useDropout ? '\n            nn.Dropout(p=0.25),' : ''}
+            nn.Linear(hidden_dim, num_classes)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        # Input shape: [${batchSize}, ${inFeatures}]
+        logits = self.net(x)
+        # Output shape: [${batchSize}, ${numClasses}]
+        return logits
+
+# Initialize model & inspect shape propagation
+model = ClassifierMLP()
+dummy_batch = torch.randn(${batchSize}, ${inFeatures})
+out = model(dummy_batch)
+print("Output logits shape:", out.shape)  # torch.Size([${batchSize}, ${numClasses}])
+print("Total Trainable Parameters:", sum(p.numel() for p in model.parameters() if p.requires_grad))`;
+
   return (
     <div className="space-y-6 text-zinc-100">
+      {/* PyTorch Sub-Tab Switcher */}
+      <div className="flex items-center justify-between border-b border-surface-border pb-3">
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setTorchTab('autograd')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              torchTab === 'autograd'
+                ? 'bg-rose-500/20 border-rose-500 text-rose-300 shadow'
+                : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Network className="w-3.5 h-3.5" />
+            <span>Autograd Graph (DAG)</span>
+          </button>
+          <button
+            onClick={() => setTorchTab('nn')}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-semibold border transition ${
+              torchTab === 'nn'
+                ? 'bg-rose-500/20 border-rose-500 text-rose-300 shadow'
+                : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+            }`}
+          >
+            <Layers className="w-3.5 h-3.5" />
+            <span>Neural Network Layers & Shapes</span>
+          </button>
+        </div>
+      </div>
+
+      {torchTab === 'autograd' ? (
+      <>
       {/* Top Banner & Control Deck */}
       <div className="rounded-2xl border border-white/[0.07] bg-surface-panel/90 p-5 space-y-5 shadow-2xl backdrop-blur-xl">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 border-b border-white/[0.07] pb-4">
@@ -557,8 +632,311 @@ print(b.grad)  # tensor(${dLoss_db.toFixed(2)})`}
           </pre>
         </div>
       </div>
+      </>
+      ) : (
+      /* ------------------------------------------------------------- */
+      /* TAB: NEURAL NETWORK ARCHITECTURE & TENSOR SHAPES              */
+      /* ------------------------------------------------------------- */
+      <div className="space-y-6">
+        {/* Top Architecture Metric Cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div className="p-4 bg-surface-panel border border-white/[0.07] rounded-2xl space-y-1">
+            <div className="text-[10px] font-mono uppercase text-zinc-500">Total Trainable Parameters</div>
+            <div className="text-xl font-bold font-mono text-rose-400">
+              {totalParams.toLocaleString()}
+            </div>
+            <div className="text-[11px] text-zinc-400">Weights + Biases across all layers</div>
+          </div>
+
+          <div className="p-4 bg-surface-panel border border-white/[0.07] rounded-2xl space-y-1">
+            <div className="text-[10px] font-mono uppercase text-zinc-500">Weights Memory Footprint</div>
+            <div className="text-xl font-bold font-mono text-amber-400">
+              {paramMemoryKb} KB
+            </div>
+            <div className="text-[11px] text-zinc-400">Float32 (4 bytes per parameter)</div>
+          </div>
+
+          <div className="p-4 bg-surface-panel border border-white/[0.07] rounded-2xl space-y-1">
+            <div className="text-[10px] font-mono uppercase text-zinc-500">Batch Tensor Dimension</div>
+            <div className="text-xl font-bold font-mono text-cyan-400">
+              [{batchSize}, {numClasses}]
+            </div>
+            <div className="text-[11px] text-zinc-400">Output class prediction logits</div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Left: Layer Stack Visualizer */}
+          <div className="lg:col-span-7 space-y-4">
+            <div className="p-5 bg-zinc-950 border border-zinc-800 rounded-2xl space-y-3 shadow-inner">
+              <div className="flex items-center justify-between text-xs font-mono text-zinc-400 pb-2 border-b border-zinc-800">
+                <span>Layer Architecture & Forward Shape Propagation</span>
+                <span className="text-rose-400">Sequential Execution</span>
+              </div>
+
+              {/* Layer 0: Input Tensor */}
+              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-zinc-500 uppercase">Input Batch</div>
+                  <div className="text-xs font-bold text-zinc-200">torch.Tensor</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-mono font-bold text-sky-400">
+                    [{batchSize}, {inFeatures}]
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500">Batch × Features</div>
+                </div>
+              </div>
+
+              <div className="text-center text-zinc-600 font-bold text-xs">↓</div>
+
+              {/* Layer 1: nn.Linear */}
+              <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-rose-400 uppercase">Linear Layer 1</div>
+                  <div className="text-xs font-bold text-zinc-200">nn.Linear({inFeatures}, {hiddenFeatures})</div>
+                  <div className="text-[10px] text-zinc-400">
+                    Params: {inFeatures} × {hiddenFeatures} + {hiddenFeatures} = {linear1Params.toLocaleString()}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-mono font-bold text-rose-300">
+                    [{batchSize}, {hiddenFeatures}]
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500">Affine Projection</div>
+                </div>
+              </div>
+
+              {useBatchNorm && (
+                <>
+                  <div className="text-center text-zinc-600 font-bold text-xs">↓</div>
+                  <div className="p-3 bg-indigo-950/20 border border-indigo-900/40 rounded-xl flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-mono text-indigo-400 uppercase">Normalization</div>
+                      <div className="text-xs font-bold text-zinc-200">nn.BatchNorm1d({hiddenFeatures})</div>
+                      <div className="text-[10px] text-zinc-400">
+                        Learnable γ & β: {bnParams} params
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-mono font-bold text-indigo-300">
+                        [{batchSize}, {hiddenFeatures}]
+                      </div>
+                      <div className="text-[10px] font-mono text-zinc-500">Zero Mean / Unit Var</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="text-center text-zinc-600 font-bold text-xs">↓</div>
+
+              {/* Layer 3: ReLU */}
+              <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-emerald-400 uppercase">Activation</div>
+                  <div className="text-xs font-bold text-zinc-200">nn.ReLU()</div>
+                  <div className="text-[10px] text-zinc-400">Non-linear elementwise max(0, x) (0 params)</div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-mono font-bold text-emerald-300">
+                    [{batchSize}, {hiddenFeatures}]
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500">Non-linearity</div>
+                </div>
+              </div>
+
+              {useDropout && (
+                <>
+                  <div className="text-center text-zinc-600 font-bold text-xs">↓</div>
+                  <div className="p-3 bg-zinc-900 border border-zinc-800 rounded-xl flex items-center justify-between">
+                    <div>
+                      <div className="text-[10px] font-mono text-amber-400 uppercase">Regularization</div>
+                      <div className="text-xs font-bold text-zinc-200">nn.Dropout(p=0.25)</div>
+                      <div className="text-[10px] text-zinc-400">Randomly zeros 25% activations in training</div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-xs font-mono font-bold text-amber-300">
+                        [{batchSize}, {hiddenFeatures}]
+                      </div>
+                      <div className="text-[10px] font-mono text-zinc-500">Stochastic Mask</div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="text-center text-zinc-600 font-bold text-xs">↓</div>
+
+              {/* Layer 5: nn.Linear Output */}
+              <div className="p-3 bg-rose-950/20 border border-rose-900/40 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-[10px] font-mono text-rose-400 uppercase">Linear Output Head</div>
+                  <div className="text-xs font-bold text-zinc-200">nn.Linear({hiddenFeatures}, {numClasses})</div>
+                  <div className="text-[10px] text-zinc-400">
+                    Params: {hiddenFeatures} × {numClasses} + {numClasses} = {linear2Params.toLocaleString()}
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="text-xs font-mono font-bold text-rose-300">
+                    [{batchSize}, {numClasses}]
+                  </div>
+                  <div className="text-[10px] font-mono text-zinc-500">Classification Logits</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Right: Dimension & Architecture Controls */}
+          <div className="lg:col-span-5 space-y-4">
+            <div className="p-4 bg-surface-panel border border-white/[0.07] rounded-xl space-y-4">
+              <div className="text-xs font-bold text-zinc-200 flex items-center gap-1.5 pb-2 border-b border-surface-border">
+                <Sliders className="w-3.5 h-3.5 text-rose-400" />
+                <span>Tensor & Layer Parameters</span>
+              </div>
+
+              {/* Batch Size */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-400">Batch Size (B)</span>
+                  <span className="font-mono text-zinc-200 font-bold">{batchSize}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[8, 16, 32, 64].map((b) => (
+                    <button
+                      key={b}
+                      onClick={() => setBatchSize(b)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        batchSize === b
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                          : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {b}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* In Features */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-400">Input Dimension (In)</span>
+                  <span className="font-mono text-zinc-200 font-bold">{inFeatures}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[64, 128, 256, 784].map((dim) => (
+                    <button
+                      key={dim}
+                      onClick={() => setInFeatures(dim)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        inFeatures === dim
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                          : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {dim}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Hidden Dim */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-400">Hidden Layer Dimension (H)</span>
+                  <span className="font-mono text-zinc-200 font-bold">{hiddenFeatures}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[64, 128, 256, 512].map((dim) => (
+                    <button
+                      key={dim}
+                      onClick={() => setHiddenFeatures(dim)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        hiddenFeatures === dim
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                          : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {dim}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Num Classes */}
+              <div className="space-y-1">
+                <div className="flex justify-between text-xs">
+                  <span className="text-zinc-400">Target Classes (Out)</span>
+                  <span className="font-mono text-zinc-200 font-bold">{numClasses}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  {[2, 10, 100].map((cls) => (
+                    <button
+                      key={cls}
+                      onClick={() => setNumClasses(cls)}
+                      className={`flex-1 py-1.5 rounded-lg text-xs font-bold border transition ${
+                        numClasses === cls
+                          ? 'bg-rose-500/20 border-rose-500 text-rose-300'
+                          : 'bg-surface-elevated border-surface-border text-zinc-400 hover:text-zinc-200'
+                      }`}
+                    >
+                      {cls}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Toggles */}
+              <div className="space-y-2 pt-2 border-t border-surface-border">
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useBatchNorm}
+                    onChange={(e) => setUseBatchNorm(e.target.checked)}
+                    className="rounded accent-rose-500"
+                  />
+                  <span>Include nn.BatchNorm1d</span>
+                </label>
+                <label className="flex items-center gap-2 text-xs text-zinc-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={useDropout}
+                    onChange={(e) => setUseDropout(e.target.checked)}
+                    className="rounded accent-rose-500"
+                  />
+                  <span>Include nn.Dropout(p=0.25)</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Generated PyTorch Module Snippet */}
+            <div className="p-4 bg-zinc-950 border border-zinc-800 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-mono font-semibold text-rose-400">
+                  PyTorch nn.Module Implementation
+                </span>
+                <button
+                  onClick={() => {
+                    navigator.clipboard.writeText(generatedNNCode);
+                    setCopiedNNCode(true);
+                    setTimeout(() => setCopiedNNCode(false), 2000);
+                  }}
+                  className="flex items-center gap-1 text-[10px] text-zinc-400 hover:text-zinc-200 transition"
+                >
+                  {copiedNNCode ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
+                  <span>{copiedNNCode ? 'Copied' : 'Copy'}</span>
+                </button>
+              </div>
+              <pre className="text-[11px] font-mono text-zinc-300 overflow-x-auto max-h-56 custom-scrollbar whitespace-pre">
+                {generatedNNCode}
+              </pre>
+            </div>
+          </div>
+        </div>
+      </div>
+      )}
     </div>
   );
 };
 
 export default InteractiveAutogradVisualizer;
+

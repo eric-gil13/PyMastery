@@ -18,6 +18,8 @@ import InteractiveArrayVisualizer from './InteractiveArrayVisualizer';
 import InteractiveDataframeVisualizer from './InteractiveDataframeVisualizer';
 import InteractiveAutogradVisualizer from './InteractiveAutogradVisualizer';
 import InteractivePythonMemoryVisualizer from './InteractivePythonMemoryVisualizer';
+import InteractiveMatplotlibVisualizer from './InteractiveMatplotlibVisualizer';
+import InteractiveSklearnVisualizer from './InteractiveSklearnVisualizer';
 import MarkdownGuideRenderer from './MarkdownGuideRenderer';
 import ApiCheatCard from './ApiCheatCard';
 
@@ -59,23 +61,31 @@ export const ChallengeIntuitionPanel: React.FC<ChallengeIntuitionPanelProps> = (
     setMasterclassOpen(false);
   }, [challenge.id]);
 
-  // Render appropriate interactive visualizer widget based on track
+  // Render appropriate interactive visualizer widget based on track & challenge
   const renderInteractiveWidget = () => {
+    const libName = currentDay?.libraryMechanics?.libraryName?.toLowerCase() || '';
+    const chId = challenge.id.toLowerCase();
     const widgetType = currentDay?.libraryMechanics?.interactiveWidgetType;
-    const dayNum = currentDay?.dayNumber || 1;
 
-    if (widgetType === 'python-memory' || challenge.id.startsWith('python-')) {
+    if (chId.startsWith('python-') || libName.includes('python') || widgetType === 'python-memory') {
       return <InteractivePythonMemoryVisualizer />;
     }
-    if (widgetType === 'numpy-strides' || (dayNum === 1 && !challenge.id.startsWith('python-') && !challenge.id.startsWith('pandas-'))) {
-      return <InteractiveArrayVisualizer />;
+    if (chId.startsWith('matplotlib-') || libName.includes('matplotlib') || widgetType === 'matplotlib-artists') {
+      return <InteractiveMatplotlibVisualizer />;
     }
-    if (widgetType === 'pandas-blockmanager' || dayNum === 2) {
-      return <InteractiveDataframeVisualizer />;
+    if (chId.startsWith('sklearn-') || libName.includes('sklearn') || libName.includes('scikit') || widgetType === 'sklearn-pipeline') {
+      return <InteractiveSklearnVisualizer />;
     }
-    if (widgetType === 'pytorch-autograd' || dayNum === 3 || dayNum === 5 || dayNum === 6) {
+    if (chId.startsWith('pytorch-') || libName.includes('pytorch') || libName.includes('torch') || widgetType === 'pytorch-autograd' || widgetType === 'pytorch-nn') {
       return <InteractiveAutogradVisualizer />;
     }
+    if (chId.startsWith('pandas-') || libName.includes('pandas') || widgetType === 'pandas-blockmanager') {
+      return <InteractiveDataframeVisualizer />;
+    }
+    if (chId.startsWith('numpy-') || libName.includes('numpy') || widgetType === 'numpy-strides') {
+      return <InteractiveArrayVisualizer />;
+    }
+
     return <InteractiveArrayVisualizer />;
   };
 
