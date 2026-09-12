@@ -244,35 +244,24 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
     );
   };
 
-  // Synchronize external code updates (challenge switch, reset, snippet insertion, remote draft)
+  // Only switch model content when active challenge.id actually changes
+  const prevChallengeIdRef = useRef(challenge.id);
   useEffect(() => {
-    const editor = editorRef.current;
-    if (!editor) return;
-
-    const normalizedPropCode = (code || '').replace(/\r\n/g, '\n');
-    const currentEditorValue = (editor.getValue() || '').replace(/\r\n/g, '\n');
-
-    // 1. If editor already matches, do not disturb cursor or content
-    if (normalizedPropCode === currentEditorValue) {
-      lastEmittedValueRef.current = normalizedPropCode;
-      return;
+    if (prevChallengeIdRef.current !== challenge.id) {
+      prevChallengeIdRef.current = challenge.id;
+      const editor = editorRef.current;
+      if (editor) {
+        const normalized = (code || '').replace(/\r\n/g, '\n');
+        editor.setValue(normalized);
+        const model = editor.getModel();
+        if (model) {
+          model.setEOL(0); // EndOfLineSequence.LF
+        }
+        editor.setPosition({ lineNumber: 1, column: 1 });
+        editor.setScrollTop(0);
+      }
     }
-
-    // 2. If this code matches what the editor recently emitted during typing, do nothing
-    if (normalizedPropCode === lastEmittedValueRef.current) {
-      return;
-    }
-
-    // 3. External change detected -> update cleanly
-    lastEmittedValueRef.current = normalizedPropCode;
-    editor.setValue(normalizedPropCode);
-    const model = editor.getModel();
-    if (model) {
-      model.setEOL(0); // EndOfLineSequence.LF
-    }
-    editor.setPosition({ lineNumber: 1, column: 1 });
-    editor.setScrollTop(0);
-  }, [code, challenge.id]);
+  }, [challenge.id, code]);
 
   const handleEditorChange = (val: string | undefined) => {
     const nextVal = (val || '').replace(/\r\n/g, '\n');

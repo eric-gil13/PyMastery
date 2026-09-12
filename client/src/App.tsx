@@ -87,6 +87,7 @@ export function App() {
   const [authModalOpen, setAuthModalOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
+  const [editorResetKey, setEditorResetKey] = useState(0);
 
   const autoSaveTimerRef = useRef<any>(null);
 
@@ -131,6 +132,7 @@ export function App() {
               setUserCodeMap((prev) => ({ ...prev, ...normalizedDrafts }));
               if (normalizedDrafts[activeChallenge.id]) {
                 setCurrentCode(normalizedDrafts[activeChallenge.id]);
+                setEditorResetKey((k) => k + 1);
               }
             }
           })
@@ -468,6 +470,7 @@ export function App() {
           setUserCodeMap((prev) => ({ ...prev, ...remote.drafts }));
           if (remote.drafts[activeChallenge.id]) {
             setCurrentCode(remote.drafts[activeChallenge.id]);
+            setEditorResetKey((k) => k + 1);
           }
         }
       })
@@ -550,7 +553,10 @@ export function App() {
                   onOpenStudyMasterclass={() => setLayoutMode('masterclass')}
                   onOpenPrimer={() => setPrimerOpen(true)}
                   onOpenMentor={() => setMentorOpen(true)}
-                  onInsertStarterSnippet={(snip: string) => handleCodeChange(snip)}
+                  onInsertStarterSnippet={(snip: string) => {
+                    handleCodeChange(snip);
+                    setEditorResetKey((k) => k + 1);
+                  }}
                 />
               </div>
 
@@ -559,6 +565,7 @@ export function App() {
                 {/* Code Workspace */}
                 <div className="flex-1 flex flex-col min-h-[280px] border-b border-surface-border overflow-hidden">
                   <CodeWorkspace
+                    key={`${activeChallenge.id}-${editorResetKey}`}
                     challenge={activeChallenge}
                     code={currentCode}
                     onChangeCode={handleCodeChange}
@@ -594,6 +601,7 @@ export function App() {
               {/* Maximized Editor */}
               <div className="flex-1 flex flex-col min-w-0 border-b border-surface-border overflow-hidden">
                 <CodeWorkspace
+                  key={`${activeChallenge.id}-${editorResetKey}`}
                   challenge={activeChallenge}
                   code={currentCode}
                   onChangeCode={handleCodeChange}
@@ -680,6 +688,7 @@ export function App() {
           saveUserProgress(newProgress);
           if (newProgress.codeSubmissions[activeChallenge.id]) {
             setCurrentCode(newProgress.codeSubmissions[activeChallenge.id]);
+            setEditorResetKey((k) => k + 1);
           }
         }}
       />
