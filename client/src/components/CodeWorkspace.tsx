@@ -37,6 +37,26 @@ interface CodeWorkspaceProps {
   testsPassed?: boolean;
 }
 
+const CursorPositionIndicator: React.FC<{ editor: any }> = ({ editor }) => {
+  const [pos, setPos] = useState({ line: 1, col: 1 });
+
+  useEffect(() => {
+    if (!editor) return;
+    const disposable = editor.onDidChangeCursorPosition((e: any) => {
+      setPos({ line: e.position.lineNumber, col: e.position.column });
+    });
+    return () => {
+      disposable?.dispose?.();
+    };
+  }, [editor]);
+
+  return (
+    <span className="font-mono text-zinc-300">
+      Ln {pos.line}, Col {pos.col}
+    </span>
+  );
+};
+
 export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   challenge,
   code,
@@ -56,9 +76,10 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
   const [fontSize, setFontSize] = useState(13);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [copiedSolution, setCopiedSolution] = useState(false);
-  const [cursorPos, setCursorPos] = useState({ line: 1, col: 1 });
+  const [editorInstance, setEditorInstance] = useState<any>(null);
   const [dismissedSentinel, setDismissedSentinel] = useState<string | null>(null);
   const editorRef = useRef<any>(null);
+  const lastEmittedValueRef = useRef<string>((code || '').replace(/\r\n/g, '\n'));
 
   // Close solution view whenever challenge switches
   useEffect(() => {
@@ -151,6 +172,13 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
 
   const handleEditorDidMount: OnMount = (editor, monaco: Monaco) => {
     editorRef.current = editor;
+    setEditorInstance(editor);
+
+    // Normalize Monaco model line endings to LF explicitly
+    const model = editor.getModel();
+    if (model) {
+      model.setEOL(monaco.editor.EndOfLineSequence.LF);
+    }
 
     // Define Monaco Deep Obsidian Theme
     monaco.editor.defineTheme('deep-obsidian', {
@@ -214,16 +242,54 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
         onSubmit();
       }
     );
+  };
 
-    // Track cursor position
-    editor.onDidChangeCursorPosition((e) => {
-      setCursorPos({ line: e.position.lineNumber, col: e.position.column });
-    });
+  // Synchronize external code updates (challenge switch, reset, snippet insertion, remote draft)
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const normalizedPropCode = (code || '').replace(/\r\n/g, '\n');
+    const currentEditorValue = (editor.getValue() || '').replace(/\r\n/g, '\n');
+
+    // 1. If editor already matches, do not disturb cursor or content
+    if (normalizedPropCode === currentEditorValue) {
+      lastEmittedValueRef.current = normalizedPropCode;
+      return;
+    }
+
+    // 2. If this code matches what the editor recently emitted during typing, do nothing
+    if (normalizedPropCode === lastEmittedValueRef.current) {
+      return;
+    }
+
+    // 3. External change detected -> update cleanly
+    lastEmittedValueRef.current = normalizedPropCode;
+    editor.setValue(normalizedPropCode);
+    const model = editor.getModel();
+    if (model) {
+      model.setEOL(0); // EndOfLineSequence.LF
+    }
+    editor.setPosition({ lineNumber: 1, column: 1 });
+    editor.setScrollTop(0);
+  }, [code, challenge.id]);
+
+  const handleEditorChange = (val: string | undefined) => {
+    const nextVal = (val || '').replace(/\r\n/g, '\n');
+    lastEmittedValueRef.current = nextVal;
+    onChangeCode(nextVal);
   };
 
   const handleResetCode = () => {
     if (window.confirm('Reset code to original starter template? Current edits will be overwritten.')) {
-      onChangeCode(challenge.starterCode);
+      const normalizedStarter = (challenge.starterCode || '').replace(/\r\n/g, '\n');
+      if (editorRef.current) {
+        editorRef.current.setValue(normalizedStarter);
+        editorRef.current.setPosition({ lineNumber: 1, column: 1 });
+        editorRef.current.setScrollTop(0);
+      }
+      lastEmittedValueRef.current = normalizedStarter;
+      onChangeCode(normalizedStarter);
     }
   };
 
@@ -235,7 +301,14 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
 
   const handleApplySolution = () => {
     if (window.confirm('Replace your current workspace code with the golden reference solution?')) {
-      onChangeCode(challenge.solutionCode);
+      const normalizedSolution = (challenge.solutionCode || '').replace(/\r\n/g, '\n');
+      if (editorRef.current) {
+        editorRef.current.setValue(normalizedSolution);
+        editorRef.current.setPosition({ lineNumber: 1, column: 1 });
+        editorRef.current.setScrollTop(0);
+      }
+      lastEmittedValueRef.current = normalizedSolution;
+      onChangeCode(normalizedSolution);
       setShowSolution(false);
     }
   };
@@ -365,8 +438,8 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
         <Editor
           height="100%"
           language="python"
-          value={code}
-          onChange={(val) => onChangeCode(val || '')}
+          defaultValue={(code || '').replace(/\r\n/g, '\n')}
+          onChange={handleEditorChange}
           onMount={handleEditorDidMount}
           theme="deep-obsidian"
           options={{
@@ -446,9 +519,7 @@ export const CodeWorkspace: React.FC<CodeWorkspaceProps> = ({
       <div className="h-11 bg-surface-panel border-t border-surface-border px-3 flex items-center justify-between flex-shrink-0 select-none">
         {/* Left: Environment status and shortcuts */}
         <div className="flex items-center gap-3 text-xs text-zinc-400">
-          <span className="font-mono text-zinc-300">
-            Ln {cursorPos.line}, Col {cursorPos.col}
-          </span>
+          <CursorPositionIndicator editor={editorInstance} />
 
           <div className="h-3 w-[1px] bg-surface-border" />
 

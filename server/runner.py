@@ -13,6 +13,8 @@ import tempfile
 import time
 import subprocess
 import traceback
+import logging
+import multiprocessing as mp
 from typing import Any, Dict, List, Optional, Tuple
 
 
@@ -663,8 +665,184 @@ if __name__ == "__main__":
 '''
 
 
+logger = logging.getLogger("pymastery.runner")
+
+
+class WarmWorkerManager:
+    """Manages a persistent warm Python worker process with pre-loaded scientific packages."""
+
+    def __init__(self, python_path: Optional[str] = None):
+        self.python_path = python_path
+        self._lock = asyncio.Lock()
+        self.proc: Optional[mp.Process] = None
+        self.pipe: Optional[mp.connection.Connection] = None
+
+    def _ensure_worker(self):
+        if self.proc is not None and self.proc.is_alive() and self.pipe is not None:
+            return
+
+        self._cleanup()
+
+        try:
+            ctx = mp.get_context()
+            parent_conn, child_conn = ctx.Pipe()
+            from server._worker import warm_worker_loop
+            self.proc = ctx.Process(target=warm_worker_loop, args=(child_conn,), daemon=True)
+            self.proc.start()
+            self.pipe = parent_conn
+
+            # Wait for ready signal (up to 20s for initial import/linking of torch/openblas)
+            if self.pipe.poll(20.0):
+                msg = self.pipe.recv()
+                if not (isinstance(msg, dict) and msg.get("type") == "ready"):
+                    raise RuntimeError(f"Unexpected worker handshake: {msg}")
+            else:
+                self._cleanup()
+                raise TimeoutError("Warm worker initialization timed out")
+        except Exception:
+            self._cleanup()
+            raise
+
+    def _cleanup(self):
+        if self.proc:
+            try:
+                CodeRunner._kill_process_tree(self.proc.pid)
+            except Exception:
+                pass
+            try:
+                self.proc.join(timeout=0.5)
+            except Exception:
+                pass
+            self.proc = None
+        if self.pipe:
+            try:
+                self.pipe.close()
+            except Exception:
+                pass
+            self.pipe = None
+
+    async def execute(
+        self,
+        payload: dict,
+        timeout_sec: float,
+        memory_limit_mb: float,
+        mode: str
+    ) -> RunResponse:
+        async with self._lock:
+            await asyncio.to_thread(self._ensure_worker)
+
+            start_time = time.perf_counter()
+            timed_out = False
+            memory_exceeded = False
+            peak_memory_mb = 0.0
+
+            ps_proc = None
+            try:
+                ps_proc = psutil.Process(self.proc.pid)
+                peak_memory_mb = ps_proc.memory_info().rss / (1024.0 * 1024.0)
+            except Exception:
+                pass
+
+            try:
+                self.pipe.send(payload)
+            except Exception as send_err:
+                self._cleanup()
+                raise send_err
+
+            def _poll_worker() -> Tuple[Optional[dict], bool, bool, float]:
+                nonlocal peak_memory_mb
+                nonlocal timed_out
+                nonlocal memory_exceeded
+
+                start_poll = time.perf_counter()
+                recv_msg = None
+
+                while True:
+                    if ps_proc:
+                        try:
+                            rss_mb = ps_proc.memory_info().rss / (1024.0 * 1024.0)
+                            if rss_mb > peak_memory_mb:
+                                peak_memory_mb = rss_mb
+                            if rss_mb > memory_limit_mb:
+                                memory_exceeded = True
+                                break
+                        except (psutil.NoSuchProcess, psutil.AccessDenied):
+                            pass
+
+                    if self.pipe.poll(0.02):
+                        try:
+                            recv_msg = self.pipe.recv()
+                        except (EOFError, BrokenPipeError):
+                            recv_msg = None
+                        break
+
+                    if not self.proc.is_alive():
+                        break
+
+                    elapsed = time.perf_counter() - start_poll
+                    if elapsed > timeout_sec:
+                        timed_out = True
+                        break
+
+                return recv_msg, timed_out, memory_exceeded, peak_memory_mb
+
+            recv_msg, timed_out, memory_exceeded, peak_memory_mb = await asyncio.to_thread(_poll_worker)
+            duration_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
+
+            if timed_out:
+                self._cleanup()
+                return RunResponse(
+                    success=False,
+                    status="timeout",
+                    stdout="",
+                    stderr="",
+                    exit_code=-1,
+                    duration_ms=duration_ms,
+                    peak_memory_mb=round(peak_memory_mb, 2),
+                    error=f"Execution timed out after {timeout_sec:.1f} seconds. Check for infinite loops or heavy computations.",
+                    test_results=[] if mode == "run" else None,
+                    tests_summary=None,
+                )
+
+            if memory_exceeded:
+                self._cleanup()
+                return RunResponse(
+                    success=False,
+                    status="memory_exceeded",
+                    stdout="",
+                    stderr="",
+                    exit_code=-1,
+                    duration_ms=duration_ms,
+                    peak_memory_mb=round(peak_memory_mb, 2),
+                    error=f"Memory limit of {memory_limit_mb:.0f} MB exceeded (peak: {peak_memory_mb:.1f} MB).",
+                    test_results=[] if mode == "run" else None,
+                    tests_summary=None,
+                )
+
+            if recv_msg is None or recv_msg.get("type") != "result":
+                self._cleanup()
+                err_text = "Worker process terminated unexpectedly."
+                if recv_msg and recv_msg.get("type") == "error":
+                    err_text = recv_msg.get("error", err_text)
+                return RunResponse(
+                    success=False,
+                    status="runtime_error",
+                    stdout="",
+                    stderr="",
+                    exit_code=-1,
+                    duration_ms=duration_ms,
+                    peak_memory_mb=round(peak_memory_mb, 2),
+                    error=err_text,
+                    test_results=[] if mode == "run" else None,
+                    tests_summary=None,
+                )
+
+            harness_data = recv_msg.get("data", {})
+            return CodeRunner._build_response(harness_data, duration_ms, peak_memory_mb, mode)
+
+
 class CodeRunner:
-    """Executes Python code in an isolated subprocess with watchdog and resource constraints."""
+    """Executes Python code in a pre-warmed background worker with isolated subprocess fallback."""
 
     def __init__(self, python_path: Optional[str] = None):
         if python_path:
@@ -682,21 +860,117 @@ class CodeRunner:
 
         self.harness_path = pathlib.Path(__file__).resolve().parent / "_harness.py"
         self._ensure_harness()
+        self.warm_worker = WarmWorkerManager(python_path=self.python_path)
 
     def _ensure_harness(self):
         try:
-            if not self.harness_path.exists() or self.harness_path.read_text(encoding="utf-8") != HARNESS_CODE:
+            if not self.harness_path.exists():
                 with open(self.harness_path, "w", encoding="utf-8") as f:
                     f.write(HARNESS_CODE)
         except Exception:
             pass
 
-    async def execute(self, req: RunRequest) -> RunResponse:
-        """Executes the request asynchronously with watchdog timer and memory threshold."""
-        self._ensure_harness()
+    @staticmethod
+    def _build_response(
+        harness_data: dict,
+        duration_ms: float,
+        peak_memory_mb: float,
+        mode: str,
+        exit_code: int = 0
+    ) -> RunResponse:
+        plots = [
+            PlotArtifact(
+                index=p["index"],
+                format=p["format"],
+                data=p["data"],
+                mime_type=p.get("mime_type", "image/png"),
+                dpi=p.get("dpi", 100),
+                title=p.get("title"),
+            )
+            for p in harness_data.get("plots", [])
+        ]
 
+        data_objects = [
+            DataObjectSummary(
+                name=d["name"],
+                object_type=d["object_type"],
+                shape=d.get("shape"),
+                dtype=d.get("dtype"),
+                columns=d.get("columns"),
+                dtypes=d.get("dtypes"),
+                preview=d.get("preview"),
+                summary_stats=d.get("summary_stats"),
+            )
+            for d in harness_data.get("data_objects", [])
+        ]
+
+        test_results = [] if mode == "run" else None
+        if mode != "run" and harness_data.get("test_results") is not None:
+            test_results = [
+                TestCaseResult(
+                    id=tr.get("id"),
+                    name=tr["name"],
+                    status=tr["status"],
+                    duration_ms=tr.get("duration_ms", 0.0),
+                    memory_kb=tr.get("memory_kb", 0.0),
+                    expected=tr.get("expected"),
+                    actual=tr.get("actual"),
+                    error_message=tr.get("error_message"),
+                    diff=tr.get("diff"),
+                    traceback=tr.get("traceback"),
+                    stdout=tr.get("stdout"),
+                    hidden=tr.get("hidden", False),
+                    input_repr=tr.get("input_repr"),
+                    call=tr.get("call"),
+                )
+                for tr in harness_data["test_results"]
+            ]
+
+        benchmark = None
+        if harness_data.get("benchmark") is not None:
+            benchmark = BenchmarkResult(**harness_data["benchmark"])
+
+        return RunResponse(
+            success=harness_data.get("success", exit_code == 0),
+            status=harness_data.get("status", "completed" if exit_code == 0 else "runtime_error"),
+            stdout=harness_data.get("stdout", ""),
+            stderr=harness_data.get("stderr", ""),
+            exit_code=exit_code if not harness_data.get("success", True) and exit_code != 0 else 0,
+            duration_ms=duration_ms,
+            peak_memory_mb=round(peak_memory_mb, 2),
+            error=harness_data.get("error"),
+            traceback=harness_data.get("traceback"),
+            test_results=test_results,
+            tests_summary=None if mode == "run" else harness_data.get("tests_summary"),
+            benchmark=benchmark,
+            plots=plots,
+            data_objects=data_objects,
+        )
+
+    async def execute(self, req: RunRequest) -> RunResponse:
+        """Executes the request via warm worker with fallback to isolated subprocess."""
         timeout_sec = min(max(req.timeout, 0.5), 35.0)
         memory_limit_mb = min(max(req.memory_limit_mb, 64.0), 1024.0)
+
+        payload = {
+            "code": req.code,
+            "mode": req.mode,
+            "test_cases": [] if req.mode == "run" else [tc.model_dump() for tc in (req.test_cases or [])],
+            "benchmark_iterations": req.benchmark_iterations,
+            "benchmark_setup": req.benchmark_setup,
+            "benchmark_stmt": req.benchmark_stmt,
+            "stdin": req.stdin or "",
+        }
+
+        try:
+            return await self.warm_worker.execute(payload, timeout_sec, memory_limit_mb, req.mode)
+        except Exception as warm_err:
+            logger.warning("Warm worker execution failed, falling back to subprocess: %s", warm_err)
+            return await self._execute_subprocess(req, timeout_sec, memory_limit_mb)
+
+    async def _execute_subprocess(self, req: RunRequest, timeout_sec: float, memory_limit_mb: float) -> RunResponse:
+        """Fallback execution in a cold subprocess."""
+        self._ensure_harness()
 
         with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False, encoding="utf-8") as in_f:
             json.dump({
@@ -706,6 +980,7 @@ class CodeRunner:
                 "benchmark_iterations": req.benchmark_iterations,
                 "benchmark_setup": req.benchmark_setup,
                 "benchmark_stmt": req.benchmark_stmt,
+                "stdin": req.stdin or "",
             }, in_f)
             in_file_path = in_f.name
 
@@ -776,17 +1051,15 @@ class CodeRunner:
                         self._kill_process_tree(proc.pid)
                         break
 
-                    time.sleep(0.02)
+                    time.sleep(0.05)
 
                 stdout_bytes, stderr_bytes = proc.communicate()
                 return proc.returncode or 0, stdout_bytes or b"", stderr_bytes or b""
 
             exit_code, stdout_bytes, stderr_bytes = await asyncio.to_thread(_run_subprocess_sync)
-
             stdout_str = stdout_bytes.decode("utf-8", errors="replace") if stdout_bytes else ""
             stderr_str = stderr_bytes.decode("utf-8", errors="replace") if stderr_bytes else ""
             duration_ms = round((time.perf_counter() - start_time) * 1000.0, 2)
-
 
             if timed_out:
                 return RunResponse(
@@ -816,7 +1089,6 @@ class CodeRunner:
                     tests_summary=None,
                 )
 
-            # Load harness output JSON
             harness_data = {}
             if os.path.exists(out_file_path) and os.path.getsize(out_file_path) > 0:
                 try:
@@ -826,83 +1098,21 @@ class CodeRunner:
                     harness_data = {
                         "success": False,
                         "status": "runtime_error",
-                        "error": f"Failed to parse runner output: {str(json_err)}"
+                        "error": f"Failed to parse runner output: {str(json_err)}",
                     }
             else:
                 harness_data = {
                     "success": False,
                     "status": "runtime_error" if exit_code != 0 else "completed",
-                    "error": stderr_str if stderr_str else f"Process exited with code {exit_code}"
+                    "error": stderr_str if stderr_str else f"Process exited with code {exit_code}",
                 }
 
-            plots = [
-                PlotArtifact(
-                    index=p["index"],
-                    format=p["format"],
-                    data=p["data"],
-                    mime_type=p.get("mime_type", "image/png"),
-                    dpi=p.get("dpi", 100),
-                    title=p.get("title")
-                )
-                for p in harness_data.get("plots", [])
-            ]
+            if not harness_data.get("stdout") and stdout_str:
+                harness_data["stdout"] = stdout_str
+            if not harness_data.get("stderr") and stderr_str:
+                harness_data["stderr"] = stderr_str
 
-            data_objects = [
-                DataObjectSummary(
-                    name=d["name"],
-                    object_type=d["object_type"],
-                    shape=d.get("shape"),
-                    dtype=d.get("dtype"),
-                    columns=d.get("columns"),
-                    dtypes=d.get("dtypes"),
-                    preview=d.get("preview"),
-                    summary_stats=d.get("summary_stats")
-                )
-                for d in harness_data.get("data_objects", [])
-            ]
-
-            test_results = [] if req.mode == "run" else None
-            if req.mode != "run" and harness_data.get("test_results") is not None:
-                test_results = [
-                    TestCaseResult(
-                        id=tr.get("id"),
-                        name=tr["name"],
-                        status=tr["status"],
-                        duration_ms=tr.get("duration_ms", 0.0),
-                        memory_kb=tr.get("memory_kb", 0.0),
-                        expected=tr.get("expected"),
-                        actual=tr.get("actual"),
-                        error_message=tr.get("error_message"),
-                        diff=tr.get("diff"),
-                        traceback=tr.get("traceback"),
-                        stdout=tr.get("stdout"),
-                        hidden=tr.get("hidden", False),
-                        input_repr=tr.get("input_repr"),
-                        call=tr.get("call"),
-                    )
-                    for tr in harness_data["test_results"]
-                ]
-
-            benchmark = None
-            if harness_data.get("benchmark") is not None:
-                benchmark = BenchmarkResult(**harness_data["benchmark"])
-
-            return RunResponse(
-                success=harness_data.get("success", exit_code == 0),
-                status=harness_data.get("status", "completed" if exit_code == 0 else "runtime_error"),
-                stdout=stdout_str,
-                stderr=stderr_str,
-                exit_code=exit_code,
-                duration_ms=duration_ms,
-                peak_memory_mb=round(peak_memory_mb, 2),
-                error=harness_data.get("error"),
-                traceback=harness_data.get("traceback"),
-                test_results=test_results,
-                tests_summary=None if req.mode == "run" else harness_data.get("tests_summary"),
-                benchmark=benchmark,
-                plots=plots,
-                data_objects=data_objects,
-            )
+            return self._build_response(harness_data, duration_ms, peak_memory_mb, req.mode, exit_code)
 
         except Exception as runner_err:
             return RunResponse(
@@ -936,6 +1146,7 @@ class CodeRunner:
             parent.kill()
         except Exception:
             pass
+
     run_code = execute
 
 

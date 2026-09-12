@@ -68,7 +68,7 @@ export function App() {
 
   // User Code State (keyed by challenge.id)
   const [userCodeMap, setUserCodeMap] = useState<Record<string, string>>({});
-  const [currentCode, setCurrentCode] = useState<string>(activeChallenge.starterCode);
+  const [currentCode, setCurrentCode] = useState<string>(() => (activeChallenge.starterCode || '').replace(/\r\n/g, '\n'));
 
   // User Progress & Auth State
   const [userProgress, setUserProgress] = useState<UserProgress>(loadUserProgress);
@@ -96,16 +96,21 @@ export function App() {
     setUserProgress(loaded);
 
     // Initialize code map with saved code or starter code
-    const initialCodeMap: Record<string, string> = { ...loaded.codeSubmissions };
+    const initialCodeMap: Record<string, string> = {};
+    if (loaded.codeSubmissions) {
+      Object.entries(loaded.codeSubmissions).forEach(([k, v]) => {
+        initialCodeMap[k] = (v || '').replace(/\r\n/g, '\n');
+      });
+    }
     curriculum.forEach((day) => {
       day.challenges.forEach((ch) => {
         if (!initialCodeMap[ch.id]) {
-          initialCodeMap[ch.id] = ch.starterCode;
+          initialCodeMap[ch.id] = (ch.starterCode || '').replace(/\r\n/g, '\n');
         }
       });
     });
     setUserCodeMap(initialCodeMap);
-    setCurrentCode(initialCodeMap[activeChallenge.id] || activeChallenge.starterCode);
+    setCurrentCode(((initialCodeMap[activeChallenge.id] || activeChallenge.starterCode) || '').replace(/\r\n/g, '\n'));
 
     // Check stored user token
     const storedAuth = localStorage.getItem('pymastery_auth');
@@ -119,9 +124,13 @@ export function App() {
           .then((r) => r.json())
           .then((remote) => {
             if (remote && remote.drafts) {
-              setUserCodeMap((prev) => ({ ...prev, ...remote.drafts }));
-              if (remote.drafts[activeChallenge.id]) {
-                setCurrentCode(remote.drafts[activeChallenge.id]);
+              const normalizedDrafts: Record<string, string> = {};
+              Object.entries(remote.drafts).forEach(([k, v]) => {
+                normalizedDrafts[k] = (v as string || '').replace(/\r\n/g, '\n');
+              });
+              setUserCodeMap((prev) => ({ ...prev, ...normalizedDrafts }));
+              if (normalizedDrafts[activeChallenge.id]) {
+                setCurrentCode(normalizedDrafts[activeChallenge.id]);
               }
             }
           })
@@ -140,7 +149,7 @@ export function App() {
 
       setCurrentDay(day);
       setActiveChallenge(challenge);
-      const nextCode = userCodeMap[challenge.id] || challenge.starterCode;
+      const nextCode = (userCodeMap[challenge.id] || challenge.starterCode || '').replace(/\r\n/g, '\n');
       setCurrentCode(nextCode);
       setExecutionResult(null);
     },
